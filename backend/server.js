@@ -15,8 +15,8 @@ app.get('/api/students', async (req, res) => {
     const result = await pool.query('SELECT id, full_name, nickname FROM students ORDER BY id');
     res.json(result.rows);
   } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server error');
+    console.error('Error fetching students from DB:', err); // Log completo del error
+    res.status(500).send('Server error: Could not fetch students');
   }
 });
 
