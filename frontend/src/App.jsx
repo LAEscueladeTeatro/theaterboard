@@ -6,7 +6,9 @@ import TeacherLoginPage from './pages/TeacherLoginPage';
 import TeacherDashboardPage from './pages/TeacherDashboardPage';
 import StudentListPage from './pages/StudentListPage';
 import TeacherAttendancePage from './pages/TeacherAttendancePage';
-import TeacherScoresPage from './pages/TeacherScoresPage'; // Nueva página de puntuaciones
+import TeacherScoresPage from './pages/TeacherScoresPage';
+import TeacherSummaryPage from './pages/TeacherSummaryPage'; // Nueva página de resumen
+import TeacherRankingPage from './pages/TeacherRankingPage'; // Nueva página de ranking
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -41,7 +43,9 @@ function App() {
               <Route path="/docente/dashboard" element={<TeacherDashboardPage />} />
               <Route path="/docente/lista-estudiantes" element={<StudentListPage />} />
               <Route path="/docente/asistencia" element={<TeacherAttendancePage />} />
-              <Route path="/docente/puntuaciones" element={<TeacherScoresPage />} /> {/* Nueva ruta */}
+              <Route path="/docente/puntuaciones" element={<TeacherScoresPage />} />
+              <Route path="/docente/resumen" element={<TeacherSummaryPage />} /> {/* Nueva ruta */}
+              <Route path="/docente/ranking" element={<TeacherRankingPage />} /> {/* Nueva ruta */}
               {/* Aquí se añadirán más rutas protegidas para el docente en el futuro */}
             </Route>
 

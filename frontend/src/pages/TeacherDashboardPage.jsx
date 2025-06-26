@@ -18,11 +18,11 @@ const TeacherDashboardPage = () => {
       <h2>Panel del Docente</h2>
       <nav>
         <ul>
-          <li><Link to="/docente/asistencia">Registrar asistencia</Link></li>
-          <li><Link to="/docente/puntuaciones">Registrar puntuaciones</Link></li>
-          <li><Link to="/docente/resumen-asistencia">Resumen asistencia</Link></li>
-          <li><Link to="/docente/ranking">Ranking</Link></li>
-          <li><Link to="/docente/lista-estudiantes">Lista de estudiantes</Link></li>
+          <li><Link to="/docente/asistencia">Registrar Asistencia</Link></li>
+          <li><Link to="/docente/puntuaciones">Registrar Puntuaciones</Link></li>
+          <li><Link to="/docente/resumen">Resumen de Puntos</Link></li> {/* Actualizado */}
+          <li><Link to="/docente/ranking">Ranking Mensual</Link></li> {/* Actualizado */}
+          <li><Link to="/docente/lista-estudiantes">Lista de Estudiantes</Link></li>
           {/* <li><Link to="/docente/base-datos">Base de datos</Link></li> (Definir qué es esto) */}
           {/* <li><Link to="/docente/editar-registro">Editar registro</Link></li> (Definir qué es esto) */}
           {/* <li><Link to="/docente/icono-registro">Ícono de registro</Link></li> (Definir qué es esto) */}
