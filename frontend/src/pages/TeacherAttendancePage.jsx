@@ -111,7 +111,7 @@ const TeacherAttendancePage = () => {
   // Actualizar hora de Perú cada segundo
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentPeruDateTime(getCurrentPeruTime());
+      setCurrentPeruDateTime(getCurrentPeruDateTimeObject());
     }, 1000);
     return () => clearInterval(timer);
   }, []);
@@ -599,9 +599,12 @@ const TeacherAttendancePage = () => {
         </tbody>
       </table>
 
-      {/* TODO: Botón para Cierre de Asistencia */}
-      <button disabled={isAttendanceClosedForToday}>
-        {isAttendanceClosedForToday ? 'Asistencia Cerrada' : 'Realizar Cierre de Asistencia'}
+      <button
+        onClick={handleOpenCloseAttendanceModal}
+        disabled={isAttendanceEffectivelyClosed} // Corrected variable name
+        style={{marginTop: '20px'}}
+      >
+        {isAttendanceEffectivelyClosed ? 'Asistencia del Día Cerrada' : 'Realizar Cierre de Asistencia'}
       </button>
 
       {/* Renderizar el modal de tardanza */}
@@ -610,28 +613,7 @@ const TeacherAttendancePage = () => {
       {/* Renderizar el modal de cierre de asistencia */}
       {renderCloseAttendanceModal()}
 
-      {/* Estilos básicos para el modal (se pueden mover a un archivo CSS) */}
-      <style jsx global>{`
-        .modal-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background-color: rgba(0, 0, 0, 0.5);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 1000;
-        }
-        .modal-content {
-          background-color: white;
-          padding: 20px;
-          border-radius: 5px;
-          min-width: 300px;
-          max-width: 500px;
-        }
-      `}</style>
+      {/* Los estilos del modal se moverán a un archivo CSS global o se definirán de otra manera si es necesario */}
     </div>
   );
 };
