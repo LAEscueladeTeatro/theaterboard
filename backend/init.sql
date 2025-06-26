@@ -99,3 +99,21 @@ CREATE INDEX IF NOT EXISTS idx_attendance_student_date ON attendance_records(stu
 CREATE INDEX IF NOT EXISTS idx_attendance_date ON attendance_records(attendance_date);
 CREATE INDEX IF NOT EXISTS idx_daily_bonus_log_student_date ON daily_bonus_log(student_id, bonus_date);
 CREATE INDEX IF NOT EXISTS idx_daily_bonus_log_date ON daily_bonus_log(bonus_date);
+
+-- Tabla para registrar puntuaciones adicionales (grupales e individuales)
+DROP TABLE IF EXISTS score_records CASCADE;
+CREATE TABLE score_records (
+    id SERIAL PRIMARY KEY,
+    student_id VARCHAR(10) NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+    score_date DATE NOT NULL,
+    score_type VARCHAR(50) NOT NULL, -- Ej: 'ROPA_TRABAJO', 'MATERIALES', 'LIMPIEZA', 'PARTICIPACION', 'CONDUCTA', 'USO_CELULAR'
+    sub_category VARCHAR(100),      -- Ej: 'Uniforme Incompleto', 'Falta Leve', 'Participacion Activa'
+    points_assigned INTEGER NOT NULL,
+    notes TEXT,
+    recorded_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Índices para score_records
+CREATE INDEX IF NOT EXISTS idx_score_records_student_date ON score_records(student_id, score_date);
+CREATE INDEX IF NOT EXISTS idx_score_records_type ON score_records(score_type);
+CREATE INDEX IF NOT EXISTS idx_score_records_date ON score_records(score_date);
