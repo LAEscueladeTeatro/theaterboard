@@ -3,11 +3,35 @@ import axios from 'axios';
 import { Link } from 'react-router-dom';
 
 const TeacherScoresPage = () => {
-  const [students, setStudents] = useState([]);
+  const [allStudents, setAllStudents] = useState([]); // Lista completa de estudiantes
+  const [presentStudents, setPresentStudents] = useState([]); // Estudiantes filtrados por asistencia
   const [loadingStudents, setLoadingStudents] = useState(true);
+  const [loadingAttendance, setLoadingAttendance] = useState(false);
   const [error, setError] = useState('');
   const API_URL = 'http://localhost:3001/api';
-  const todayDateString = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+
+  // Obtener la fecha de hoy en formato YYYY-MM-DD para la zona horaria de Perú
+  // (Reutilizando la función de TeacherAttendancePage o una similar si es necesario)
+  // Por simplicidad, la redefiniré aquí, idealmente estaría en un utils.js
+  const getCurrentPeruDateTimeObjectForScores = () => {
+    const now = new Date();
+    const options = { timeZone: 'America/Lima', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: false };
+    const formatter = new Intl.DateTimeFormat('en-CA', options);
+    const parts = formatter.formatToParts(now);
+    const dateParts = {};
+    for (const part of parts) {
+      if (part.type !== 'literal') dateParts[part.type] = parseInt(part.value, 10);
+    }
+    return new Date(dateParts.year, dateParts.month - 1, dateParts.day, dateParts.hour, dateParts.minute, dateParts.second);
+  };
+  const getTodayPeruDateStringForScores = () => {
+    const nowInPeru = getCurrentPeruDateTimeObjectForScores();
+    const year = nowInPeru.getFullYear();
+    const month = (nowInPeru.getMonth() + 1).toString().padStart(2, '0');
+    const day = nowInPeru.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+  const todayDateString = getTodayPeruDateStringForScores();
 
   // Estados para Puntuaciones Grupales
   const [groupScoreType, setGroupScoreType] = useState('ROPA_TRABAJO');
@@ -24,29 +48,79 @@ const TeacherScoresPage = () => {
 
   const getToken = useCallback(() => localStorage.getItem('teacherToken'), []);
 
-  // Cargar lista de estudiantes
+  const getToken = useCallback(() => localStorage.getItem('teacherToken'), []);
+
+  // Función para cargar el estado de asistencia para una fecha dada y filtrar estudiantes
+  const fetchAttendanceAndFilterStudents = useCallback(async (dateForFilter) => {
+    if (!dateForFilter || allStudents.length === 0) {
+      setPresentStudents(allStudents); // Si no hay fecha o estudiantes base, mostrar todos (o ninguno si allStudents está vacío)
+      return;
+    }
+    setLoadingAttendance(true);
+    setError('');
+    try {
+      const token = getToken();
+      const response = await axios.get(`${API_URL}/attendance/status/${dateForFilter}`, { headers: { 'x-auth-token': token } });
+      const attendanceRecords = response.data.attendance_records || [];
+
+      const presentStudentIds = new Set(
+        attendanceRecords
+          .filter(record => record.status && !record.status.startsWith('AUSENCIA'))
+          .map(record => record.student_id)
+      );
+
+      const filtered = allStudents.filter(student => presentStudentIds.has(student.id));
+      setPresentStudents(filtered);
+
+      // Actualizar/inicializar groupStudentStatus solo para los estudiantes presentes en la fecha seleccionada
+      const initialStatus = {};
+      filtered.forEach(student => {
+        initialStatus[student.id] = groupStudentStatus[student.id] || 'compliant'; // Mantener estado si ya existe, sino default
+      });
+      // Para los no presentes, podríamos querer limpiar su estado o simplemente no incluirlos
+      // Aquí optamos por reconstruir basado en `filtered`
+      setGroupStudentStatus(initialStatus);
+
+    } catch (err) {
+      console.error(`Error fetching attendance for ${dateForFilter}:`, err);
+      setError(err.response?.data?.message || err.message || `Error al cargar asistencia para ${dateForFilter}.`);
+      setPresentStudents([]); // En caso de error, limpiar la lista de presentes
+    } finally {
+      setLoadingAttendance(false);
+    }
+  }, [getToken, API_URL, allStudents]); // Incluir allStudents como dependencia
+
+  // Cargar lista completa de estudiantes una vez
   useEffect(() => {
-    const fetchStudents = async () => {
+    const fetchAllStudents = async () => {
       setLoadingStudents(true);
       try {
         const token = getToken();
         const response = await axios.get(`${API_URL}/students`, { headers: { 'x-auth-token': token } });
-        setStudents(response.data);
-        // Inicializar groupStudentStatus para todos los estudiantes como 'not_applicable' o 'compliant' por defecto
-        const initialStatus = {};
-        response.data.forEach(student => {
-          initialStatus[student.id] = 'compliant'; // O 'not_applicable' si se prefiere empezar sin marcar
-        });
-        setGroupStudentStatus(initialStatus);
+        setAllStudents(response.data);
       } catch (err) {
-        console.error("Error fetching students:", err);
-        setError(err.response?.data?.message || err.message || 'Error al cargar estudiantes.');
+        console.error("Error fetching all students:", err);
+        setError(err.response?.data?.message || err.message || 'Error al cargar lista completa de estudiantes.');
       } finally {
         setLoadingStudents(false);
       }
     };
-    fetchStudents();
+    fetchAllStudents();
   }, [getToken]);
+
+  // Efecto para cargar asistencia cuando cambia la fecha de puntuación grupal o la lista de todos los estudiantes
+  useEffect(() => {
+    if (allStudents.length > 0) { // Solo ejecutar si ya tenemos la lista base de estudiantes
+        fetchAttendanceAndFilterStudents(groupScoreDate);
+    }
+  }, [groupScoreDate, allStudents, fetchAttendanceAndFilterStudents]);
+
+  // Efecto para cargar asistencia cuando cambia la fecha de puntuación personal (si quisiéramos filtrar el selector de estudiante)
+  // Por ahora, el selector de estudiante personal usará `allStudents` para simplicidad,
+  // pero podría usar `presentStudents` si `personalScoreDate` también gatilla `fetchAttendanceAndFilterStudents`.
+  // Si se decide filtrar el selector de estudiante personal, se necesitaría un estado de `presentStudentsForPersonal`
+  // y un useEffect similar al de groupScoreDate que reaccione a `personalScoreDate`.
+
 
   const handleGroupStudentStatusChange = (studentId, status) => {
     setGroupStudentStatus(prev => ({ ...prev, [studentId]: status }));
@@ -177,8 +251,10 @@ const TeacherScoresPage = () => {
           </div>
 
           <div style={{marginTop: '15px'}}>
-            <h4>Marcar Estudiantes:</h4>
-            {students.map(student => (
+            <h4>Marcar Estudiantes (Presentes en fecha seleccionada: {groupScoreDate}):</h4>
+            {loadingAttendance && <p>Cargando asistencia para la fecha...</p>}
+            {!loadingAttendance && presentStudents.length === 0 && <p>No hay estudiantes marcados como presentes para esta fecha o no se pudo cargar la asistencia.</p>}
+            {presentStudents.map(student => (
               <div key={student.id} style={{marginBottom: '5px'}}>
                 <span>{student.full_name} ({student.id}): </span>
                 <label><input type="radio" name={`group_${student.id}`} value="compliant" checked={groupStudentStatus[student.id] === 'compliant'} onChange={() => handleGroupStudentStatusChange(student.id, 'compliant')} /> Cumple (+1)</label>
@@ -196,17 +272,18 @@ const TeacherScoresPage = () => {
         <h3>Puntuaciones Personales</h3>
         <form onSubmit={handleSubmitPersonalScore}>
           <div>
-            <label htmlFor="personalSelectedStudent">Estudiante: </label>
+            <label htmlFor="personalSelectedStudent">Estudiante (Presentes en fecha de Puntuación Grupal: {groupScoreDate}): </label>
             <select id="personalSelectedStudent" value={personalSelectedStudent} onChange={(e) => setPersonalSelectedStudent(e.target.value)} required>
               <option value="">Seleccione un estudiante</option>
-              {students.map(student => (
+              {presentStudents.map(student => ( // Usar presentStudents aquí también
                 <option key={student.id} value={student.id}>{student.full_name} ({student.id})</option>
               ))}
             </select>
           </div>
           <div style={{marginTop: '10px'}}>
-            <label htmlFor="personalScoreDate">Fecha: </label>
+            <label htmlFor="personalScoreDate">Fecha Puntuación Personal: </label>
             <input type="date" id="personalScoreDate" value={personalScoreDate} onChange={(e) => setPersonalScoreDate(e.target.value)} required />
+            <p style={{fontSize: '0.8em', color: 'gray'}}>Nota: La lista de estudiantes para selección personal se basa en los presentes de la fecha de "Puntuaciones Grupales" ({groupScoreDate}).</ycji>
           </div>
           <div style={{marginTop: '10px'}}>
             <label htmlFor="personalScoreType">Tipo de Puntuación Personal: </label>
