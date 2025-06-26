@@ -48,8 +48,6 @@ const TeacherScoresPage = () => {
 
   const getToken = useCallback(() => localStorage.getItem('teacherToken'), []);
 
-  const getToken = useCallback(() => localStorage.getItem('teacherToken'), []);
-
   // Función para cargar el estado de asistencia para una fecha dada y filtrar estudiantes
   const fetchAttendanceAndFilterStudents = useCallback(async (dateForFilter) => {
     if (!dateForFilter || allStudents.length === 0) {
@@ -283,7 +281,7 @@ const TeacherScoresPage = () => {
           <div style={{marginTop: '10px'}}>
             <label htmlFor="personalScoreDate">Fecha Puntuación Personal: </label>
             <input type="date" id="personalScoreDate" value={personalScoreDate} onChange={(e) => setPersonalScoreDate(e.target.value)} required />
-            <p style={{fontSize: '0.8em', color: 'gray'}}>Nota: La lista de estudiantes para selección personal se basa en los presentes de la fecha de "Puntuaciones Grupales" ({groupScoreDate}).</ycji>
+            <p style={{fontSize: '0.8em', color: 'gray'}}>Nota: La lista de estudiantes para selección personal se basa en los presentes de la fecha de "Puntuaciones Grupales" ({groupScoreDate}).</p>
           </div>
           <div style={{marginTop: '10px'}}>
             <label htmlFor="personalScoreType">Tipo de Puntuación Personal: </label>
