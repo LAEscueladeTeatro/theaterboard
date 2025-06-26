@@ -96,11 +96,14 @@ const StudentDashboardPage = () => {
           <div>
             <p><strong>ID:</strong> {studentInfo.id}</p>
             <p><strong>Apodo:</strong> {studentInfo.nickname || 'N/A'}</p>
+            {rankingPosition !== null && rankingPosition !== undefined && (
+              <p><strong>Puesto en Ranking ({currentMonth}):</strong> {rankingInfo.icon} N° {rankingPosition}</p>
+            )}
           </div>
         </div>
       </div>
 
-      <div style={{ marginTop: '20px', border: '1px solid #ccc', padding: '15px' }}>
+      <div style={{ marginTop: '20px', border: '1px solid #ccc', padding: '15px', borderRadius: '8px' }}>
         <h4>Resumen del Mes ({currentMonth})</h4>
         <p><strong>Puntaje Total del Mes:</strong> {monthlyTotalPoints} puntos</p>
         <p>
@@ -110,7 +113,8 @@ const StudentDashboardPage = () => {
           </span>
         </p>
         <p>
-          <strong>Ranking del Mes ({currentMonth}):</strong> {rankingInfo.icon} {rankingInfo.message}
+          {/* Mensaje motivacional sin el número de puesto explícito aquí, ya que está arriba */}
+          <strong>Feedback del Ranking:</strong> {rankingInfo.message.replace(/\(Puesto N° \d+\)/g, '').trim()}
         </p>
         <p><Link to="/estudiante/mis-puntajes">Ver Mis Puntajes Detallados</Link></p>
       </div>

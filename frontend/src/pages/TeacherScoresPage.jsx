@@ -41,7 +41,7 @@ const TeacherScoresPage = () => {
   // Estados para Puntuaciones Personales
   const [personalSelectedStudent, setPersonalSelectedStudent] = useState('');
   const [personalScoreType, setPersonalScoreType] = useState('PARTICIPACION');
-  const [personalScoreDate, setPersonalScoreDate] = useState(todayDateString);
+  // personalScoreDate ya no se necesita como estado, usará groupScoreDate
   const [personalPoints, setPersonalPoints] = useState(''); // Para conducta o uso celular, o deducido para participación
   const [personalSubCategory, setPersonalSubCategory] = useState('');
   const [personalNotes, setPersonalNotes] = useState('');
@@ -200,7 +200,7 @@ const TeacherScoresPage = () => {
       const payload = {
         student_id: personalSelectedStudent,
         score_type: personalScoreType,
-        score_date: personalScoreDate,
+        score_date: groupScoreDate, // Usar groupScoreDate aquí
         points_assigned: pointsToAssign,
         sub_category: personalSubCategory,
         notes: personalNotes,
@@ -278,11 +278,11 @@ const TeacherScoresPage = () => {
               ))}
             </select>
           </div>
-          <div style={{marginTop: '10px'}}>
-            <label htmlFor="personalScoreDate">Fecha Puntuación Personal: </label>
-            <input type="date" id="personalScoreDate" value={personalScoreDate} onChange={(e) => setPersonalScoreDate(e.target.value)} required />
-            <p style={{fontSize: '0.8em', color: 'gray'}}>Nota: La lista de estudiantes para selección personal se basa en los presentes de la fecha de "Puntuaciones Grupales" ({groupScoreDate}).</p>
-          </div>
+          {/* El input de fecha para Puntuaciones Personales se elimina */}
+          {/* La fecha usada será groupScoreDate */}
+          <p style={{fontSize: '0.9em', color: '#555', marginTop: '10px'}}>
+            La fecha para las Puntuaciones Personales será la misma seleccionada para Puntuaciones Grupales: <strong>{groupScoreDate}</strong>.
+          </p>
           <div style={{marginTop: '10px'}}>
             <label htmlFor="personalScoreType">Tipo de Puntuación Personal: </label>
             <select id="personalScoreType" value={personalScoreType} onChange={handlePersonalScoreTypeChange}>
