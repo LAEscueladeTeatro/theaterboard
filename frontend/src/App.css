@@ -27,7 +27,7 @@
   padding: 0.8em 1.8em; /* Ajustar padding */
   font-size: 1.1rem; /* Ligeramente más grande */
   font-weight: 500; /* Semi-bold */
-  color: var(--text-color-light);
+  color: var(--text-color-light) !important; /* Forzar color de texto para Links */
   border-radius: var(--border-radius-pill); /* Totalmente redondeado */
   border: none;
   cursor: pointer;
@@ -37,6 +37,12 @@
   min-width: 280px; /* Ancho mínimo para consistencia */
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
+/* Forzar que el texto de Link dentro de btn-action sea blanco */
+.btn-action a, .btn-action a:visited {
+  color: var(--text-color-light) !important;
+  text-decoration: none !important;
+}
+
 
 .btn-action:hover {
   transform: translateY(-2px); /* Efecto hover sutil */
@@ -48,10 +54,11 @@
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
-.btn-action .icon {
+.btn-action .icon { /* Estilos para los SVGs definidos como componentes */
   margin-right: 0.75em;
-  font-size: 1.2em; /* Tamaño del ícono placeholder */
-  /* En un caso real, aquí irían estilos para el SVG o font-icon */
+  width: 20px; /* Tamaño por defecto para iconos en botones grandes */
+  height: 20px;
+  vertical-align: middle; /* Mejor alineación */
 }
 
 /* Colores específicos para botones */
@@ -59,7 +66,7 @@
   background-color: var(--primary-color-teacher);
 }
 .btn-teacher:hover {
-  background-color: color-mix(in srgb, var(--primary-color-teacher) 90%, #000000 10%); /* Oscurecer un poco */
+  background-color: color-mix(in srgb, var(--primary-color-teacher) 90%, #000000 10%);
 }
 
 .btn-student {
@@ -76,20 +83,20 @@
   background-color: color-mix(in srgb, var(--primary-color-register) 90%, #000000 10%);
 }
 
-/* Estilos para el header y footer (opcional, para mejorar la integración con el tema oscuro) */
+/* Estilos para el header y footer */
 header {
-  background-color: rgba(10, 10, 20, 0.5); /* Fondo oscuro semi-transparente para header */
+  background-color: rgba(10, 10, 20, 0.5);
   padding: 1rem 2rem;
   text-align: center;
   box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-  width: 100%; /* Asegurar que ocupe todo el ancho */
+  width: 100%;
 }
 
-header .app-title-header { /* Clase específica para el H1 del header */
+header .app-title-header {
   color: var(--text-color-light);
-  font-size: 1.8rem; /* Ajustar tamaño para el header */
+  font-size: 1.8rem;
   margin: 0;
-  font-weight: 500; /* Un poco menos bold que los H1 de página */
+  font-weight: 500;
 }
 
 header nav {
@@ -99,30 +106,27 @@ header nav {
 header nav a {
   color: var(--text-color-main);
   margin: 0 0.75rem;
-  font-weight: 400; /* Regular weight para links de nav */
+  font-weight: 400;
   font-size: 0.95rem;
 }
 header nav a:hover {
   color: var(--primary-color-teacher);
 }
 
-/* Main content area */
 main {
-  flex-grow: 1; /* Asegura que main ocupe el espacio disponible */
+  flex-grow: 1;
   width: 100%;
-  display: flex; /* Para que el contenido dentro de main pueda usar flex-grow si es necesario */
+  display: flex;
   flex-direction: column;
 }
 
-
 footer {
-  background-color: rgba(10, 10, 20, 0.5); /* Fondo oscuro semi-transparente para footer */
+  background-color: rgba(10, 10, 20, 0.5);
   padding: 1rem;
   text-align: center;
   color: var(--text-color-main);
   font-size: 0.9rem;
-  width: 100%; /* Asegurar que ocupe todo el ancho */
-  /* margin-top: auto; No es necesario si #root y body usan flex-direction column y main usa flex-grow */
+  width: 100%;
 }
 
 /* Estilos para páginas de login y otras con tarjetas centradas */
@@ -137,23 +141,23 @@ footer {
 
 .form-card {
   background-color: var(--container-background);
-  padding: 2.5rem 2rem; /* Más padding */
+  padding: 2.5rem 2rem;
   border-radius: var(--border-radius-medium);
   box-shadow: 0 8px 30px rgba(0,0,0,0.3);
   width: 100%;
-  max-width: 450px; /* Ancho máximo para la tarjeta de login */
+  max-width: 450px;
   text-align: center;
 }
 
 .form-card h2 {
-  font-size: 1.8rem; /* Tamaño del título dentro de la tarjeta */
+  font-size: 1.8rem;
   margin-bottom: 1.8rem;
   color: var(--text-color-light);
 }
 
-.form-card form div {
-  margin-bottom: 1.2rem; /* Espacio entre campos del formulario */
-  text-align: left; /* Alinear labels a la izquierda */
+.form-card form div:not(.modal-actions) { /* Evitar que afecte a .modal-actions si está dentro de form */
+  margin-bottom: 1.2rem;
+  text-align: left;
 }
 
 .form-card label {
@@ -167,16 +171,13 @@ footer {
 .form-card input[type="email"],
 .form-card input[type="password"],
 .form-card input[type="text"] {
-  /* Los estilos base de input en index.css ya aplican,
-     pero podemos hacer ajustes específicos si es necesario */
-  padding: 0.8em 1em; /* Ajuste de padding para inputs en tarjetas */
+  padding: 0.8em 1em;
 }
 
-
-.form-card .btn-action { /* Botón dentro de la tarjeta */
-  width: 100%; /* Botón ocupa todo el ancho de la tarjeta */
-  margin-top: 1rem; /* Espacio arriba del botón */
-  padding: 0.9em 1.8em; /* Padding ligeramente mayor para el botón principal del form */
+.form-card .btn-action {
+  width: 100%;
+  margin-top: 1rem;
+  padding: 0.9em 1.8em;
 }
 
 .form-card .secondary-link {
@@ -195,20 +196,20 @@ footer {
 .dashboard-page-container {
   padding: 2rem;
   width: 100%;
-  max-width: 1200px; /* Limitar ancho para mejor lectura en pantallas grandes */
-  margin: 0 auto;   /* Centrar el contenedor */
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
-.dashboard-page-container h2 {
+.dashboard-page-container h2 { /* Título general de la página del dashboard */
   text-align: center;
-  margin-bottom: 2.5rem; /* Más espacio debajo del título */
-  font-size: 2.2rem; /* Tamaño de título de dashboard */
+  margin-bottom: 2.5rem;
+  font-size: 2.2rem;
 }
 
 .dashboard-actions-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Grid responsive */
-  gap: 1.5rem; /* Espacio entre tarjetas */
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
   list-style: none;
   padding: 0;
   margin: 0;
@@ -216,61 +217,61 @@ footer {
 
 .dashboard-action-card {
   background-color: var(--container-background);
-  padding: 1.8rem 1.5rem; /* Ajustar padding */
+  padding: 1.8rem 1.5rem;
   border-radius: var(--border-radius-medium);
-  color: var(--text-color-light);
+  color: var(--text-color-light) !important;
   text-decoration: none;
   display: flex;
-  flex-direction: column; /* Apilar ícono (futuro) y texto verticalmente si se desea */
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
   border: 1px solid var(--border-color-subtle);
   transition: background-color 0.25s ease, transform 0.2s ease, box-shadow 0.25s ease, border-color 0.25s ease;
   box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-  font-weight: 500; /* Texto de las tarjetas un poco más bold */
-  min-height: 120px; /* Altura mínima para las tarjetas */
+  font-weight: 500;
+  min-height: 120px;
 }
+.dashboard-action-card a, .dashboard-action-card a:visited {
+   color: var(--text-color-light) !important;
+   text-decoration: none !important;
+}
+
 
 .dashboard-action-card:hover {
   background-color: color-mix(in srgb, var(--primary-color-teacher) 15%, var(--container-background) 85%);
   transform: translateY(-4px);
-  box-shadow: 0 7px 20px rgba(var(--primary-color-teacher-rgb, 157, 78, 221), 0.2); /* Sombra con color primario */
+  box-shadow: 0 7px 20px rgba(157, 78, 221, 0.2);
   border-color: var(--primary-color-teacher);
 }
 
-/* Para el botón de Salir, si se quiere que se vea como una tarjeta también */
-.dashboard-action-card.button-as-card {
+.dashboard-action-card.button-as-card { /* Para el botón Salir si se mantiene como tarjeta */
   width: 100%;
   font-size: 1rem;
   font-weight: 500;
-  color: var(--text-color-light); /* Asegurar color de texto */
-  /* Si el botón base ya tiene estilos que interfieren, resetearlos aquí */
-  background-color: var(--container-background); /* Forzar el mismo fondo */
-  border: 1px solid var(--border-color-subtle); /* Forzar el mismo borde */
+  color: var(--text-color-light);
+  background-color: var(--container-background);
+  border: 1px solid var(--border-color-subtle);
 }
 .dashboard-action-card.button-as-card:hover {
-   background-color: color-mix(in srgb, var(--primary-color-teacher) 15%, var(--container-background) 85%) !important; /* Usar !important si es necesario para el hover del botón */
+   background-color: color-mix(in srgb, var(--primary-color-teacher) 15%, var(--container-background) 85%) !important;
    border-color: var(--primary-color-teacher) !important;
 }
 
-
-/* Contenedor principal de la aplicación en App.jsx */
 .app-container {
   display: flex;
   flex-direction: column;
-  min-height: 100vh; /* Asegura que el contenedor ocupe al menos toda la altura de la ventana */
-  width: 100%;      /* Asegura que el contenedor ocupe todo el ancho */
+  min-height: 100vh;
+  width: 100%;
 }
 
-/* Ajustes para la tarjeta de registro público que es más ancha */
 .public-registration-page .form-card {
-  max-width: 800px; /* Más ancho para el formulario de registro */
-  text-align: left; /* Alinear texto a la izquierda en general para el contenido informativo */
+  max-width: 800px;
+  text-align: left;
 }
 
 .public-registration-page .form-card h2 {
-  text-align: center; /* Centrar el título principal de la tarjeta */
+  text-align: center;
 }
 
 .form-section {
@@ -280,35 +281,33 @@ footer {
 }
 
 .form-section-title {
-  font-size: 1.3rem; /* Ligeramente más pequeño que h2 de tarjeta */
+  font-size: 1.3rem;
   color: var(--text-color-light);
   margin-bottom: 1.5rem;
   padding-bottom: 0.5rem;
   border-bottom: 1px solid var(--border-color-subtle);
-  font-weight: 600; /* Un poco más de peso para los subtítulos */
+  font-weight: 600;
 }
 
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Grid responsive para campos */
-  gap: 1rem 1.5rem; /* row-gap column-gap */
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem 1.5rem;
 }
 
-.form-grid div { /* Cada item del grid */
-  margin-bottom: 0; /* Resetear margen inferior si los inputs ya lo tienen */
+.form-grid div {
+  margin-bottom: 0;
 }
 
-/* Estilo para los textareas dentro de la tarjeta del formulario de registro */
 .public-registration-page .form-card textarea {
-  min-height: 80px; /* Un poco más de altura para textareas */
+  min-height: 80px;
 }
-
 
 .form-footer-notes {
   margin-top: 2rem;
-  padding: 1.5rem; /* Padding alrededor */
+  padding: 1.5rem;
   border-top: 1px solid var(--border-color-subtle);
-  background-color: rgba(0,0,0,0.1); /* Fondo muy sutil para destacar la sección */
+  background-color: rgba(0,0,0,0.1);
   border-radius: var(--border-radius-small);
   font-size: 0.85rem;
   color: var(--text-color-main);
@@ -329,83 +328,407 @@ footer {
   margin-bottom: 0.5rem;
 }
 
-/* Botón de Salir (Logout) */
 .btn-logout {
   background-color: var(--color-danger);
   color: var(--text-color-light);
-  padding: 0.7em 1.6em; /* Padding ajustado */
-  border-radius: var(--border-radius-small); /* Bordes menos redondeados que .btn-action */
+  padding: 0.7em 1.6em;
+  border-radius: var(--border-radius-small);
   font-weight: 500;
   text-decoration: none;
-  display: inline-flex; /* Para alinear ícono y texto */
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid transparent; /* Para consistencia, aunque el fondo lo cubre */
+  border: 1px solid transparent;
   transition: background-color 0.2s ease, transform 0.15s ease;
 }
 
-.btn-logout .icon { /* Estilo para el ícono dentro del botón de logout */
+.btn-logout .icon {
   margin-right: 0.6em;
-  width: 18px; /* Tamaño específico para este ícono si es necesario */
+  width: 18px;
   height: 18px;
+  vertical-align: middle;
 }
 
 .btn-logout:hover {
-  background-color: color-mix(in srgb, var(--color-danger) 85%, #000000 15%); /* Oscurecer en hover */
-  transform: translateY(-1px); /* Ligero efecto de elevación */
+  background-color: color-mix(in srgb, var(--color-danger) 85%, #000000 15%);
+  transform: translateY(-1px);
 }
 
 .btn-logout:active {
   transform: translateY(0px);
-  background-color: color-mix(in srgb, var(--color-danger) 75%, #000000 25%); /* Más oscuro al presionar */
+  background-color: color-mix(in srgb, var(--color-danger) 75%, #000000 25%);
 }
-replace_with_git_merge_diff
-frontend/src/App.jsx
-<<<<<<< SEARCH
-            <Link to="/estudiante/login">Login Estudiante</Link> | {' '}
-            <Link to="/registro">Regístrate Aquí</Link> {/* Enlace añadido */}
-          </nav>
-          <h1>TheaterBoard</h1>
-        </header>
 
-        <main>
-          <Routes>
-            {/* Ruta principal o de bienvenida */}
-            <Route path="/" element={
-              <div>
-                <h2>Bienvenido a TheaterBoard</h2>
-                <p>Sistema de gestión para escuelas de teatro.</p>
-                <p><Link to="/docente/login">Acceder como Docente</Link></p>
-                <p><Link to="/estudiante/login">Acceder como Estudiante</Link></p>
-                <p><Link to="/registro">¿Nuevo Alumno? Regístrate Aquí</Link></p> {/* Enlace añadido */}
-              </div>
-            } />
+/* Estilos para Páginas de Contenido del Dashboard (como Asistencia, Puntuaciones) */
+.content-page-container {
+  padding: 2rem;
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+}
 
-            {/* Ruta Pública de Registro */}
-=======
-            <Link to="/estudiante/login">Login Estudiante</Link> | {' '}
-            <Link to="/registro">Regístrate Aquí</Link>
-          </nav>
-          <h1 className="app-title-header">TheaterBoard</h1>
-        </header>
+.content-page-container .page-title {
+  text-align: center;
+  margin-bottom: 0.5rem;
+  font-size: 2rem;
+}
 
-        <main>
-          <Routes>
-            {/* Ruta principal o de bienvenida */}
-            <Route path="/" element={
-              <div className="home-container">
-                <h2 className="home-title">TheaterBoard 2025</h2>
-                <Link to="/docente/login" className="btn-action btn-teacher">
-                  <span className="icon">[D]</span>Acceder como Docente
-                </Link>
-                <Link to="/estudiante/login" className="btn-action btn-student">
-                  <span className="icon">[E]</span>Acceder como Estudiante
-                </Link>
-                <Link to="/registro" className="btn-action btn-register">
-                  <span className="icon">[R]</span>Regístrate Aquí
-                </Link>
-              </div>
-            } />
+.content-page-container .page-subtitle {
+  text-align: center;
+  margin-top: 0;
+  margin-bottom: 2rem;
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--text-color-main);
+}
+.content-page-container .page-subtitle strong {
+    color: var(--primary-color-teacher);
+    font-weight: 600;
+}
 
-            {/* Ruta Pública de Registro */}
->>>>>>> REPLACE
+.controls-section {
+  background-color: var(--container-background);
+  padding: 1.5rem;
+  border-radius: var(--border-radius-medium);
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+.controls-section .section-title {
+  margin-top: 0;
+  margin-bottom: 1.2rem;
+  font-size: 1.3rem;
+  color: var(--text-color-light);
+  border-bottom: 1px solid var(--border-color-subtle);
+  padding-bottom: 0.75rem;
+  font-weight: 600;
+}
+
+.controls-bar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.controls-bar input[type="text"],
+.controls-section select {
+  padding: 0.7em 1em;
+  flex-grow: 1;
+  min-width: 200px;
+}
+.controls-section .control-group {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+.controls-section .control-group label {
+    margin-bottom: 0;
+    white-space: nowrap;
+}
+
+.controls-section button:not(.btn-action-row) {
+  background-color: var(--primary-color-teacher);
+  color: var(--text-color-light);
+  padding: 0.7em 1.2em;
+  border-radius: var(--border-radius-small);
+  font-size: 0.95rem;
+  border: none; /* Asegurar que no haya borde por defecto */
+}
+.controls-section button:not(.btn-action-row) .icon {
+    vertical-align: middle;
+    margin-right: 0.5em;
+}
+.controls-section button:not(.btn-action-row):hover {
+  background-color: color-mix(in srgb, var(--primary-color-teacher) 85%, #000000 15%);
+}
+.controls-section button:disabled {
+  background-color: var(--border-color-subtle);
+  color: var(--text-color-placeholder);
+  cursor: not-allowed;
+}
+
+/* Estilos para Tablas */
+.styled-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin-bottom: 2rem;
+  font-size: 0.95rem;
+  background-color: var(--container-background);
+  border-radius: var(--border-radius-medium);
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.styled-table thead th {
+  background-color: rgba(0,0,0,0.2);
+  color: var(--text-color-light);
+  font-weight: 600;
+  padding: 0.9em 1em;
+  text-align: left;
+  border-bottom: 1px solid var(--primary-color-teacher);
+}
+.styled-table thead th:first-child { border-top-left-radius: var(--border-radius-medium); }
+.styled-table thead th:last-child { border-top-right-radius: var(--border-radius-medium); }
+
+
+.styled-table tbody tr {
+  border-bottom: 1px solid var(--border-color-subtle);
+  transition: background-color 0.15s ease-in-out;
+}
+
+.styled-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.styled-table tbody tr:hover {
+  background-color: rgba(157, 78, 221, 0.08); /* Usar RGB directo para el color del hover */
+}
+
+.styled-table td {
+  padding: 0.8em 1em;
+  vertical-align: middle;
+  color: var(--text-color-main);
+}
+.styled-table td .status-text-grey {
+    color: var(--text-color-placeholder);
+    font-style: italic;
+}
+.styled-table td .status-text-red {
+    color: var(--color-danger);
+    font-weight: 500;
+}
+
+.styled-table td input[type="text"] {
+  padding: 0.5em 0.8em;
+  font-size: 0.9rem;
+  max-width: 180px;
+  background-color: var(--input-background-focus);
+}
+
+.btn-action-row {
+  background-color: var(--primary-color-student);
+  color: var(--text-color-light) !important; /* Refuerzo */
+  padding: 0.5em 1em;
+  font-size: 0.9rem;
+  border-radius: var(--border-radius-small);
+  min-width: auto;
+  margin-right: 0.5rem;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none; /* Refuerzo */
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+.btn-action-row:hover {
+  background-color: color-mix(in srgb, var(--primary-color-student) 85%, #000000 15%);
+  transform: translateY(-1px);
+}
+.btn-action-row:active {
+    transform: translateY(0px);
+}
+.btn-action-row:disabled {
+   background-color: var(--border-color-subtle);
+   color: var(--text-color-placeholder) !important; /* Refuerzo */
+   cursor: not-allowed;
+}
+.btn-action-row .icon {
+    margin-right: 0.4em;
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
+}
+
+/* Estilos para Modales */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+  padding: 1rem;
+}
+
+.modal-content {
+  background-color: var(--container-background);
+  padding: 2rem;
+  border-radius: var(--border-radius-medium);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+  width: 100%;
+  max-width: 550px;
+  border: 1px solid var(--border-color-subtle);
+}
+
+.modal-content h3 {
+  font-size: 1.6rem;
+  margin-top: 0;
+  margin-bottom: 1.8rem;
+  text-align: center;
+  color: var(--text-color-light);
+}
+
+.modal-content .form-group {
+    margin-bottom: 1.2rem;
+}
+.modal-content .form-group label {
+  font-size: 0.9rem;
+  margin-bottom: 0.4rem;
+  display: block;
+  color: var(--text-color-main);
+  font-weight: 500;
+}
+.modal-content .form-group input[type="radio"],
+.modal-content .form-group input[type="checkbox"] {
+    margin-right: 0.5rem;
+    vertical-align: middle;
+    accent-color: var(--primary-color-teacher);
+}
+.modal-content .form-group label.inline-label {
+    display: inline-flex;
+    align-items: center;
+    margin-right: 1rem;
+    font-weight: 400;
+}
+
+.modal-content select,
+.modal-content textarea,
+.modal-content input[type="text"] {
+  margin-bottom: 1rem;
+}
+.modal-content textarea {
+    min-height: 80px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color-subtle);
+}
+
+.modal-actions button {
+  padding: 0.7em 1.4em;
+  font-size: 0.95rem;
+  min-width: 100px;
+  border: none; /* Refuerzo */
+}
+.modal-actions .btn-primary {
+  background-color: var(--primary-color-teacher);
+  color: var(--text-color-light);
+}
+.modal-actions .btn-primary .icon {
+    vertical-align: middle;
+    margin-right: 0.5em;
+}
+.modal-actions .btn-primary:hover {
+  background-color: color-mix(in srgb, var(--primary-color-teacher) 85%, #000000 15%);
+}
+.modal-actions .btn-secondary {
+  background-color: var(--input-background);
+  color: var(--text-color-main);
+  border: 1px solid var(--border-color-subtle);
+}
+.modal-actions .btn-secondary:hover {
+  background-color: var(--border-color-subtle);
+  color: var(--text-color-light);
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 1.5rem;
+  color: var(--text-color-main);
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+.back-link:hover {
+  color: var(--primary-color-teacher);
+  text-decoration: underline;
+}
+
+.bonus-awarded-message {
+  color: var(--primary-color-register);
+  font-weight: 500;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background-color: rgba(22, 160, 133, 0.1); /* Usando RGB de --primary-color-register */
+  border-left: 4px solid var(--primary-color-register);
+  border-radius: var(--border-radius-small);
+}
+.error-message-page {
+    color: var(--color-danger);
+    font-weight: 500;
+    text-align: center;
+    padding: 1rem;
+    background-color: rgba(217, 83, 79, 0.1);
+    border: 1px solid var(--color-danger);
+    border-radius: var(--border-radius-small);
+    margin-bottom: 1rem;
+}
+
+.page-header-controls {
+  display: flex;
+  justify-content: flex-start; /* Alineado a la izquierda */
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.page-header-controls .back-link {
+  margin-bottom: 0;
+}
+
+.empty-table-message {
+  text-align: center;
+  padding: 2rem;
+  color: var(--text-color-placeholder);
+  font-style: italic;
+  background-color: var(--container-background);
+  border-radius: var(--border-radius-medium);
+}
+
+.current-date-display {
+  text-align: center;
+  margin-top: 0rem; /* Ajuste si el título principal ya tiene margen */
+  margin-bottom: 2rem;
+  font-size: 1.1rem;
+  color: var(--text-color-main);
+}
+.current-date-display strong {
+  color: var(--primary-color-teacher);
+  font-weight: 600;
+}
+
+/* Estilo para tabla dentro de un modal */
+.modal-table {
+    font-size: 0.9rem; /* Texto un poco más pequeño en tablas de modal */
+    background-color: transparent; /* Sin fondo propio, usa el del modal */
+    box-shadow: none; /* Sin sombra propia */
+    border-radius: var(--border-radius-small); /* Un radio menor si se desea */
+}
+.modal-table thead th {
+    padding: 0.7em 0.8em;
+    background-color: rgba(0,0,0,0.25); /* Cabecera un poco más oscura */
+}
+.modal-table td {
+    padding: 0.6em 0.8em;
+}
+.modal-table td input[type="text"] {
+    max-width: none; /* Permitir que ocupe el ancho de la celda */
+    font-size: 0.85rem;
+}
+.modal-table td .inline-label {
+    font-size: 0.85rem; /* Ajustar tamaño de label de checkbox */
+}
+.modal-table td input[type="checkbox"] {
+    vertical-align: middle;
+}
