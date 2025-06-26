@@ -9,8 +9,9 @@ import TeacherAttendancePage from './pages/TeacherAttendancePage';
 import TeacherScoresPage from './pages/TeacherScoresPage';
 import TeacherSummaryPage from './pages/TeacherSummaryPage';
 import TeacherRankingPage from './pages/TeacherRankingPage';
-import StudentLoginPage from './pages/StudentLoginPage'; // Nueva página de login de estudiante
-import StudentDashboardPage from './pages/StudentDashboardPage'; // Nueva página de dashboard de estudiante
+import StudentLoginPage from './pages/StudentLoginPage';
+import StudentDashboardPage from './pages/StudentDashboardPage';
+import StudentScoresDetailPage from './pages/StudentScoresDetailPage'; // Nueva página de detalle de scores
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -55,6 +56,7 @@ function App() {
             <Route path="/estudiante/login" element={<StudentLoginPage />} />
             <Route element={<ProtectedRoute tokenType="studentToken" redirectTo="/estudiante/login" />}>
               <Route path="/estudiante/dashboard" element={<StudentDashboardPage />} />
+              <Route path="/estudiante/mis-puntajes" element={<StudentScoresDetailPage />} /> {/* Nueva ruta */}
             </Route>
 
             {/* Ruta por defecto para URLs no encontradas */}

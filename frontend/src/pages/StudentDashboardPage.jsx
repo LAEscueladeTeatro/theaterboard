@@ -55,7 +55,29 @@ const StudentDashboardPage = () => {
   if (error) return <p style={{ color: 'red' }}>Error: {error}</p>;
   if (!dashboardData) return <p>No se pudieron cargar los datos del panel.</p>;
 
-  const { studentInfo, currentMonth, monthlyTotalPoints, castingStatus } = dashboardData;
+  const { studentInfo, currentMonth, monthlyTotalPoints, castingStatus, rankingPosition } = dashboardData;
+
+  const getRankingMessageAndIcon = () => {
+    if (rankingPosition === null || rankingPosition === undefined) {
+      return { icon: '❓', message: 'Tu posición en el ranking no está disponible actualmente.' };
+    }
+    if (rankingPosition >= 1 && rankingPosition <= 3) {
+      let icon = '🏆';
+      if (rankingPosition === 1) icon = '🥇';
+      if (rankingPosition === 2) icon = '🥈';
+      if (rankingPosition === 3) icon = '🥉';
+      return { icon, message: `¡Felicidades! Estás en el Top 3 (Puesto N° ${rankingPosition}). ¡Sigue brillando!` };
+    }
+    if (rankingPosition > 3 && rankingPosition <= 10) {
+      return { icon: '⭐', message: `¡Gran esfuerzo! Estás entre los mejores 10 (Puesto N° ${rankingPosition}).` };
+    }
+    if (rankingPosition > 10 && rankingPosition <= 20) {
+      return { icon: '', message: `Vas por buen camino (Puesto N° ${rankingPosition}). ¡Un poco más de esfuerzo y subirás!` };
+    }
+    return { icon: '', message: `Estás en el Puesto N° ${rankingPosition}. Presta atención a tus puntos para mejorar.` };
+  };
+
+  const rankingInfo = getRankingMessageAndIcon();
 
   return (
     <div>
@@ -63,7 +85,7 @@ const StudentDashboardPage = () => {
       <button onClick={handleLogout} style={{ float: 'right' }}>Salir</button>
       <Link to="/">Volver al Inicio</Link>
 
-      <div style={{ marginTop: '20px', border: '1px solid #ccc', padding: '15px' }}>
+      <div style={{ marginTop: '20px', border: '1px solid #ccc', padding: '15px', borderRadius: '8px' }}>
         <h3>Bienvenido/a, {studentInfo.full_name}!</h3>
         <div style={{ display: 'flex', alignItems: 'center' }}>
           <img
@@ -87,8 +109,10 @@ const StudentDashboardPage = () => {
             {castingStatus}
           </span>
         </p>
-        {/* <p><strong>Posición en el Ranking (Mes Actual):</strong> {dashboardData.rankingPosition || 'No disponible'} </p> */}
-        <p><Link to="/docente/ranking">Ver Ranking Completo</Link> (Nota: este enlace va al ranking de docente, se podría crear uno específico para estudiantes)</p>
+        <p>
+          <strong>Ranking del Mes ({currentMonth}):</strong> {rankingInfo.icon} {rankingInfo.message}
+        </p>
+        <p><Link to="/estudiante/mis-puntajes">Ver Mis Puntajes Detallados</Link></p>
       </div>
 
       {/* Aquí se podrían añadir más secciones, como un historial de puntos, etc. */}
