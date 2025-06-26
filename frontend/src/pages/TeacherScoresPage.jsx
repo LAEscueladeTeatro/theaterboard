@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 // Iconos
 const SaveIcon = () => <svg className="icon" viewBox="0 0 20 20" fill="currentColor" width="16" height="16" style={{verticalAlign: 'middle', marginRight: '0.5em'}}><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.25a.75.75 0 00-1.5 0v2.5h-2.5a.75.75 0 000 1.5h2.5v2.5a.75.75 0 001.5 0v-2.5h2.5a.75.75 0 000-1.5h-2.5v-2.5z" clipRule="evenodd" /></svg>;
 
-// Color para diagnóstico
+// Color para diagnóstico (se mantendrá por ahora, pero idealmente se quita si las clases funcionan)
 const COLOR_TEACHER_PURPLE = '#9D4EDD';
 
 const TeacherScoresPage = () => {
@@ -46,56 +46,120 @@ const TeacherScoresPage = () => {
 
   const getToken = useCallback(() => localStorage.getItem('teacherToken'), []);
 
+  // 1. fetchAttendanceAndFilterStudents ahora solo setea presentStudents
   const fetchAttendanceAndFilterStudents = useCallback(async (dateForFilter) => {
-    if (!dateForFilter || allStudents.length === 0) { setPresentStudents(allStudents); return; }
-    setLoadingAttendance(true); setError('');
+    if (!dateForFilter || allStudents.length === 0) {
+      setPresentStudents(allStudents.length > 0 ? allStudents : []);
+      setLoadingAttendance(false);
+      return;
+    }
+    setLoadingAttendance(true);
+    setError('');
     try {
       const token = getToken();
       const response = await axios.get(`${API_URL}/attendance/status/${dateForFilter}`, { headers: { 'x-auth-token': token } });
       const attendanceRecords = response.data.attendance_records || [];
-      const presentStudentIds = new Set(attendanceRecords.filter(r => r.status && !r.status.startsWith('AUSENCIA')).map(r => r.student_id));
+      const presentStudentIds = new Set(
+        attendanceRecords
+          .filter(record => record.status && !record.status.startsWith('AUSENCIA'))
+          .map(record => record.student_id)
+      );
       const filtered = allStudents.filter(student => presentStudentIds.has(student.id));
-      setPresentStudents(filtered);
-      const initialStatus = {};
-      filtered.forEach(student => { initialStatus[student.id] = groupStudentStatus[student.id] || 'compliant'; });
-      setGroupStudentStatus(initialStatus);
-    } catch (err) { console.error(`Error fetching attendance for ${dateForFilter}:`, err); setError(err.response?.data?.message || err.message || `Error al cargar asistencia para ${dateForFilter}.`); setPresentStudents([]); }
-    finally { setLoadingAttendance(false); }
-  }, [getToken, API_URL, allStudents, groupStudentStatus]);
+      setPresentStudents(filtered); // Solo actualiza presentStudents
+    } catch (err) {
+      console.error(`Error fetching attendance for ${dateForFilter}:`, err);
+      setError(err.response?.data?.message || err.message || `Error al cargar asistencia para ${dateForFilter}.`);
+      setPresentStudents([]);
+    } finally {
+      setLoadingAttendance(false);
+    }
+  }, [getToken, allStudents, API_URL]); // Dependencias correctas
 
+  // Carga inicial de todos los estudiantes
   useEffect(() => {
     const fetchAllStudents = async () => {
       setLoadingStudents(true);
-      try { const token = getToken(); const response = await axios.get(`${API_URL}/admin/students?active=true`, { headers: { 'x-auth-token': token } }); setAllStudents(response.data); }
-      catch (err) { console.error("Error fetching all students:", err); setError(err.response?.data?.message || err.message || 'Error al cargar lista completa de estudiantes.'); }
-      finally { setLoadingStudents(false); }
+      try {
+        const token = getToken();
+        const response = await axios.get(`${API_URL}/admin/students?active=true`, { headers: { 'x-auth-token': token } });
+        setAllStudents(response.data);
+      } catch (err) {
+        console.error("Error fetching all students:", err);
+        setError(err.response?.data?.message || err.message || 'Error al cargar lista completa de estudiantes.');
+      } finally {
+        setLoadingStudents(false);
+      }
     };
     fetchAllStudents();
-  }, [getToken]);
+  }, [getToken, API_URL]); // API_URL es constante, pero es bueno listarla si se usa
 
-  useEffect(() => { if (allStudents.length > 0) { fetchAttendanceAndFilterStudents(groupScoreDate); } }, [groupScoreDate, allStudents, fetchAttendanceAndFilterStudents]);
+  // Efecto para obtener estudiantes presentes cuando cambia la fecha o la lista de todos los estudiantes
+  useEffect(() => {
+    if (allStudents.length > 0) {
+      fetchAttendanceAndFilterStudents(groupScoreDate);
+    } else {
+      setPresentStudents([]);
+    }
+  }, [groupScoreDate, allStudents, fetchAttendanceAndFilterStudents]);
 
-  const handleGroupStudentStatusChange = (studentId, status) => setGroupStudentStatus(prev => ({ ...prev, [studentId]: status }));
-  const handleSpecialGroupSelection = (studentId, isSelected) => {
-    if (groupScoreType === 'CINCO_VALIENTES') { const currentSelectedCount = Object.values(groupStudentStatus).filter(s => s === 'selected_for_bonus').length; if (isSelected && currentSelectedCount >= 5 && !(groupStudentStatus[studentId] === 'selected_for_bonus')) { alert("Solo puedes seleccionar hasta 5 estudiantes para 'Cinco Valientes'."); return; } }
-    setGroupStudentStatus(prev => ({ ...prev, [studentId]: isSelected ? 'selected_for_bonus' : 'not_selected' }));
+  // 2. Nuevo useEffect para inicializar/resetear groupStudentStatus basado en presentStudents y groupScoreType
+  useEffect(() => {
+    const newStatus = {};
+    presentStudents.forEach(student => {
+      if (groupScoreType === 'CINCO_VALIENTES' || groupScoreType === 'PRIMER_GRUPO') {
+        newStatus[student.id] = 'not_selected';
+      } else { // ROPA_TRABAJO, MATERIALES, LIMPIEZA
+        newStatus[student.id] = 'compliant';
+      }
+    });
+    setGroupStudentStatus(newStatus);
+  }, [presentStudents, groupScoreType]); // Se ejecuta cuando cambian los presentes o el tipo de puntaje
+
+  const handleGroupStudentStatusChange = (studentId, status) => {
+    setGroupStudentStatus(prev => ({ ...prev, [studentId]: status }));
   };
+
+  const handleSpecialGroupSelection = (studentId, isSelected) => {
+    if (groupScoreType === 'CINCO_VALIENTES') {
+      const currentSelected = Object.keys(groupStudentStatus).filter(id => groupStudentStatus[id] === 'selected_for_bonus');
+      if (isSelected && currentSelected.length >= 5 && !currentSelected.includes(studentId) ) {
+        alert("Solo puedes seleccionar hasta 5 estudiantes para 'Cinco Valientes'.");
+        return;
+      }
+    }
+    setGroupStudentStatus(prev => ({
+      ...prev,
+      [studentId]: isSelected ? 'selected_for_bonus' : 'not_selected'
+    }));
+  };
+
   const countSelectedForBonus = () => Object.values(groupStudentStatus).filter(s => s === 'selected_for_bonus').length;
 
   const handleSubmitGroupScore = async (e) => {
     e.preventDefault(); setError(''); let payload = { score_type: groupScoreType, score_date: groupScoreDate };
     if (groupScoreType === 'CINCO_VALIENTES' || groupScoreType === 'PRIMER_GRUPO') {
-      const student_ids = Object.entries(groupStudentStatus).filter(([_, status]) => status === 'selected_for_bonus').map(([studentId, _]) => studentId);
-      if (student_ids.length === 0) { alert("Por favor, seleccione al menos un estudiante."); return; }
+      const student_ids = Object.entries(groupStudentStatus)
+        .filter(([studentId, status]) => status === 'selected_for_bonus' && presentStudents.find(p => p.id === studentId)) // Asegurar que solo se envíen presentes
+        .map(([studentId, _]) => studentId);
+      if (student_ids.length === 0) { alert("Por favor, seleccione al menos un estudiante presente."); return; }
       if (groupScoreType === 'CINCO_VALIENTES' && student_ids.length > 5) { alert("'Cinco Valientes' no puede tener más de 5 estudiantes."); return; }
       payload.student_ids = student_ids;
     } else {
       const students_compliant = []; const students_non_compliant = [];
-      Object.entries(groupStudentStatus).forEach(([studentId, status]) => { if (presentStudents.find(s => s.id === studentId)) { if (status === 'compliant') { students_compliant.push(studentId); } else if (status === 'non_compliant') { students_non_compliant.push(studentId); } } });
-      if (students_compliant.length === 0 && students_non_compliant.length === 0) { alert("Por favor, marque el estado de al menos un estudiante presente."); return; }
+      presentStudents.forEach(student => { // Iterar sobre presentStudents
+        const status = groupStudentStatus[student.id];
+        if (status === 'compliant') { students_compliant.push(student.id); }
+        else if (status === 'non_compliant') { students_non_compliant.push(student.id); }
+      });
+      if (students_compliant.length === 0 && students_non_compliant.length === 0 && presentStudents.length > 0) {
+        alert("Por favor, marque el estado de al menos un estudiante presente."); return;
+      } else if (presentStudents.length === 0 && (students_compliant.length > 0 || students_non_compliant.length > 0)) {
+        // Esto no debería pasar si la lógica es correcta, pero como salvaguarda
+        alert("No hay estudiantes presentes para asignar puntajes."); return;
+      }
       payload.students_compliant = students_compliant; payload.students_non_compliant = students_non_compliant;
     }
-    try { const token = getToken(); const response = await axios.post(`${API_URL}/scores/group`, payload, { headers: { 'x-auth-token': token } }); alert(response.data.message || "Puntuaciones grupales registradas."); if (['ROPA_TRABAJO', 'LIMPIEZA', 'CINCO_VALIENTES', 'PRIMER_GRUPO'].includes(groupScoreType)) { const newStatus = {}; presentStudents.forEach(student => { newStatus[student.id] = 'compliant';}); setGroupStudentStatus(newStatus); } }
+    try { const token = getToken(); const response = await axios.post(`${API_URL}/scores/group`, payload, { headers: { 'x-auth-token': token } }); alert(response.data.message || "Puntuaciones grupales registradas."); if (['ROPA_TRABAJO', 'LIMPIEZA', 'CINCO_VALIENTES', 'PRIMER_GRUPO'].includes(groupScoreType)) { /* El useEffect [presentStudents, groupScoreType] se encargará de resetear */ } }
     catch (err) { console.error("Error submitting group score:", err); setError(err.response?.data?.message || err.message || 'Error al registrar puntuaciones grupales.'); alert(`Error: ${err.response?.data?.message || err.message}`); }
   };
 
@@ -105,12 +169,13 @@ const TeacherScoresPage = () => {
     let pointsToAssign = parseInt(personalPoints, 10);
     if (personalScoreType === 'PARTICIPACION') { if (personalSubCategory === 'Participativo') pointsToAssign = 2; else if (personalSubCategory === 'Apático') pointsToAssign = -1; else { alert("Seleccione el nivel de participación."); return; } }
     else if (personalScoreType === 'EXTRA') { if (isNaN(pointsToAssign) || pointsToAssign === 0) { alert("Ingrese un valor numérico de puntos (diferente de cero) para Puntos Extra."); return; } }
-    else if (isNaN(pointsToAssign)) { alert("Ingrese un valor numérico para los puntos."); return; }
+    else if (personalScoreType === 'CONDUCTA' || personalScoreType === 'USO_CELULAR') { if (isNaN(pointsToAssign)) {alert("Seleccione una opción de puntos válida."); return;} } // Para conducta y celular, los puntos vienen de un select
+    else if (isNaN(pointsToAssign)) { alert("Ingrese un valor numérico para los puntos."); return; } // Fallback
     try { const token = getToken(); const payload = { student_id: personalSelectedStudent, score_type: personalScoreType, score_date: groupScoreDate, points_assigned: pointsToAssign, sub_category: personalSubCategory, notes: personalNotes }; const response = await axios.post(`${API_URL}/scores/personal`, payload, { headers: { 'x-auth-token': token } }); let alertMessage = response.data.message || "Puntuación personal registrada."; if (personalScoreType === 'CONDUCTA') { let timeOutMessage = ''; if (pointsToAssign === -3) timeOutMessage = "Recuerda: Enviar al alumno un tiempo fuera de 15 minutos."; else if (pointsToAssign === -2) timeOutMessage = "Recuerda: Enviar al alumno un tiempo fuera de 10 minutos."; else if (pointsToAssign === -1) timeOutMessage = "Recuerda: Enviar al alumno un tiempo fuera de 5 minutos."; if (timeOutMessage) { alertMessage += `\n${timeOutMessage}`; } } alert(alertMessage); setPersonalSelectedStudent(''); setPersonalPoints(''); setPersonalSubCategory(''); setPersonalNotes(''); }
     catch (err) { console.error("Error submitting personal score:", err); setError(err.response?.data?.message || err.message || 'Error al registrar puntuación personal.'); alert(`Error: ${err.response?.data?.message || err.message}`); }
   };
 
-  if (loadingStudents) return <div className="content-page-container"><p className="text-center" style={{padding: '2rem'}}>Cargando estudiantes...</p></div>;
+  if (loadingStudents && allStudents.length === 0) return <div className="content-page-container"><p className="text-center" style={{padding: '2rem'}}>Cargando estudiantes...</p></div>;
 
   return (
     <div className="content-page-container">
@@ -151,8 +216,8 @@ const TeacherScoresPage = () => {
                       <label className="inline-label" style={{width: '100%', justifyContent: 'space-between'}}>
                         <span className="student-name">{student.full_name} ({student.id})</span>
                         <div>
-                          <input type="radio" name={`group_${student.id}`} value="compliant" checked={groupStudentStatus[student.id] === 'compliant'} onChange={() => handleGroupStudentStatusChange(student.id, 'compliant')} /> Cumple (+1)
-                          <input type="radio" name={`group_${student.id}`} value="non_compliant" checked={groupStudentStatus[student.id] === 'non_compliant'} onChange={() => handleGroupStudentStatusChange(student.id, 'non_compliant')} style={{marginLeft: '10px'}}/> No Cumple (-1)
+                          <input type="radio" name={`group_status_${student.id}`} value="compliant" checked={groupStudentStatus[student.id] === 'compliant'} onChange={() => handleGroupStudentStatusChange(student.id, 'compliant')} /> Cumple (+1)
+                          <input type="radio" name={`group_status_${student.id}`} value="non_compliant" checked={groupStudentStatus[student.id] === 'non_compliant'} onChange={() => handleGroupStudentStatusChange(student.id, 'non_compliant')} style={{marginLeft: '10px'}}/> No Cumple (-1)
                         </div>
                       </label>
                     </div>
