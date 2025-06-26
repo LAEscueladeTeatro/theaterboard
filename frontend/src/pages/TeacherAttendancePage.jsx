@@ -87,7 +87,8 @@ const TeacherAttendancePage = ({ selectedDate: historicDateProp }) => {
           </div>
           <div className="modal-actions">
             <button onClick={handleCloseStatusModal} className="btn-secondary">Cancelar</button>
-            <button onClick={handleSubmitStatusModal} className="btn-primary" style={{backgroundColor: COLOR_TEACHER_PURPLE}}><CheckCircleIcon /> Guardar Estado</button>
+            <button onClick={handleSubmitStatusModal} className="btn-primary" ><CheckCircleIcon /> Guardar Estado</button>
+            {/* Se eliminó style={{backgroundColor: COLOR_TEACHER_PURPLE}} */}
           </div>
         </div>
       </div>
@@ -125,7 +126,8 @@ const TeacherAttendancePage = ({ selectedDate: historicDateProp }) => {
           )}
           <div className="modal-actions">
             <button onClick={handleCloseModalOfAttendance} className="btn-secondary">Cancelar</button>
-            <button onClick={handleSubmitCloseAttendance} className="btn-primary" style={{backgroundColor: COLOR_TEACHER_PURPLE}} disabled={absentStudentsForModal.length === 0}>
+            <button onClick={handleSubmitCloseAttendance} className="btn-primary" disabled={absentStudentsForModal.length === 0}>
+            {/* Se eliminó style={{backgroundColor: COLOR_TEACHER_PURPLE}} */}
              <CheckCircleIcon /> Confirmar Cierre
             </button>
           </div>
@@ -230,7 +232,7 @@ const TeacherAttendancePage = ({ selectedDate: historicDateProp }) => {
                         <button
                             onClick={() => handleProcessAttendanceClick(student)}
                             className="btn-action-row"
-                            style={{backgroundColor: COLOR_STUDENT_BLUE}}
+                            // style={{backgroundColor: COLOR_STUDENT_BLUE}} // Eliminado estilo en línea
                             disabled={statusModalOpen || isAttendanceEffectivelyClosed}
                         >
                           {isRecorded ? 'Corregir' : (historicDateProp ? 'Registrar' : 'Marcar')}
@@ -261,7 +263,7 @@ const TeacherAttendancePage = ({ selectedDate: historicDateProp }) => {
           onClick={handleOpenCloseAttendanceModal}
           disabled={isAttendanceEffectivelyClosed}
           className="btn-action btn-teacher" // Esta clase debería aplicar el color morado
-          style={{backgroundColor: COLOR_TEACHER_PURPLE}} // Refuerzo en línea para diagnóstico
+          // style={{backgroundColor: COLOR_TEACHER_PURPLE}} // Eliminado estilo en línea
         >
           {isAttendanceEffectivelyClosed ? `Asistencia del ${dateForOperations} Cerrada` : `Realizar Cierre de Asistencia (${dateForOperations})`}
         </button>
