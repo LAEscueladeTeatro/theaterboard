@@ -118,6 +118,7 @@ main {
   width: 100%;
   display: flex;
   flex-direction: column;
+  align-items: center; /* << --- AÑADIR ESTO PARA CENTRAR EL CONTENIDO DE LA PÁGINA SI ES MÁS ESTRECHO */
 }
 
 footer {
@@ -429,8 +430,8 @@ footer {
 }
 
 .controls-section button:not(.btn-action-row) {
-  background-color: var(--primary-color-teacher);
-  color: var(--text-color-light);
+  background-color: var(--primary-color-teacher) !important; /* Diagnóstico */
+  color: var(--text-color-light) !important; /* Diagnóstico */
   padding: 0.7em 1.2em;
   border-radius: var(--border-radius-small);
   font-size: 0.95rem;
@@ -509,7 +510,7 @@ footer {
 }
 
 .btn-action-row {
-  background-color: var(--primary-color-student);
+  background-color: var(--primary-color-student) !important; /* Diagnóstico */
   color: var(--text-color-light) !important; /* Refuerzo */
   padding: 0.5em 1em;
   font-size: 0.9rem;
@@ -624,8 +625,8 @@ footer {
   border: none; /* Refuerzo */
 }
 .modal-actions .btn-primary {
-  background-color: var(--primary-color-teacher);
-  color: var(--text-color-light);
+  background-color: var(--primary-color-teacher) !important; /* Diagnóstico */
+  color: var(--text-color-light) !important; /* Diagnóstico */
 }
 .modal-actions .btn-primary .icon {
     vertical-align: middle;
@@ -635,13 +636,13 @@ footer {
   background-color: color-mix(in srgb, var(--primary-color-teacher) 85%, #000000 15%);
 }
 .modal-actions .btn-secondary {
-  background-color: var(--input-background);
-  color: var(--text-color-main);
+  background-color: var(--input-background) !important; /* Diagnóstico - Aunque este es gris oscuro, para ver si se aplica */
+  color: var(--text-color-main) !important; /* Diagnóstico */
   border: 1px solid var(--border-color-subtle);
 }
 .modal-actions .btn-secondary:hover {
-  background-color: var(--border-color-subtle);
-  color: var(--text-color-light);
+  background-color: var(--border-color-subtle) !important; /* Diagnóstico */
+  color: var(--text-color-light) !important; /* Diagnóstico */
 }
 
 .back-link {
