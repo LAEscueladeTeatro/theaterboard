@@ -1,68 +1,173 @@
+/* Import Poppins - ya debería estar en index.html, pero como fallback o si se mueve aquí */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;700&display=swap');
+
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+  /* Paleta de Colores */
+  --background-gradient-start: #0D1117; /* Azul muy oscuro */
+  --background-gradient-end: #1A0B2E;   /* Morado oscuro */
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  --primary-color-teacher: #9D4EDD; /* Morado vibrante */
+  --primary-color-student: #3498DB; /* Azul eléctrico/brillante */
+  --primary-color-register: #58A6FF; /* Un azul un poco más claro para diferenciar registro */
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
+  --text-color-main: #E0E0E0;       /* Gris muy claro */
+  --text-color-light: #FFFFFF;
+  --text-color-dark: #121212;
+  --text-color-placeholder: #888890;
+
+  --container-background: rgba(30, 30, 50, 0.75);
+  --input-background: #2A2A3E;
+  --input-background-focus: #353550;
+  --border-color-subtle: #4A4A60;
+  --border-color-focus: var(--primary-color-student);
+
+  /* Tipografía */
+  --font-family-main: 'Poppins', sans-serif;
+
+  /* Otros */
+  --border-radius-small: 8px;
+  --border-radius-medium: 16px;
+  --border-radius-large: 24px;
+  --border-radius-pill: 999px;
+}
+
+/* Reset básico y estilos globales */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+  text-rendering: optimizeLegibility;
+  font-synthesis: none;
+  height: 100%; /* Asegurar que html ocupe toda la altura */
 }
 
 body {
-  margin: 0;
+  font-family: var(--font-family-main);
+  color: var(--text-color-main);
+  background-image: linear-gradient(to bottom right, var(--background-gradient-start), var(--background-gradient-end));
+  background-attachment: fixed; /* Para que el gradiente no se mueva con el scroll */
+  min-height: 100vh; /* Ocupar al menos toda la altura de la ventana */
   display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  flex-direction: column;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+#root {
+  width: 100%;
+  flex-grow: 1; /* Para que ocupe el espacio disponible */
+  display: flex;
+  flex-direction: column;
 }
 
+/* Estilos para links globales */
+a {
+  color: var(--primary-color-student);
+  text-decoration: none;
+  transition: color 0.2s ease-in-out;
+}
+a:hover {
+  color: var(--primary-color-teacher);
+}
+
+/* Estilos base para encabezados */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  color: var(--text-color-light);
+  margin-bottom: 0.75em;
+}
+
+h1 { font-size: 2.5rem; line-height: 1.2; }
+h2 { font-size: 2rem; line-height: 1.25; }
+h3 { font-size: 1.75rem; line-height: 1.3; }
+h4 { font-size: 1.5rem; line-height: 1.35; }
+
+p {
+  margin-bottom: 1rem;
+}
+
+/* Estilos base para botones (se sobreescribirán para botones específicos) */
 button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
+  font-family: var(--font-family-main);
   cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  border: none;
+  padding: 0.75em 1.5em;
+  font-size: 1rem;
+  font-weight: 500;
+  border-radius: var(--border-radius-small);
+  transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
 }
 
+button:active {
+  transform: scale(0.98);
+}
+
+/* Estilos base para inputs (se sobreescribirán) */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="tel"],
+input[type="date"],
+textarea,
+select {
+  font-family: var(--font-family-main);
+  background-color: var(--input-background);
+  color: var(--text-color-main);
+  border: 1px solid var(--border-color-subtle);
+  border-radius: var(--border-radius-small);
+  padding: 0.75em 1em;
+  font-size: 1rem;
+  width: 100%;
+  transition: border-color 0.2s ease-in-out, background-color 0.2s ease-in-out;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-color-placeholder);
+  opacity: 1; /* Firefox */
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--border-color-focus);
+  background-color: var(--input-background-focus);
+}
+
+/* Sobrescribir :root de Vite para forzar nuestro tema */
+/* Es importante que esto esté después de la definición de variables para que las use */
+:root {
+  font-family: var(--font-family-main) !important; /* Forzar nuestra fuente */
+  color-scheme: dark !important; /* Forzar dark mode */
+  color: var(--text-color-main) !important;
+  background-color: transparent !important; /* El body ya tiene el fondo */
+}
+
+/* Eliminar estilos de @media (prefers-color-scheme: light) si no se va a soportar light mode explícitamente */
+/* O asegurarse de que también fuerce el tema oscuro */
 @media (prefers-color-scheme: light) {
   :root {
-    color: #213547;
-    background-color: #ffffff;
+    color-scheme: dark !important;
+    color: var(--text-color-main) !important;
+    background-color: transparent !important;
   }
+  /* Podríamos necesitar ser más específicos para otros elementos si Vite los sigue cambiando */
   a:hover {
-    color: #747bff;
+     color: var(--primary-color-teacher) !important;
   }
   button {
-    background-color: #f9f9f9;
+    /* Los botones específicos .btn-action ya definen su background,
+       así que este 'button' general no debería interferir mucho si no se usa. */
   }
 }
+
+/* Utilidades de clase (opcional, pero puede ser útil) */
+.text-center {
+  text-align: center;
+}
+
+.mt-1 { margin-top: 1rem; }
+.mb-1 { margin-bottom: 1rem; }
+/* ... más utilidades si son necesarias */
