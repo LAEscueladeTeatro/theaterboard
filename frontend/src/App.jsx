@@ -17,6 +17,7 @@ import StudentDashboardPage from './pages/StudentDashboardPage';
 import StudentScoresDetailPage from './pages/StudentScoresDetailPage';
 import PublicRegistrationPage from './pages/PublicRegistrationPage'; // Nueva página de Registro Público
 import ProtectedRoute from './components/ProtectedRoute';
+import WhatsAppButton from './components/WhatsAppButton'; // <-- Importar el botón de WhatsApp
 
 function App() {
   return (
@@ -84,6 +85,7 @@ function App() {
         <footer>
           <p>&copy; {new Date().getFullYear()} TheaterBoard</p>
         </footer>
+        <WhatsAppButton /> {/* <-- Añadir el botón de WhatsApp aquí */}
       </div>
     </Router>
   );
