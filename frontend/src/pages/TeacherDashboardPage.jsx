@@ -9,29 +9,25 @@ const TeacherDashboardPage = () => {
     navigate('/docente/login');
   };
 
-  // La lista de estudiantes ahora es una vista separada, podemos enlazarla.
-  // Asumiré que la ruta para la lista de estudiantes es /docente/students
-  // Esto requerirá configurar esa ruta en App.jsx más adelante.
-
   return (
-    <div>
+    <div className="dashboard-page-container">
       <h2>Panel del Docente</h2>
-      <nav>
-        <ul>
-          <li><Link to="/docente/asistencia">Registrar Asistencia</Link></li>
-          <li><Link to="/docente/puntuaciones">Registrar Puntuaciones</Link></li>
-          <li><Link to="/docente/resumen">Resumen de Puntos</Link></li> {/* Actualizado */}
-          <li><Link to="/docente/ranking">Ranking Mensual</Link></li>
-          <li><Link to="/docente/lista-estudiantes">Lista de Estudiantes</Link></li>
-          <li><Link to="/docente/database">Base de Datos Estudiantes</Link></li> {/* Nuevo enlace */}
-          <li><Link to="/docente/ingreso-historico">Ingresar Registro Pasado</Link></li> {/* Enlace a la nueva funcionalidad */}
-          {/* <li><Link to="/docente/editar-registro">Editar registro</Link></li> (Definir qué es esto) */}
-          {/* <li><Link to="/docente/icono-registro">Ícono de registro</Link></li> (Definir qué es esto) */}
-          <li><button onClick={handleLogout}>Salir</button></li>
-        </ul>
-      </nav>
-      <p>Bienvenido al panel de control. Desde aquí podrás gestionar las actividades de la escuela.</p>
-      {/* Aquí se renderizarán los componentes de cada funcionalidad del menú */}
+      <div className="dashboard-actions-grid">
+        <Link to="/docente/asistencia" className="dashboard-action-card">Registrar Asistencia</Link>
+        <Link to="/docente/puntuaciones" className="dashboard-action-card">Registrar Puntuaciones</Link>
+        <Link to="/docente/ingreso-historico" className="dashboard-action-card">Ingresar Registro Pasado</Link>
+        <Link to="/docente/resumen" className="dashboard-action-card">Resumen de Puntos</Link>
+        <Link to="/docente/ranking" className="dashboard-action-card">Ranking Mensual</Link>
+        <Link to="/docente/lista-estudiantes" className="dashboard-action-card">Lista de Estudiantes</Link>
+        <Link to="/docente/database" className="dashboard-action-card">Base de Datos Estudiantes</Link>
+        {/* Añadir más acciones aquí si es necesario */}
+        <button onClick={handleLogout} className="dashboard-action-card button-as-card">
+          Salir
+        </button>
+      </div>
+      <p style={{textAlign: 'center', marginTop: '2rem', fontSize: '0.9rem', color: 'var(--text-color-main)'}}>
+        Bienvenido al panel de control. Desde aquí podrás gestionar las actividades de la escuela.
+      </p>
     </div>
   );
 };
