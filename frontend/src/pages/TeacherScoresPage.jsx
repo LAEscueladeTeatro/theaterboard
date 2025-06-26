@@ -121,39 +121,82 @@ const TeacherScoresPage = () => {
 
 
   const handleGroupStudentStatusChange = (studentId, status) => {
+    // Para ROPA_TRABAJO, MATERIALES, LIMPIEZA
     setGroupStudentStatus(prev => ({ ...prev, [studentId]: status }));
+  };
+
+  const handleSpecialGroupSelection = (studentId, isSelected) => {
+    // Para CINCO_VALIENTES, PRIMER_GRUPO
+    if (groupScoreType === 'CINCO_VALIENTES') {
+      const currentSelectedCount = Object.values(groupStudentStatus).filter(s => s === 'selected_for_bonus').length;
+      if (isSelected && currentSelectedCount >= 5 && !(groupStudentStatus[studentId] === 'selected_for_bonus')) {
+        alert("Solo puedes seleccionar hasta 5 estudiantes para 'Cinco Valientes'.");
+        return;
+      }
+    }
+    setGroupStudentStatus(prev => ({
+      ...prev,
+      [studentId]: isSelected ? 'selected_for_bonus' : 'not_selected' // o simplemente eliminar la key
+    }));
+  };
+
+  const countSelectedForBonus = () => {
+    return Object.values(groupStudentStatus).filter(s => s === 'selected_for_bonus').length;
   };
 
   const handleSubmitGroupScore = async (e) => {
     e.preventDefault();
     setError('');
-    const students_compliant = [];
-    const students_non_compliant = [];
+    let payload = {
+      score_type: groupScoreType,
+      score_date: groupScoreDate,
+    };
 
-    for (const studentId in groupStudentStatus) {
-      if (groupStudentStatus[studentId] === 'compliant') {
-        students_compliant.push(studentId);
-      } else if (groupStudentStatus[studentId] === 'non_compliant') {
-        students_non_compliant.push(studentId);
+    if (groupScoreType === 'CINCO_VALIENTES' || groupScoreType === 'PRIMER_GRUPO') {
+      const student_ids = Object.entries(groupStudentStatus)
+        .filter(([_, status]) => status === 'selected_for_bonus')
+        .map(([studentId, _]) => studentId);
+
+      if (student_ids.length === 0) {
+        alert("Por favor, seleccione al menos un estudiante.");
+        return;
       }
-    }
+      if (groupScoreType === 'CINCO_VALIENTES' && student_ids.length > 5) {
+        alert("'Cinco Valientes' no puede tener más de 5 estudiantes.");
+        return;
+      }
+      payload.student_ids = student_ids;
+    } else { // ROPA_TRABAJO, MATERIALES, LIMPIEZA
+      const students_compliant = [];
+      const students_non_compliant = [];
+      Object.entries(groupStudentStatus).forEach(([studentId, status]) => {
+        if (presentStudents.find(s => s.id === studentId)) { // Solo considerar estudiantes actualmente listados (presentes)
+            if (status === 'compliant') {
+                students_compliant.push(studentId);
+            } else if (status === 'non_compliant') {
+                students_non_compliant.push(studentId);
+            }
+        }
+      });
 
-    if (students_compliant.length === 0 && students_non_compliant.length === 0) {
-      alert("Por favor, marque el estado de al menos un estudiante.");
-      return;
+      if (students_compliant.length === 0 && students_non_compliant.length === 0) {
+        alert("Por favor, marque el estado de al menos un estudiante presente.");
+        return;
+      }
+      payload.students_compliant = students_compliant;
+      payload.students_non_compliant = students_non_compliant;
     }
 
     try {
       const token = getToken();
-      const payload = {
-        score_type: groupScoreType,
-        score_date: groupScoreDate,
-        students_compliant,
-        students_non_compliant
-      };
       const response = await axios.post(`${API_URL}/scores/group`, payload, { headers: { 'x-auth-token': token } });
       alert(response.data.message || "Puntuaciones grupales registradas.");
-      // Resetear o actualizar UI según sea necesario
+      // Resetear groupStudentStatus para los tipos de uso único, o limpiar selecciones
+      if (['ROPA_TRABAJO', 'LIMPIEZA', 'CINCO_VALIENTES', 'PRIMER_GRUPO'].includes(groupScoreType)) {
+        const newStatus = {};
+        presentStudents.forEach(student => { newStatus[student.id] = 'compliant';}); // Reset a default
+        setGroupStudentStatus(newStatus);
+      }
     } catch (err) {
       console.error("Error submitting group score:", err);
       setError(err.response?.data?.message || err.message || 'Error al registrar puntuaciones grupales.');
@@ -179,7 +222,7 @@ const TeacherScoresPage = () => {
 
     let pointsToAssign = parseInt(personalPoints, 10); // Asegurar que es un número
 
-    // Validaciones específicas y asignación de puntos para participación
+    // Validaciones específicas y asignación de puntos
     if (personalScoreType === 'PARTICIPACION') {
         if (personalSubCategory === 'Participativo') pointsToAssign = 2;
         else if (personalSubCategory === 'Apático') pointsToAssign = -1;
@@ -187,11 +230,17 @@ const TeacherScoresPage = () => {
             alert("Seleccione el nivel de participación.");
             return;
         }
-    } else { // Para CONDUCTA y USO_CELULAR, los puntos se ingresan directamente
-        if (isNaN(pointsToAssign)) {
-            alert("Ingrese un valor numérico para los puntos.");
+    } else if (personalScoreType === 'EXTRA') {
+        if (isNaN(pointsToAssign) || pointsToAssign === 0) { // Asumimos que 0 no es un puntaje extra válido
+            alert("Ingrese un valor numérico de puntos (diferente de cero) para Puntos Extra.");
             return;
         }
+    }
+    // Para CONDUCTA y USO_CELULAR, los puntos ya están validados por el select y parseInt
+    // y el backend también los valida.
+    else if (isNaN(pointsToAssign)) { // Fallback para otros tipos si se añaden y no se manejan arriba
+        alert("Ingrese un valor numérico para los puntos.");
+        return;
     }
 
 
@@ -206,7 +255,20 @@ const TeacherScoresPage = () => {
         notes: personalNotes,
       };
       const response = await axios.post(`${API_URL}/scores/personal`, payload, { headers: { 'x-auth-token': token } });
-      alert(response.data.message || "Puntuación personal registrada.");
+      let alertMessage = response.data.message || "Puntuación personal registrada.";
+
+      // Recordatorio para Conducta
+      if (personalScoreType === 'CONDUCTA') {
+        let timeOutMessage = '';
+        if (pointsToAssign === -3) timeOutMessage = "Recuerda: Enviar al alumno un tiempo fuera de 15 minutos.";
+        else if (pointsToAssign === -2) timeOutMessage = "Recuerda: Enviar al alumno un tiempo fuera de 10 minutos.";
+        else if (pointsToAssign === -1) timeOutMessage = "Recuerda: Enviar al alumno un tiempo fuera de 5 minutos.";
+        if (timeOutMessage) {
+          alertMessage += `\n${timeOutMessage}`;
+        }
+      }
+      alert(alertMessage);
+
       // Resetear formulario personal
       setPersonalSelectedStudent('');
       // setPersonalScoreType('PARTICIPACION'); // O mantener el último tipo
@@ -242,25 +304,55 @@ const TeacherScoresPage = () => {
           <div style={{marginTop: '10px'}}>
             <label htmlFor="groupScoreType">Tipo de Puntuación Grupal: </label>
             <select id="groupScoreType" value={groupScoreType} onChange={(e) => setGroupScoreType(e.target.value)}>
-              <option value="ROPA_TRABAJO">Ropa de Trabajo</option>
-              <option value="MATERIALES">Materiales</option>
-              <option value="LIMPIEZA">Limpieza</option>
+              <option value="ROPA_TRABAJO">Ropa de Trabajo (1 vez/día)</option>
+              <option value="MATERIALES">Materiales (Acumulativo)</option>
+              <option value="LIMPIEZA">Limpieza (1 vez/día)</option>
+              <option value="CINCO_VALIENTES">Cinco Valientes (+1 c/u, 1 vez/día)</option>
+              <option value="PRIMER_GRUPO">Primer Grupo (+1 c/u, 1 vez/día)</option>
             </select>
           </div>
 
-          <div style={{marginTop: '15px'}}>
-            <h4>Marcar Estudiantes (Presentes en fecha seleccionada: {groupScoreDate}):</h4>
-            {loadingAttendance && <p>Cargando asistencia para la fecha...</p>}
-            {!loadingAttendance && presentStudents.length === 0 && <p>No hay estudiantes marcados como presentes para esta fecha o no se pudo cargar la asistencia.</p>}
-            {presentStudents.map(student => (
-              <div key={student.id} style={{marginBottom: '5px'}}>
-                <span>{student.full_name} ({student.id}): </span>
-                <label><input type="radio" name={`group_${student.id}`} value="compliant" checked={groupStudentStatus[student.id] === 'compliant'} onChange={() => handleGroupStudentStatusChange(student.id, 'compliant')} /> Cumple (+1)</label>
-                <label><input type="radio" name={`group_${student.id}`} value="non_compliant" checked={groupStudentStatus[student.id] === 'non_compliant'} onChange={() => handleGroupStudentStatusChange(student.id, 'non_compliant')} /> No Cumple (-1)</label>
-                {/* <label><input type="radio" name={`group_${student.id}`} value="not_applicable" checked={groupStudentStatus[student.id] === 'not_applicable'} onChange={() => handleGroupStudentStatusChange(student.id, 'not_applicable')} /> No Aplica</label> */}
-              </div>
-            ))}
-          </div>
+          {/* UI específica para ROPA_TRABAJO, MATERIALES, LIMPIEZA */}
+          {(groupScoreType === 'ROPA_TRABAJO' || groupScoreType === 'MATERIALES' || groupScoreType === 'LIMPIEZA') && (
+            <div style={{marginTop: '15px'}}>
+              <h4>Marcar Estudiantes (Presentes en fecha: {groupScoreDate}):</h4>
+              {loadingAttendance && <p>Cargando...</p>}
+              {!loadingAttendance && presentStudents.length === 0 && <p>No hay presentes o no se cargó asistencia.</p>}
+              {presentStudents.map(student => (
+                <div key={student.id} style={{marginBottom: '5px'}}>
+                  <span>{student.full_name} ({student.id}): </span>
+                  <label><input type="radio" name={`group_${student.id}`} value="compliant" checked={groupStudentStatus[student.id] === 'compliant'} onChange={() => handleGroupStudentStatusChange(student.id, 'compliant')} /> Cumple (+1)</label>
+                  <label><input type="radio" name={`group_${student.id}`} value="non_compliant" checked={groupStudentStatus[student.id] === 'non_compliant'} onChange={() => handleGroupStudentStatusChange(student.id, 'non_compliant')} /> No Cumple (-1)</label>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* UI específica para CINCO_VALIENTES y PRIMER_GRUPO */}
+          {(groupScoreType === 'CINCO_VALIENTES' || groupScoreType === 'PRIMER_GRUPO') && (
+            <div style={{marginTop: '15px'}}>
+              <h4>Seleccionar Estudiantes (Presentes en fecha: {groupScoreDate}):</h4>
+              {loadingAttendance && <p>Cargando...</p>}
+              {!loadingAttendance && presentStudents.length === 0 && <p>No hay presentes o no se cargó asistencia.</p>}
+              {presentStudents.map(student => (
+                <div key={student.id} style={{marginBottom: '5px'}}>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={groupStudentStatus[student.id] === 'selected_for_bonus'} // Usar un estado diferente o adaptar
+                      onChange={(e) => handleSpecialGroupSelection(student.id, e.target.checked)}
+                    />
+                    {student.full_name} ({student.id})
+                  </label>
+                </div>
+              ))}
+              {groupScoreType === 'CINCO_VALIENTES' &&
+                <p style={{fontSize: '0.8em', color: countSelectedForBonus() > 5 ? 'red' : 'inherit'}}>
+                  Seleccionados: {countSelectedForBonus()} / 5
+                </p>
+              }
+            </div>
+          )}
           <button type="submit" style={{marginTop: '15px'}}>Registrar Puntuación Grupal</button>
         </form>
       </section>
@@ -286,9 +378,10 @@ const TeacherScoresPage = () => {
           <div style={{marginTop: '10px'}}>
             <label htmlFor="personalScoreType">Tipo de Puntuación Personal: </label>
             <select id="personalScoreType" value={personalScoreType} onChange={handlePersonalScoreTypeChange}>
-              <option value="PARTICIPACION">Participación</option>
-              <option value="CONDUCTA">Conducta</option>
-              <option value="USO_CELULAR">Uso de Celular</option>
+              <option value="PARTICIPACION">Participación (Acumulativo)</option>
+              <option value="CONDUCTA">Conducta (Acumulativo)</option>
+              <option value="USO_CELULAR">Uso de Celular (Acumulativo)</option>
+              <option value="EXTRA">Puntos Extra (Acumulativo)</option>
             </select>
           </div>
 
@@ -332,13 +425,29 @@ const TeacherScoresPage = () => {
             </div>
           )}
 
-          {(personalScoreType === 'CONDUCTA' || personalScoreType === 'USO_CELULAR') && (
+          {personalScoreType === 'EXTRA' && (
             <div style={{marginTop: '10px'}}>
-                {/* Este input de puntos es redundante si se usa el select, pero lo dejo por si se quiere más flexibilidad */}
-                {/* <label htmlFor="personalPoints">Puntos Asignados (manual): </label> */}
-                {/* <input type="number" id="personalPoints" value={personalPoints} onChange={(e) => setPersonalPoints(e.target.value)} placeholder="Puntos" /> */}
+              <label htmlFor="extraPoints">Puntos Extra (puede ser negativo): </label>
+              <input
+                type="number"
+                id="extraPoints"
+                value={personalPoints}
+                onChange={(e) => setPersonalPoints(e.target.value)}
+                placeholder="Ej: 5 o -3"
+                required
+              />
+              <div style={{marginTop: '5px'}}>
+                <label htmlFor="extraSubCategory">Motivo/Descripción Breve: </label>
+                <input type="text" id="extraSubCategory" value={personalSubCategory} onChange={(e) => setPersonalSubCategory(e.target.value)} placeholder="Ej: Ayuda excepcional" />
+              </div>
             </div>
           )}
+
+          {/* El input manual de puntos se elimina o se usa solo para EXTRA si no hay select */}
+          {/* {(personalScoreType === 'CONDUCTA' || personalScoreType === 'USO_CELULAR') && (
+            <div style={{marginTop: '10px'}}>
+            </div>
+          )} */}
 
           <div style={{marginTop: '10px'}}>
             <label htmlFor="personalNotes">Notas Adicionales: </label>

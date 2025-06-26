@@ -5,18 +5,38 @@ const pool = require('../config/db');
 
 // Constantes para tipos de puntuación (para consistencia con el frontend y la lógica)
 const SCORE_TYPES = {
-  ROPA_TRABAJO: 'ROPA_TRABAJO',
-  MATERIALES: 'MATERIALES',
-  LIMPIEZA: 'LIMPIEZA',
-  PARTICIPACION: 'PARTICIPACION',
-  CONDUCTA: 'CONDUCTA',
-  USO_CELULAR: 'USO_CELULAR',
+  ROPA_TRABAJO: 'ROPA_TRABAJO',     // Uso único diario
+  MATERIALES: 'MATERIALES',         // Acumulativo
+  LIMPIEZA: 'LIMPIEZA',             // Uso único diario
+  PARTICIPACION: 'PARTICIPACION',   // Acumulativo
+  CONDUCTA: 'CONDUCTA',             // Acumulativo
+  USO_CELULAR: 'USO_CELULAR',       // Acumulativo
+  CINCO_VALIENTES: 'CINCO_VALIENTES', // Uso único diario
+  PRIMER_GRUPO: 'PRIMER_GRUPO',       // Uso único diario
+  EXTRA: 'EXTRA',                   // Acumulativo (Personal)
 };
 
-// Puntos por defecto para grupales (pueden ser configurables o fijos)
-const GROUP_POINTS = {
-  COMPLIANT: 1,    // +1 si cumple
-  NON_COMPLIANT: -1 // -1 si no cumple (ejemplo, puedes ajustarlo)
+// Tipos de score que son de uso único diario (el mismo tipo de score no se puede aplicar dos veces en el mismo día a ningún estudiante)
+const SINGLE_USE_PER_DAY_TYPES = [
+  SCORE_TYPES.ROPA_TRABAJO,
+  SCORE_TYPES.LIMPIEZA,
+  SCORE_TYPES.CINCO_VALIENTES,
+  SCORE_TYPES.PRIMER_GRUPO,
+];
+
+// Puntos por defecto
+const DEFAULT_POINTS = {
+  COMPLIANT: 1,           // Para ROPA_TRABAJO, MATERIALES, LIMPIEZA (si cumple)
+  NON_COMPLIANT: -1,      // Para ROPA_TRABAJO, MATERIALES, LIMPIEZA (si no cumple)
+  CINCO_VALIENTES: 1,     // +1 para cada uno de los cinco valientes
+  PRIMER_GRUPO: 1,        // +1 para cada miembro del primer grupo
+  PARTICIPACION_ACTIVA: 2,
+  PARTICIPACION_APATICA: -1,
+  CONDUCTA_LEVE: -1,
+  CONDUCTA_MEDIA: -2,
+  CONDUCTA_GRAVE: -3,
+  USO_CELULAR_ADVERTENCIA: -1,
+  USO_CELULAR_REITERADO: -3,
 };
 
 /**
@@ -32,40 +52,87 @@ router.post('/group', async (req, res) => {
   const { score_type, score_date, students_compliant = [], students_non_compliant = [] } = req.body;
 
   // Validación de entrada
+  const { score_type, score_date, students_compliant = [], students_non_compliant = [], student_ids = [] } = req.body;
+  // student_ids se usará para CINCO_VALIENTES y PRIMER_GRUPO
+
+  // Validación de entrada
   if (!score_type || !score_date) {
     return res.status(400).json({ message: 'score_type y score_date son requeridos.' });
   }
-  if (![SCORE_TYPES.ROPA_TRABAJO, SCORE_TYPES.MATERIALES, SCORE_TYPES.LIMPIEZA].includes(score_type)) {
-    return res.status(400).json({ message: 'score_type no es válido para puntuaciones grupales.' });
-  }
-  if (!Array.isArray(students_compliant) || !Array.isArray(students_non_compliant)) {
-    return res.status(400).json({ message: 'students_compliant y students_non_compliant deben ser arrays.' });
+  const validGroupTypes = [
+    SCORE_TYPES.ROPA_TRABAJO, SCORE_TYPES.MATERIALES, SCORE_TYPES.LIMPIEZA,
+    SCORE_TYPES.CINCO_VALIENTES, SCORE_TYPES.PRIMER_GRUPO
+  ];
+  if (!validGroupTypes.includes(score_type)) {
+    return res.status(400).json({ message: 'score_type no es válido para este endpoint.' });
   }
 
   const client = await pool.connect();
   try {
-    await client.query('BEGIN'); // Iniciar transacción
-
-    const records = [];
-
-    // Procesar estudiantes que cumplen
-    for (const student_id of students_compliant) {
-      const result = await client.query(
-        `INSERT INTO score_records (student_id, score_date, score_type, sub_category, points_assigned, notes)
-         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-        [student_id, score_date, score_type, 'Cumple', GROUP_POINTS.COMPLIANT, null]
+    // Validación de uso único diario para tipos aplicables
+    if (SINGLE_USE_PER_DAY_TYPES.includes(score_type)) {
+      const checkQuery = await client.query(
+        'SELECT id FROM score_records WHERE score_type = $1 AND score_date = $2 LIMIT 1',
+        [score_type, score_date]
       );
-      records.push(result.rows[0]);
+      if (checkQuery.rows.length > 0) {
+        client.release();
+        return res.status(409).json({ message: `El tipo de puntuación '${score_type}' ya ha sido registrado hoy.` });
+      }
     }
 
-    // Procesar estudiantes que no cumplen
-    for (const student_id of students_non_compliant) {
-      const result = await client.query(
-        `INSERT INTO score_records (student_id, score_date, score_type, sub_category, points_assigned, notes)
-         VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-        [student_id, score_date, score_type, 'No Cumple', GROUP_POINTS.NON_COMPLIANT, null]
-      );
-      records.push(result.rows[0]);
+    // Validación específica para CINCO_VALIENTES
+    if (score_type === SCORE_TYPES.CINCO_VALIENTES) {
+      if (!Array.isArray(student_ids) || student_ids.length === 0) {
+        client.release();
+        return res.status(400).json({ message: 'Se requiere un array de student_ids para CINCO_VALIENTES.' });
+      }
+      if (student_ids.length > 5) {
+        client.release();
+        return res.status(400).json({ message: 'CINCO_VALIENTES solo puede tener hasta 5 estudiantes.' });
+      }
+    } else if (score_type === SCORE_TYPES.PRIMER_GRUPO) {
+       if (!Array.isArray(student_ids) || student_ids.length === 0) {
+        client.release();
+        return res.status(400).json({ message: 'Se requiere un array de student_ids para PRIMER_GRUPO.' });
+      }
+    } else { // ROPA_TRABAJO, MATERIALES, LIMPIEZA
+      if (!Array.isArray(students_compliant) || !Array.isArray(students_non_compliant)) {
+        client.release();
+        return res.status(400).json({ message: 'students_compliant y students_non_compliant deben ser arrays para este tipo.' });
+      }
+    }
+
+    await client.query('BEGIN'); // Iniciar transacción
+    const records = [];
+
+    if (score_type === SCORE_TYPES.CINCO_VALIENTES || score_type === SCORE_TYPES.PRIMER_GRUPO) {
+      const points = score_type === SCORE_TYPES.CINCO_VALIENTES ? DEFAULT_POINTS.CINCO_VALIENTES : DEFAULT_POINTS.PRIMER_GRUPO;
+      for (const student_id of student_ids) {
+        const result = await client.query(
+          `INSERT INTO score_records (student_id, score_date, score_type, points_assigned)
+           VALUES ($1, $2, $3, $4) RETURNING *`,
+          [student_id, score_date, score_type, points]
+        );
+        records.push(result.rows[0]);
+      }
+    } else { // ROPA_TRABAJO, MATERIALES, LIMPIEZA
+      for (const student_id of students_compliant) {
+        const result = await client.query(
+          `INSERT INTO score_records (student_id, score_date, score_type, sub_category, points_assigned)
+           VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+          [student_id, score_date, score_type, 'Cumple', DEFAULT_POINTS.COMPLIANT]
+        );
+        records.push(result.rows[0]);
+      }
+      for (const student_id of students_non_compliant) {
+        const result = await client.query(
+          `INSERT INTO score_records (student_id, score_date, score_type, sub_category, points_assigned)
+           VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+          [student_id, score_date, score_type, 'No Cumple', DEFAULT_POINTS.NON_COMPLIANT]
+        );
+        records.push(result.rows[0]);
+      }
     }
 
     await client.query('COMMIT'); // Finalizar transacción
@@ -73,7 +140,7 @@ router.post('/group', async (req, res) => {
 
   } catch (err) {
     await client.query('ROLLBACK'); // Revertir en caso de error
-    console.error('Error en POST /api/scores/group:', err);
+    console.error(`Error en POST /api/scores/group (${score_type}):`, err);
     if (err.code === '23503') { // foreign key violation
         return res.status(400).json({ message: 'Error: Uno o más student_id no existen.' });
     }
@@ -98,29 +165,38 @@ router.post('/personal', async (req, res) => {
   const { student_id, score_type, score_date, points_assigned, sub_category, notes } = req.body;
 
   // Validación de entrada
-  if (!student_id || !score_type || !score_date || points_assigned === undefined) {
-    return res.status(400).json({ message: 'student_id, score_type, score_date, y points_assigned son requeridos.' });
+  if (!student_id || !score_type || !score_date || (points_assigned === undefined && score_type !== SCORE_TYPES.PARTICIPACION /* Para participación se deduce */) ) {
+    return res.status(400).json({ message: 'student_id, score_type, score_date son requeridos. points_assigned es requerido excepto para PARTICIPACION.' });
   }
-  if (![SCORE_TYPES.PARTICIPACION, SCORE_TYPES.CONDUCTA, SCORE_TYPES.USO_CELULAR].includes(score_type)) {
+  const validPersonalTypes = [
+    SCORE_TYPES.PARTICIPACION, SCORE_TYPES.CONDUCTA,
+    SCORE_TYPES.USO_CELULAR, SCORE_TYPES.EXTRA
+  ];
+  if (!validPersonalTypes.includes(score_type)) {
     return res.status(400).json({ message: 'score_type no es válido para puntuaciones personales.' });
   }
-  if (typeof points_assigned !== 'number') {
-    return res.status(400).json({ message: 'points_assigned debe ser un número.' });
+  if (score_type !== SCORE_TYPES.PARTICIPACION && typeof points_assigned !== 'number') {
+    return res.status(400).json({ message: 'points_assigned debe ser un número para este tipo de score.' });
   }
 
   // Validación específica de puntos según el tipo (ejemplos)
-  if (score_type === SCORE_TYPES.PARTICIPACION && ![2, -1].includes(points_assigned)) {
-    return res.status(400).json({ message: 'Puntos para PARTICIPACION deben ser +2 o -1.' });
-  }
-  if (score_type === SCORE_TYPES.CONDUCTA && ![-3, -2, -1].includes(points_assigned)) {
-    return res.status(400).json({ message: 'Puntos para CONDUCTA deben ser -3, -2, o -1.' });
-  }
-  if (score_type === SCORE_TYPES.USO_CELULAR && ![-3, -1].includes(points_assigned)) {
-    return res.status(400).json({ message: 'Puntos para USO_CELULAR deben ser -3 o -1.' });
+  // Para EXTRA, no hay validación de puntos aquí, ya que puede ser cualquier valor.
+  if (score_type === SCORE_TYPES.PARTICIPACION) {
+    if (![DEFAULT_POINTS.PARTICIPACION_ACTIVA, DEFAULT_POINTS.PARTICIPACION_APATICA].includes(points_assigned)) {
+        return res.status(400).json({ message: `Puntos para PARTICIPACION deben ser ${DEFAULT_POINTS.PARTICIPACION_ACTIVA} o ${DEFAULT_POINTS.PARTICIPACION_APATICA}.` });
+    }
+  } else if (score_type === SCORE_TYPES.CONDUCTA) {
+    if (![DEFAULT_POINTS.CONDUCTA_GRAVE, DEFAULT_POINTS.CONDUCTA_MEDIA, DEFAULT_POINTS.CONDUCTA_LEVE].includes(points_assigned)) {
+        return res.status(400).json({ message: `Puntos para CONDUCTA deben ser ${DEFAULT_POINTS.CONDUCTA_GRAVE}, ${DEFAULT_POINTS.CONDUCTA_MEDIA}, o ${DEFAULT_POINTS.CONDUCTA_LEVE}.` });
+    }
+  } else if (score_type === SCORE_TYPES.USO_CELULAR) {
+    if (![DEFAULT_POINTS.USO_CELULAR_REITERADO, DEFAULT_POINTS.USO_CELULAR_ADVERTENCIA].includes(points_assigned)) {
+        return res.status(400).json({ message: `Puntos para USO_CELULAR deben ser ${DEFAULT_POINTS.USO_CELULAR_REITERADO} o ${DEFAULT_POINTS.USO_CELULAR_ADVERTENCIA}.` });
+    }
   }
 
   try {
-    const client = await pool.connect(); // Usar transacciones no es estrictamente necesario para una sola inserción,
+    const client = await pool.connect();
                                       // pero es buena práctica si la lógica se expandiera.
     try {
       const query = `
