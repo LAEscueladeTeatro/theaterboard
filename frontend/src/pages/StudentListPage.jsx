@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react'; // Añadir useCallback
 import axios from 'axios';
 import { Link } from 'react-router-dom'; // Para volver al dashboard
 
