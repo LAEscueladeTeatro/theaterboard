@@ -82,8 +82,10 @@ const PublicRegistrationPage = () => {
 
   return (
     <div style={{maxWidth: '700px', margin: '20px auto', padding: '20px', border: '1px solid #ccc', borderRadius: '8px'}}>
-      <h2>Formulario de Inscripción TheaterBoard</h2>
-      <p><Link to="/">Volver al Inicio</Link></p>
+      <h2>¡Bienvenid@ a TheaterBoard!</h2>
+      <p>Estamos muy contentos de que quieras unirte a nuestra familia teatral.</p>
+      <p>Antes de empezar, por favor, dale una leída a nuestro <a href="https://drive.google.com/file/d/1jB6jiBouFFCbMo45FGiidC499eLyBjlt/view" target="_blank" rel="noopener noreferrer">Reglamento Interno</a>. Es importante que lo conozcas.</p>
+      <p style={{marginTop: '10px'}}><Link to="/">Volver al Inicio</Link></p>
 
       {successMessage && <p style={{color: 'green', fontWeight: 'bold'}}>{successMessage}</p>}
       {error && <p style={{color: 'red'}}>{error}</p>}
@@ -119,6 +121,14 @@ const PublicRegistrationPage = () => {
           </div>
           <div style={{marginTop: '10px'}}><label htmlFor="medical_conditions">¿Alguna condición médica o alergia a considerar?</label><textarea name="medical_conditions" value={formData.medical_conditions} onChange={handleChange} rows="3"></textarea></div>
           <div style={{marginTop: '10px'}}><label htmlFor="comments">Comentarios o dudas adicionales:</label><textarea name="comments" value={formData.comments} onChange={handleChange} rows="3"></textarea></div>
+
+          <div style={{marginTop:'20px', paddingTop: '15px', borderTop: '1px solid #eee', fontSize: '0.9em', color: '#555'}}>
+            <p><strong>Importante:</strong></p>
+            <ul>
+              <li>Asegúrate de haber revisado nuestro <a href="https://drive.google.com/file/d/1jB6jiBouFFCbMo45FGiidC499eLyBjlt/view" target="_blank" rel="noopener noreferrer">Reglamento Interno</a> antes de enviar tu inscripción.</li>
+              <li>Una vez enviado el formulario, nos pondremos en contacto contigo. Las credenciales de acceso a la plataforma (usuario y contraseña) se entregarán personalmente en la escuela.</li>
+            </ul>
+          </div>
 
           <div style={{marginTop:'25px', textAlign: 'center'}}>
             <button type="submit" disabled={loading} style={{padding: '10px 20px', fontSize: '1.1em'}}>
