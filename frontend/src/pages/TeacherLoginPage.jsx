@@ -42,32 +42,39 @@ const TeacherLoginPage = () => {
   };
 
   return (
-    <div>
-      <h2>Login Docente</h2>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label htmlFor="email">Email:</label>
-          <input
-            type="email"
-            id="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor="password">Contraseña:</label>
-          <input
-            type="password"
-            id="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
-        {error && <p style={{ color: 'red' }}>{error}</p>}
-        <button type="submit">Ingresar</button>
-      </form>
+    <div className="centered-form-page">
+      <div className="form-card">
+        <h2>Acceso Docente</h2>
+        <form onSubmit={handleSubmit}>
+          <div>
+            <label htmlFor="email">Correo Electrónico:</label>
+            <input
+              type="email"
+              id="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="ejemplo@correo.com"
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="password">Contraseña:</label>
+            <input
+              type="password"
+              id="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+            />
+          </div>
+          {error && <p style={{ color: 'var(--primary-color-teacher)', fontWeight: '500', marginTop: '1rem' }}>{error}</p>}
+          <button type="submit" className="btn-action btn-teacher">
+            <span className="icon">[&rarr;]</span>Ingresar
+          </button>
+        </form>
+        {/* <Link to="/recuperar-password" className="secondary-link">¿Olvidaste tu contraseña?</Link> */}
+      </div>
     </div>
   );
 };
