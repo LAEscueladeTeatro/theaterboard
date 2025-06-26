@@ -191,26 +191,69 @@ footer {
   text-decoration: underline;
 }
 
-/* Específico para el listado de estudiantes en panel docente, si es necesario */
-.teacher-dashboard-links ul {
-  list-style: none;
-  padding: 0;
-}
-.teacher-dashboard-links li a {
-  display: block;
-  padding: 0.8rem 1rem;
-  margin: 0.5rem 0;
-  background-color: var(--container-background);
-  color: var(--text-color-light);
-  border-radius: var(--border-radius-small);
-  text-decoration: none;
-  transition: background-color 0.2s ease;
+/* Estilos para el Dashboard del Docente */
+.dashboard-page-container {
+  padding: 2rem;
+  width: 100%;
+  max-width: 1200px; /* Limitar ancho para mejor lectura en pantallas grandes */
+  margin: 0 auto;   /* Centrar el contenedor */
 }
 
-.teacher-dashboard-links li a:hover {
-  background-color: var(--primary-color-teacher);
-  color: var(--text-color-light);
+.dashboard-page-container h2 {
+  text-align: center;
+  margin-bottom: 2.5rem; /* Más espacio debajo del título */
+  font-size: 2.2rem; /* Tamaño de título de dashboard */
 }
+
+.dashboard-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); /* Grid responsive */
+  gap: 1.5rem; /* Espacio entre tarjetas */
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.dashboard-action-card {
+  background-color: var(--container-background);
+  padding: 1.8rem 1.5rem; /* Ajustar padding */
+  border-radius: var(--border-radius-medium);
+  color: var(--text-color-light);
+  text-decoration: none;
+  display: flex;
+  flex-direction: column; /* Apilar ícono (futuro) y texto verticalmente si se desea */
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border: 1px solid var(--border-color-subtle);
+  transition: background-color 0.25s ease, transform 0.2s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  font-weight: 500; /* Texto de las tarjetas un poco más bold */
+  min-height: 120px; /* Altura mínima para las tarjetas */
+}
+
+.dashboard-action-card:hover {
+  background-color: color-mix(in srgb, var(--primary-color-teacher) 15%, var(--container-background) 85%);
+  transform: translateY(-4px);
+  box-shadow: 0 7px 20px rgba(var(--primary-color-teacher-rgb, 157, 78, 221), 0.2); /* Sombra con color primario */
+  border-color: var(--primary-color-teacher);
+}
+
+/* Para el botón de Salir, si se quiere que se vea como una tarjeta también */
+.dashboard-action-card.button-as-card {
+  width: 100%;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-color-light); /* Asegurar color de texto */
+  /* Si el botón base ya tiene estilos que interfieren, resetearlos aquí */
+  background-color: var(--container-background); /* Forzar el mismo fondo */
+  border: 1px solid var(--border-color-subtle); /* Forzar el mismo borde */
+}
+.dashboard-action-card.button-as-card:hover {
+   background-color: color-mix(in srgb, var(--primary-color-teacher) 15%, var(--container-background) 85%) !important; /* Usar !important si es necesario para el hover del botón */
+   border-color: var(--primary-color-teacher) !important;
+}
+
 
 /* Contenedor principal de la aplicación en App.jsx */
 .app-container {
@@ -218,6 +261,72 @@ footer {
   flex-direction: column;
   min-height: 100vh; /* Asegura que el contenedor ocupe al menos toda la altura de la ventana */
   width: 100%;      /* Asegura que el contenedor ocupe todo el ancho */
+}
+
+/* Ajustes para la tarjeta de registro público que es más ancha */
+.public-registration-page .form-card {
+  max-width: 800px; /* Más ancho para el formulario de registro */
+  text-align: left; /* Alinear texto a la izquierda en general para el contenido informativo */
+}
+
+.public-registration-page .form-card h2 {
+  text-align: center; /* Centrar el título principal de la tarjeta */
+}
+
+.form-section {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color-subtle);
+}
+
+.form-section-title {
+  font-size: 1.3rem; /* Ligeramente más pequeño que h2 de tarjeta */
+  color: var(--text-color-light);
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color-subtle);
+  font-weight: 600; /* Un poco más de peso para los subtítulos */
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Grid responsive para campos */
+  gap: 1rem 1.5rem; /* row-gap column-gap */
+}
+
+.form-grid div { /* Cada item del grid */
+  margin-bottom: 0; /* Resetear margen inferior si los inputs ya lo tienen */
+}
+
+/* Estilo para los textareas dentro de la tarjeta del formulario de registro */
+.public-registration-page .form-card textarea {
+  min-height: 80px; /* Un poco más de altura para textareas */
+}
+
+
+.form-footer-notes {
+  margin-top: 2rem;
+  padding: 1.5rem; /* Padding alrededor */
+  border-top: 1px solid var(--border-color-subtle);
+  background-color: rgba(0,0,0,0.1); /* Fondo muy sutil para destacar la sección */
+  border-radius: var(--border-radius-small);
+  font-size: 0.85rem;
+  color: var(--text-color-main);
+}
+
+.form-footer-notes p strong {
+  color: var(--text-color-light);
+  font-weight: 600;
+}
+
+.form-footer-notes ul {
+  list-style-position: inside;
+  padding-left: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.form-footer-notes li {
+  margin-bottom: 0.5rem;
 }
 replace_with_git_merge_diff
 frontend/src/App.jsx
