@@ -69,22 +69,23 @@ const StudentListPage = () => {
 
   // Handlers para Modales y Acciones CRUD
   const handleOpenAddQuickModal = () => {
-    setNewStudentData({ id: '', full_name: '', nickname: '' }); // Resetear form
+    setNewStudentData({ full_name: '', nickname: '' }); // Resetear form, ID ya no se maneja aquí
     setShowAddQuickModal(true);
   };
   const handleCloseAddQuickModal = () => setShowAddQuickModal(false);
 
   const handleAddQuickStudent = async (e) => {
     e.preventDefault();
-    if (!newStudentData.id || !newStudentData.full_name) {
-      alert("ID y Nombre Completo son requeridos.");
+    // ID ya no se valida aquí, se genera en backend
+    if (!newStudentData.full_name) {
+      alert("Nombre Completo es requerido.");
       return;
     }
     try {
       const token = getToken();
-      const response = await axios.post(`${API_URL}/add-quick`, newStudentData, { headers: { 'x-auth-token': token }});
-      // setStudents(prev => [...prev, response.data]); // Añadir a la lista local
-      // setAllStudentsForSearch(prev => [...prev, response.data]); // Y a la de búsqueda
+      // Enviar solo full_name y nickname. El backend generará el ID y la contraseña.
+      const payload = { full_name: newStudentData.full_name, nickname: newStudentData.nickname };
+      await axios.post(`${API_URL}/add-quick`, payload, { headers: { 'x-auth-token': token }});
       fetchActiveStudents(); // O mejor, recargar la lista para asegurar consistencia
       handleCloseAddQuickModal();
       alert("Estudiante añadido con éxito.");
@@ -206,10 +207,7 @@ const StudentListPage = () => {
           <div className="modal-content">
             <h3>Añadir Estudiante (Rápido)</h3>
             <form onSubmit={handleAddQuickStudent}>
-              <div>
-                <label htmlFor="newId">ID:</label>
-                <input type="text" id="newId" value={newStudentData.id} onChange={(e) => setNewStudentData({...newStudentData, id: e.target.value.toUpperCase()})} required />
-              </div>
+              {/* ID se genera automáticamente en el backend, no se pide aquí */}
               <div style={{marginTop:'5px'}}>
                 <label htmlFor="newFullName">Nombre Completo:</label>
                 <input type="text" id="newFullName" value={newStudentData.full_name} onChange={(e) => setNewStudentData({...newStudentData, full_name: e.target.value})} required />

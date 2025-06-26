@@ -20,8 +20,15 @@ router.get('/', async (req, res) => {
     query += ' WHERE is_active = false';
   }
   // Si activeQuery es undefined, no se añade WHERE, por lo que se obtienen todos.
+  // Ajuste: si activeQuery no es 'false', por defecto listar activos o todos.
+  // Para ser más explícito: si activeQuery es 'true', activos. Si 'false', inactivos. Si no, todos.
+  // O, como estaba: 'true' activos, 'false' inactivos, undefined/otro -> todos.
+  // Prefiero que el default sea activos si no se especifica, para la lista principal.
+  // Para obtener TODOS, se podría añadir un ?active=all o similar, o dejarlo como está (undefined).
+  // Por ahora, mantendré la lógica: ?active=true -> activos, ?active=false -> inactivos, sin query param -> todos.
+  // Y cambiaremos el orden.
 
-  query += ' ORDER BY full_name ASC';
+  query += ' ORDER BY id ASC'; // Cambiado de full_name a id
 
   try {
     const result = await pool.query(query, queryParams);
@@ -35,31 +42,54 @@ router.get('/', async (req, res) => {
 
 /**
  * @route   POST /api/admin/students/add-quick
- * @desc    Añadir un nuevo estudiante (modo rápido)
+ * @desc    Añadir un nuevo estudiante (modo rápido) - ID se genera automáticamente
  * @access  Private (Teacher)
  */
 router.post('/add-quick', async (req, res) => {
-  const { id, full_name, nickname } = req.body;
+  const { full_name, nickname } = req.body; // ID ya no se recibe del frontend
 
-  if (!id || !full_name) {
-    return res.status(400).json({ message: 'ID y Nombre Completo son requeridos.' });
+  if (!full_name) {
+    return res.status(400).json({ message: 'Nombre Completo es requerido.' });
   }
 
-  // Contraseña por defecto: ID + "pass"
-  const defaultPassword = `${id}pass`;
-
+  const client = await pool.connect();
   try {
-    const newStudent = await pool.query(
-      "INSERT INTO students (id, full_name, nickname, password, is_active) VALUES ($1, $2, $3, $4, true) RETURNING id, full_name, nickname, is_active",
-      [id, full_name, nickname || null, defaultPassword]
-    );
-    res.status(201).json(newStudent.rows[0]);
-  } catch (err) {
-    console.error('Error adding student (quick):', err);
-    if (err.code === '23505') { // Unique violation (PK)
-      return res.status(400).json({ message: 'Error: El ID de estudiante ya existe.' });
+    await client.query('BEGIN');
+
+    // Lógica para encontrar el siguiente ID disponible
+    const existingIdsResult = await client.query("SELECT id FROM students WHERE id LIKE 'ET%' ORDER BY id ASC");
+    const existingNumericIds = existingIdsResult.rows
+      .map(row => parseInt(row.id.substring(2), 10))
+      .filter(num => !isNaN(num))
+      .sort((a, b) => a - b);
+
+    let nextNumericId = 1;
+    for (const numericId of existingNumericIds) {
+      if (numericId === nextNumericId) {
+        nextNumericId++;
+      } else if (numericId > nextNumericId) {
+        break; // Encontramos un hueco
+      }
     }
+
+    const newId = `ET${nextNumericId.toString().padStart(3, '0')}`;
+    const defaultPassword = `${newId}pass`;
+
+    const newStudentResult = await client.query(
+      "INSERT INTO students (id, full_name, nickname, password, is_active) VALUES ($1, $2, $3, $4, true) RETURNING id, full_name, nickname, is_active",
+      [newId, full_name, nickname || null, defaultPassword]
+    );
+
+    await client.query('COMMIT');
+    res.status(201).json(newStudentResult.rows[0]);
+
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Error adding student (quick with auto-id):', err);
+    // No es probable un '23505' por PK si la lógica de ID es correcta, pero podría haber otros errores.
     res.status(500).json({ message: 'Error interno del servidor al añadir estudiante.' });
+  } finally {
+    client.release();
   }
 });
 
