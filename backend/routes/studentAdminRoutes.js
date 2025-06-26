@@ -10,8 +10,15 @@ const pool = require('../config/db');
  * @access  Private (Teacher)
  */
 router.get('/', async (req, res) => {
-  const activeQuery = req.query.active; // 'true', 'false', o undefined (todos)
-  let query = 'SELECT id, full_name, nickname, is_active FROM students';
+  const activeQuery = req.query.active;
+  // Devolver todos los campos para la vista de "Base de Datos" y edición completa.
+  // La contraseña no se devuelve.
+  let query = `
+    SELECT id, full_name, nickname, is_active, age, birth_date, phone, email,
+           guardian_full_name, guardian_relationship, guardian_phone, guardian_email,
+           medical_conditions, comments, emergency_contact_name, emergency_contact_phone
+    FROM students
+  `;
   const queryParams = [];
 
   if (activeQuery === 'true') {
@@ -183,5 +190,65 @@ router.delete('/:studentId/permanent-delete', async (req, res) => {
     res.status(500).json({ message: 'Error interno del servidor al eliminar estudiante.' });
   }
 });
+
+
+/**
+ * @route   PUT /api/admin/students/:studentId/edit-full
+ * @desc    Editar todos los campos de un estudiante
+ * @access  Private (Teacher)
+ */
+router.put('/:studentId/edit-full', async (req, res) => {
+  const { studentId } = req.params;
+  const {
+    full_name, nickname, is_active, age, birth_date, phone, email,
+    guardian_full_name, guardian_relationship, guardian_phone, guardian_email,
+    medical_conditions, comments, emergency_contact_name, emergency_contact_phone
+  } = req.body;
+
+  // Validación básica (al menos el nombre completo es usualmente requerido)
+  if (!full_name) {
+    return res.status(400).json({ message: 'Nombre Completo es requerido.' });
+  }
+  if (typeof is_active !== 'boolean') {
+      return res.status(400).json({ message: 'is_active debe ser un valor booleano.'})
+  }
+  // Aquí se podrían añadir más validaciones para cada campo (formato de email, teléfono, etc.)
+
+  try {
+    const updateQuery = `
+      UPDATE students SET
+        full_name = $1, nickname = $2, is_active = $3, age = $4, birth_date = $5,
+        phone = $6, email = $7, guardian_full_name = $8, guardian_relationship = $9,
+        guardian_phone = $10, guardian_email = $11, medical_conditions = $12,
+        comments = $13, emergency_contact_name = $14, emergency_contact_phone = $15
+      WHERE id = $16
+      RETURNING *;
+      -- Devuelve todos los campos excepto password
+    `;
+    const values = [
+      full_name, nickname, is_active, age, birth_date, phone, email,
+      guardian_full_name, guardian_relationship, guardian_phone, guardian_email,
+      medical_conditions, comments, emergency_contact_name, emergency_contact_phone,
+      studentId
+    ];
+
+    const updatedStudent = await pool.query(updateQuery, values);
+
+    if (updatedStudent.rows.length === 0) {
+      return res.status(404).json({ message: 'Estudiante no encontrado.' });
+    }
+    // Excluir password de la respuesta explícitamente si estuviera en RETURNING * y la tabla lo tuviera visible
+    const { password, ...studentData } = updatedStudent.rows[0];
+    res.json(studentData);
+
+  } catch (err) {
+    console.error('Error updating student (full):', err);
+    if (err.code === '23505' && err.constraint === 'students_email_key') {
+      return res.status(400).json({ message: 'Error: El correo electrónico ya está registrado por otro estudiante.' });
+    }
+    res.status(500).json({ message: 'Error interno del servidor al actualizar estudiante.' });
+  }
+});
+
 
 module.exports = router;
