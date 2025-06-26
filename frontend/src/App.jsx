@@ -10,9 +10,11 @@ import TeacherAttendancePage from './pages/TeacherAttendancePage';
 import TeacherScoresPage from './pages/TeacherScoresPage';
 import TeacherSummaryPage from './pages/TeacherSummaryPage';
 import TeacherRankingPage from './pages/TeacherRankingPage';
+import TeacherDatabasePage from './pages/TeacherDatabasePage'; // Nueva página de Base de Datos (Docente)
 import StudentLoginPage from './pages/StudentLoginPage';
 import StudentDashboardPage from './pages/StudentDashboardPage';
 import StudentScoresDetailPage from './pages/StudentScoresDetailPage';
+import PublicRegistrationPage from './pages/PublicRegistrationPage'; // Nueva página de Registro Público
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -23,7 +25,8 @@ function App() {
           <nav>
             <Link to="/">Home</Link> | {' '}
             <Link to="/docente/login">Login Docente</Link> | {' '}
-            <Link to="/estudiante/login">Login Estudiante</Link> {/* Enlace añadido */}
+            <Link to="/estudiante/login">Login Estudiante</Link> | {' '}
+            <Link to="/registro">Regístrate Aquí</Link> {/* Enlace añadido */}
           </nav>
           <h1>TheaterBoard</h1>
         </header>
@@ -36,9 +39,13 @@ function App() {
                 <h2>Bienvenido a TheaterBoard</h2>
                 <p>Sistema de gestión para escuelas de teatro.</p>
                 <p><Link to="/docente/login">Acceder como Docente</Link></p>
-                <p><Link to="/estudiante/login">Acceder como Estudiante</Link></p> {/* Enlace añadido */}
+                <p><Link to="/estudiante/login">Acceder como Estudiante</Link></p>
+                <p><Link to="/registro">¿Nuevo Alumno? Regístrate Aquí</Link></p> {/* Enlace añadido */}
               </div>
             } />
+
+            {/* Ruta Pública de Registro */}
+            <Route path="/registro" element={<PublicRegistrationPage />} />
 
             {/* Rutas de Docente */}
             <Route path="/docente/login" element={<TeacherLoginPage />} />
@@ -46,7 +53,8 @@ function App() {
             <Route element={<ProtectedRoute tokenType="teacherToken" redirectTo="/docente/login" />}>
               <Route path="/docente/dashboard" element={<TeacherDashboardPage />} />
               <Route path="/docente/lista-estudiantes" element={<StudentListPage />} />
-              <Route path="/docente/lista-estudiantes/inhabilitados" element={<DisabledStudentListPage />} /> {/* Nueva ruta */}
+              <Route path="/docente/lista-estudiantes/inhabilitados" element={<DisabledStudentListPage />} />
+              <Route path="/docente/database" element={<TeacherDatabasePage />} /> {/* Nueva ruta */}
               <Route path="/docente/asistencia" element={<TeacherAttendancePage />} />
               <Route path="/docente/puntuaciones" element={<TeacherScoresPage />} />
               <Route path="/docente/resumen" element={<TeacherSummaryPage />} />
