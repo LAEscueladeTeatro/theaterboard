@@ -24,6 +24,7 @@ const TeacherDashboardPage = () => {
           <li><Link to="/docente/ranking">Ranking Mensual</Link></li>
           <li><Link to="/docente/lista-estudiantes">Lista de Estudiantes</Link></li>
           <li><Link to="/docente/database">Base de Datos Estudiantes</Link></li> {/* Nuevo enlace */}
+          <li><Link to="/docente/ingreso-historico">Ingresar Registro Pasado</Link></li> {/* Enlace a la nueva funcionalidad */}
           {/* <li><Link to="/docente/editar-registro">Editar registro</Link></li> (Definir qué es esto) */}
           {/* <li><Link to="/docente/icono-registro">Ícono de registro</Link></li> (Definir qué es esto) */}
           <li><button onClick={handleLogout}>Salir</button></li>
