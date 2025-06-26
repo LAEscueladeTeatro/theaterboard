@@ -157,6 +157,7 @@ router.get('/daily-summary', async (req, res) => {
       LEFT JOIN student_attendance_points sap ON s.id = sap.student_id
       LEFT JOIN student_bonus_points sbp ON s.id = sbp.student_id
       LEFT JOIN aggregated_score_points asp ON s.id = asp.student_id
+      WHERE s.is_active = true -- Añadido para incluir solo estudiantes activos
       ORDER BY s.full_name;
     `;
 
