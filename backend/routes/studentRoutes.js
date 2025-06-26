@@ -3,18 +3,19 @@ const router = express.Router();
 const pool = require('../config/db');
 // El authMiddleware se aplicará globalmente a estas rutas en server.js
 
-// Umbrales para el Estado de Acceso a Casting (ejemplo)
+// Umbrales para el Estado de Acceso a Casting (actualizados)
 const CASTING_THRESHOLDS = {
-  APTO_MIN_POINTS: 100,
-  EN_EVALUACION_MIN_POINTS: 50,
+  APTO_MIN_POINTS: 50,
+  EN_EVALUACION_MIN_POINTS: 30,
+  // NO_APTO es implícito si es menor que EN_EVALUACION_MIN_POINTS
 };
 
 const determineCastingStatus = (totalPoints) => {
-  if (totalPoints >= CASTING_THRESHOLDS.APTO_MIN_POINTS) {
+  if (totalPoints >= CASTING_THRESHOLDS.APTO_MIN_POINTS) { // 50 o más
     return 'APTO';
-  } else if (totalPoints >= CASTING_THRESHOLDS.EN_EVALUACION_MIN_POINTS) {
+  } else if (totalPoints >= CASTING_THRESHOLDS.EN_EVALUACION_MIN_POINTS) { // 30 a 49
     return 'EN EVALUACIÓN';
-  } else {
+  } else { // Menos de 30
     return 'NO APTO';
   }
 };
