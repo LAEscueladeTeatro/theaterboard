@@ -91,14 +91,18 @@ p {
 button {
   font-family: var(--font-family-main);
   cursor: pointer;
-  border: none;
+  border: none; /* Asegurar que no haya borde por defecto */
   padding: 0.75em 1.5em;
   font-size: 1rem;
   font-weight: 500;
   border-radius: var(--border-radius-small);
   transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+  background-color: var(--input-background); /* Un color base oscuro para botones genéricos */
+  color: var(--text-color-main); /* Color de texto para botones genéricos */
 }
-
+button:hover {
+  background-color: var(--input-background-focus); /* Oscurecer un poco en hover */
+}
 button:active {
   transform: scale(0.98);
 }
@@ -146,22 +150,16 @@ select:focus {
   background-color: transparent !important; /* El body ya tiene el fondo */
 }
 
-/* Eliminar estilos de @media (prefers-color-scheme: light) si no se va a soportar light mode explícitamente */
-/* O asegurarse de que también fuerce el tema oscuro */
 @media (prefers-color-scheme: light) {
-  :root {
+  :root { /* Mantener tema oscuro */
     color-scheme: dark !important;
     color: var(--text-color-main) !important;
     background-color: transparent !important;
   }
-  /* Podríamos necesitar ser más específicos para otros elementos si Vite los sigue cambiando */
   a:hover {
      color: var(--primary-color-teacher) !important;
   }
-  button {
-    /* Los botones específicos .btn-action ya definen su background,
-       así que este 'button' general no debería interferir mucho si no se usa. */
-  }
+  /* No es necesario estilizar button aquí porque se usan clases específicas */
 }
 
 /* Utilidades de clase (opcional, pero puede ser útil) */
@@ -171,4 +169,3 @@ select:focus {
 
 .mt-1 { margin-top: 1rem; }
 .mb-1 { margin-bottom: 1rem; }
-/* ... más utilidades si son necesarias */
