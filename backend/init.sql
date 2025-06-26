@@ -64,3 +64,38 @@ INSERT INTO students (id, full_name, nickname) VALUES
 ('ET055', 'Dávila Espinoza, Rouss', 'Rouss'),
 ('ET056', 'Chuñoca, Jesusa', 'Jesusa'),
 ('ET057', 'Moreno Arévalo, Génesis', 'Génesis');
+
+-- Tabla para registrar la asistencia diaria de los estudiantes
+DROP TABLE IF EXISTS attendance_records CASCADE;
+CREATE TABLE attendance_records (
+    id SERIAL PRIMARY KEY,
+    student_id VARCHAR(10) NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+    attendance_date DATE NOT NULL,
+    -- PUNTUAL, A_TIEMPO, TARDANZA_JUSTIFICADA, TARDANZA_INJUSTIFICADA, AUSENCIA_JUSTIFICADA, AUSENCIA_INJUSTIFICADA
+    status VARCHAR(50) NOT NULL,
+    points_earned INTEGER NOT NULL DEFAULT 0, -- Puntos específicos del estado (ej: +2 puntualidad, -1 tardanza just.)
+    base_attendance_points INTEGER NOT NULL DEFAULT 0, -- Puntos base por asistir (ej: +2 si status no es AUSENCIA*)
+    notes TEXT,
+    recorded_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_student_attendance_per_day UNIQUE (student_id, attendance_date)
+    -- Un estudiante solo puede tener un registro de asistencia (o ausencia) por día.
+    -- Si se necesita registrar múltiples eventos por día por estudiante, esta constraint debería removerse o ajustarse.
+    -- Para el modelo actual de "un estado final de asistencia por día", esta constraint es útil.
+);
+
+-- Tabla para registrar el bono madrugador
+DROP TABLE IF EXISTS daily_bonus_log CASCADE;
+CREATE TABLE daily_bonus_log (
+    id SERIAL PRIMARY KEY,
+    student_id VARCHAR(10) NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+    bonus_date DATE NOT NULL,
+    points_awarded INTEGER NOT NULL DEFAULT 3, -- Siempre +3 para el bono madrugador
+    awarded_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_bonus_per_day UNIQUE (bonus_date) -- Solo un bono madrugador por día en toda la escuela
+);
+
+-- Índices para mejorar el rendimiento de las consultas comunes
+CREATE INDEX IF NOT EXISTS idx_attendance_student_date ON attendance_records(student_id, attendance_date);
+CREATE INDEX IF NOT EXISTS idx_attendance_date ON attendance_records(attendance_date);
+CREATE INDEX IF NOT EXISTS idx_daily_bonus_log_student_date ON daily_bonus_log(student_id, bonus_date);
+CREATE INDEX IF NOT EXISTS idx_daily_bonus_log_date ON daily_bonus_log(bonus_date);
