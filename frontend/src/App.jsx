@@ -11,6 +11,7 @@ import TeacherScoresPage from './pages/TeacherScoresPage';
 import TeacherSummaryPage from './pages/TeacherSummaryPage';
 import TeacherRankingPage from './pages/TeacherRankingPage';
 import TeacherDatabasePage from './pages/TeacherDatabasePage'; // Nueva página de Base de Datos (Docente)
+import TeacherHistoricAttendancePage from './pages/TeacherHistoricAttendancePage'; // <-- Nueva importación
 import StudentLoginPage from './pages/StudentLoginPage';
 import StudentDashboardPage from './pages/StudentDashboardPage';
 import StudentScoresDetailPage from './pages/StudentScoresDetailPage';
@@ -59,6 +60,7 @@ function App() {
               <Route path="/docente/puntuaciones" element={<TeacherScoresPage />} />
               <Route path="/docente/resumen" element={<TeacherSummaryPage />} />
               <Route path="/docente/ranking" element={<TeacherRankingPage />} />
+              <Route path="/docente/ingreso-historico" element={<TeacherHistoricAttendancePage />} /> {/* <-- Nueva ruta */}
               {/* Aquí se añadirán más rutas protegidas para el docente en el futuro */}
             </Route>
 
