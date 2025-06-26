@@ -328,6 +328,37 @@ footer {
 .form-footer-notes li {
   margin-bottom: 0.5rem;
 }
+
+/* Botón de Salir (Logout) */
+.btn-logout {
+  background-color: var(--color-danger);
+  color: var(--text-color-light);
+  padding: 0.7em 1.6em; /* Padding ajustado */
+  border-radius: var(--border-radius-small); /* Bordes menos redondeados que .btn-action */
+  font-weight: 500;
+  text-decoration: none;
+  display: inline-flex; /* Para alinear ícono y texto */
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent; /* Para consistencia, aunque el fondo lo cubre */
+  transition: background-color 0.2s ease, transform 0.15s ease;
+}
+
+.btn-logout .icon { /* Estilo para el ícono dentro del botón de logout */
+  margin-right: 0.6em;
+  width: 18px; /* Tamaño específico para este ícono si es necesario */
+  height: 18px;
+}
+
+.btn-logout:hover {
+  background-color: color-mix(in srgb, var(--color-danger) 85%, #000000 15%); /* Oscurecer en hover */
+  transform: translateY(-1px); /* Ligero efecto de elevación */
+}
+
+.btn-logout:active {
+  transform: translateY(0px);
+  background-color: color-mix(in srgb, var(--color-danger) 75%, #000000 25%); /* Más oscuro al presionar */
+}
 replace_with_git_merge_diff
 frontend/src/App.jsx
 <<<<<<< SEARCH
