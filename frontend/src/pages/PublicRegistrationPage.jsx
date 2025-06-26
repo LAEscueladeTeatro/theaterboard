@@ -80,73 +80,77 @@ const PublicRegistrationPage = () => {
     }
   };
 
+  // Icono para el botón de registro
+  const PencilIcon = () => (
+    <svg className="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+     <path d="M21.731 2.269a2.625 2.625 0 00-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 000-3.712zM19.513 8.199l-3.712-3.712-12.15 12.15a5.25 5.25 0 00-1.32 2.214l-.8 2.685a.75.75 0 00.933.933l2.685-.8a5.25 5.25 0 002.214-1.32L19.513 8.2z" />
+   </svg>
+   );
+
   return (
-    <div style={{maxWidth: '700px', margin: '20px auto', padding: '20px', border: '1px solid #ccc', borderRadius: '8px'}}>
-      <h2>¡Bienvenid@ a TheaterBoard!</h2>
-      <p>Estamos muy contentos de que quieras unirte a nuestra familia teatral.</p>
-      <p>Antes de empezar, por favor, dale una leída a nuestro <a href="https://drive.google.com/file/d/1jB6jiBouFFCbMo45FGiidC499eLyBjlt/view" target="_blank" rel="noopener noreferrer">Reglamento Interno</a>. Es importante que lo conozcas.</p>
-      <p style={{marginTop: '10px'}}><Link to="/">Volver al Inicio</Link></p>
+    <div className="centered-form-page public-registration-page"> {/* Clase adicional para posible override de max-width */}
+      <div className="form-card"> {/* Usar form-card, pero podría necesitar un max-width mayor */}
+        <h2>¡Bienvenid@ a TheaterBoard!</h2>
+        <p style={{fontSize: '1rem', marginBottom: '1rem'}}>Estamos muy contentos de que quieras unirte a nuestra familia teatral.</p>
+        <p style={{fontSize: '0.9rem', marginBottom: '1.5rem'}}>
+          Antes de empezar, por favor, dale una leída a nuestro <a href="https://drive.google.com/file/d/1jB6jiBouFFCbMo45FGiidC499eLyBjlt/view" target="_blank" rel="noopener noreferrer" style={{color: 'var(--primary-color-student)', fontWeight:'500'}}>Reglamento Interno</a>. Es importante que lo conozcas.
+        </p>
 
-      {successMessage && <p style={{color: 'green', fontWeight: 'bold'}}>{successMessage}</p>}
-      {error && <p style={{color: 'red'}}>{error}</p>}
+        {successMessage && <p style={{color: 'var(--primary-color-register)', fontWeight: 'bold', fontSize: '1.1rem', margin: '1rem 0'}}>{successMessage}</p>}
+        {error && <p style={{color: '#FF6B6B', fontWeight: '500', margin: '1rem 0'}}>{error}</p>}
 
-      {!successMessage && ( // Ocultar formulario después de éxito
-        <form onSubmit={handleSubmit}>
-          <h4>Datos del Alumno</h4>
-          <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px'}}>
-            <div><label htmlFor="full_name">Apellidos y Nombres Completos*:</label><input type="text" name="full_name" value={formData.full_name} onChange={handleChange} required /></div>
-            <div><label htmlFor="nickname">Sobrenombre (Cómo te gusta que te llamen)*:</label><input type="text" name="nickname" value={formData.nickname} onChange={handleChange} required /></div>
-            <div><label htmlFor="birth_date">Fecha de Nacimiento*:</label><input type="date" name="birth_date" value={formData.birth_date} onChange={handleChange} required /></div>
-            <div><label htmlFor="age">Edad* (se calcula con fecha nac.):</label><input type="number" name="age" value={formData.age} onChange={handleChange} required readOnly={!!formData.birth_date} /></div>
-            <div><label htmlFor="phone">Celular*:</label><input type="tel" name="phone" value={formData.phone} onChange={handleChange} required /></div>
-            <div><label htmlFor="email">Correo Electrónico*:</label><input type="email" name="email" value={formData.email} onChange={handleChange} required /></div>
-          </div>
-
-          {isMinor && (
-            <div style={{marginTop: '20px', paddingTop: '15px', borderTop: '1px dashed #ccc'}}>
-              <h4>Datos del Apoderado (Obligatorio para menores de 18)</h4>
-              <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px'}}>
-                <div><label htmlFor="guardian_full_name">Apellidos y Nombres del Apoderado*:</label><input type="text" name="guardian_full_name" value={formData.guardian_full_name} onChange={handleChange} required={isMinor} /></div>
-                <div><label htmlFor="guardian_relationship">Parentesco*:</label><input type="text" name="guardian_relationship" value={formData.guardian_relationship} onChange={handleChange} required={isMinor} /></div>
-                <div><label htmlFor="guardian_phone">Celular del Apoderado*:</label><input type="tel" name="guardian_phone" value={formData.guardian_phone} onChange={handleChange} required={isMinor} /></div>
-                <div><label htmlFor="guardian_email">Correo del Apoderado*:</label><input type="email" name="guardian_email" value={formData.guardian_email} onChange={handleChange} required={isMinor}/></div>
-              </div>
+        {!successMessage && (
+          <form onSubmit={handleSubmit}>
+            <h4 className="form-section-title">Datos del Alumno</h4>
+            <div className="form-grid">
+              <div><label htmlFor="full_name">Apellidos y Nombres Completos*:</label><input type="text" name="full_name" value={formData.full_name} onChange={handleChange} required placeholder="Ej: Pérez Gonzáles, Juan Carlos"/></div>
+              <div><label htmlFor="nickname">Sobrenombre (Cómo te gusta que te llamen)*:</label><input type="text" name="nickname" value={formData.nickname} onChange={handleChange} required placeholder="Ej: Juan, Juanca"/></div>
+              <div><label htmlFor="birth_date">Fecha de Nacimiento*:</label><input type="date" name="birth_date" value={formData.birth_date} onChange={handleChange} required /></div>
+              <div><label htmlFor="age">Edad* (se calcula):</label><input type="number" name="age" value={formData.age} onChange={handleChange} required readOnly={!!formData.birth_date} /></div>
+              <div><label htmlFor="phone">Celular*:</label><input type="tel" name="phone" value={formData.phone} onChange={handleChange} required placeholder="987654321"/></div>
+              <div><label htmlFor="email">Correo Electrónico*:</label><input type="email" name="email" value={formData.email} onChange={handleChange} required placeholder="tu@correo.com"/></div>
             </div>
-          )}
 
-          <h4 style={{marginTop: '20px'}}>Información Adicional</h4>
-          <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px'}}>
-            <div><label htmlFor="emergency_contact_name">Nombre Contacto de Emergencia:</label><input type="text" name="emergency_contact_name" value={formData.emergency_contact_name} onChange={handleChange} /></div>
-            <div><label htmlFor="emergency_contact_phone">Celular Contacto de Emergencia:</label><input type="tel" name="emergency_contact_phone" value={formData.emergency_contact_phone} onChange={handleChange} /></div>
-          </div>
-          <div style={{marginTop: '10px'}}><label htmlFor="medical_conditions">¿Alguna condición médica o alergia a considerar?</label><textarea name="medical_conditions" value={formData.medical_conditions} onChange={handleChange} rows="3"></textarea></div>
-          <div style={{marginTop: '10px'}}><label htmlFor="comments">Comentarios o dudas adicionales:</label><textarea name="comments" value={formData.comments} onChange={handleChange} rows="3"></textarea></div>
+            {isMinor && (
+              <div className="form-section">
+                <h4 className="form-section-title">Datos del Apoderado (Obligatorio para menores de 18)</h4>
+                <div className="form-grid">
+                  <div><label htmlFor="guardian_full_name">Nombres del Apoderado*:</label><input type="text" name="guardian_full_name" value={formData.guardian_full_name} onChange={handleChange} required={isMinor} /></div>
+                  <div><label htmlFor="guardian_relationship">Parentesco*:</label><input type="text" name="guardian_relationship" value={formData.guardian_relationship} onChange={handleChange} required={isMinor} /></div>
+                  <div><label htmlFor="guardian_phone">Celular del Apoderado*:</label><input type="tel" name="guardian_phone" value={formData.guardian_phone} onChange={handleChange} required={isMinor} /></div>
+                  <div><label htmlFor="guardian_email">Correo del Apoderado:</label><input type="email" name="guardian_email" value={formData.guardian_email} onChange={handleChange} /></div>
+                </div>
+              </div>
+            )}
 
-          <div style={{marginTop:'20px', paddingTop: '15px', borderTop: '1px solid #eee', fontSize: '0.9em', color: '#555'}}>
-            <p><strong>Importante:</strong></p>
-            <ul>
-              <li>Asegúrate de haber revisado nuestro <a href="https://drive.google.com/file/d/1jB6jiBouFFCbMo45FGiidC499eLyBjlt/view" target="_blank" rel="noopener noreferrer">Reglamento Interno</a> antes de enviar tu inscripción.</li>
-              <li>Una vez enviado el formulario, nos pondremos en contacto contigo. Las credenciales de acceso a la plataforma (usuario y contraseña) se entregarán personalmente en la escuela.</li>
-            </ul>
-          </div>
+            <div className="form-section">
+              <h4 className="form-section-title">Información Adicional</h4>
+              <div className="form-grid">
+                <div><label htmlFor="emergency_contact_name">Nombre Contacto de Emergencia:</label><input type="text" name="emergency_contact_name" value={formData.emergency_contact_name} onChange={handleChange} /></div>
+                <div><label htmlFor="emergency_contact_phone">Celular Contacto de Emergencia:</label><input type="tel" name="emergency_contact_phone" value={formData.emergency_contact_phone} onChange={handleChange} /></div>
+              </div>
+              <div style={{ gridColumn: '1 / -1', marginTop:'1rem' }}><label htmlFor="medical_conditions">¿Alguna condición médica o alergia a considerar?</label><textarea name="medical_conditions" value={formData.medical_conditions} onChange={handleChange} rows="3" placeholder="Ninguna / Describir aquí..."></textarea></div>
+              <div style={{ gridColumn: '1 / -1', marginTop:'1rem' }}><label htmlFor="comments">Comentarios o dudas adicionales:</label><textarea name="comments" value={formData.comments} onChange={handleChange} rows="3" placeholder="Escribe aquí tus comentarios..."></textarea></div>
+            </div>
 
-          <div style={{marginTop:'25px', textAlign: 'center'}}>
-            <button type="submit" disabled={loading} style={{padding: '10px 20px', fontSize: '1.1em'}}>
-              {loading ? 'Enviando Registro...' : 'Registrarme'}
-            </button>
-          </div>
-        </form>
-      )}
-      {/* Reutilizar estilos de modal para inputs si se desea, o definir unos propios */}
-      <style jsx global>{`
-        // Estilos básicos para inputs y labels en esta página
-        // Idealmente, estos serían más globales o parte de un sistema de diseño
-        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9em; }
-        input[type="text"], input[type="number"], input[type="email"], input[type="tel"], input[type="date"], textarea {
-          width: 100%; padding: 10px; margin-bottom:10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;
-        }
-        textarea { min-height: 60px; }
-      `}</style>
+            <div className="form-footer-notes">
+              <p><strong>Importante:</strong></p>
+              <ul>
+                <li>Asegúrate de haber revisado nuestro <a href="https://drive.google.com/file/d/1jB6jiBouFFCbMo45FGiidC499eLyBjlt/view" target="_blank" rel="noopener noreferrer" style={{color: 'var(--primary-color-student)', fontWeight:'500'}}>Reglamento Interno</a> antes de enviar tu inscripción.</li>
+                <li>Una vez enviado el formulario, nos pondremos en contacto contigo. Las credenciales de acceso a la plataforma (usuario y contraseña) se entregarán personalmente en la escuela.</li>
+              </ul>
+            </div>
+
+            <div style={{marginTop:'1.5rem', textAlign: 'center'}}>
+              <button type="submit" disabled={loading} className="btn-action btn-register">
+                <PencilIcon /> {loading ? 'Enviando Registro...' : 'Completar Inscripción'}
+              </button>
+            </div>
+          </form>
+        )}
+        <Link to="/" className="secondary-link" style={{marginTop: '2rem'}}>Volver al Inicio</Link>
+      </div>
+      {/* Eliminados los estilos <style jsx global> */}
     </div>
   );
 };
