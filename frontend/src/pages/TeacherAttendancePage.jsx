@@ -237,14 +237,14 @@ const TeacherAttendancePage = () => {
 
       // Actualizar dailyStatus para reflejar el cambio inmediatamente
       setDailyStatus(prev => {
-        const studentData = allStudents.find(s => s.id === studentId);
+        const studentInfo = allStudents.find(s => s.id === studentId); // Cambiado a studentInfo para claridad
         const updatedRecords = prev.attendance_records.filter(r => r.student_id !== studentId);
         updatedRecords.push({
             student_id: studentId,
             status: status,
             notes: notes,
-            full_name: studentData?.full_name || '',
-            nickname: studentData?.nickname || '',
+            full_name: studentInfo?.full_name || 'Desconocido', // Fallback
+            nickname: studentInfo?.nickname || '', // Fallback
             points_earned: response.data.record.points_earned,
             base_attendance_points: response.data.record.base_attendance_points,
             recorded_at: response.data.record.recorded_at,
@@ -254,7 +254,8 @@ const TeacherAttendancePage = () => {
         return { ...prev, attendance_records: updatedRecords };
       });
 
-      const studentNameForAlert = studentData?.full_name || studentId;
+      const studentInfoForAlert = allStudents.find(s => s.id === studentId);
+      const studentNameForAlert = studentInfoForAlert?.full_name || studentId;
       alert(`Asistencia para ${studentNameForAlert} registrada como ${status}.`);
 
     } catch (err) {
