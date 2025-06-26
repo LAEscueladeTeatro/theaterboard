@@ -4,8 +4,9 @@ import './App.css';
 
 import TeacherLoginPage from './pages/TeacherLoginPage';
 import TeacherDashboardPage from './pages/TeacherDashboardPage';
-import StudentListPage from './pages/StudentListPage'; // Anteriormente StudentList
-import TeacherAttendancePage from './pages/TeacherAttendancePage'; // Nueva página
+import StudentListPage from './pages/StudentListPage';
+import TeacherAttendancePage from './pages/TeacherAttendancePage';
+import TeacherScoresPage from './pages/TeacherScoresPage'; // Nueva página de puntuaciones
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -39,7 +40,8 @@ function App() {
             <Route element={<ProtectedRoute tokenType="teacherToken" redirectTo="/docente/login" />}>
               <Route path="/docente/dashboard" element={<TeacherDashboardPage />} />
               <Route path="/docente/lista-estudiantes" element={<StudentListPage />} />
-              <Route path="/docente/asistencia" element={<TeacherAttendancePage />} /> {/* Nueva ruta */}
+              <Route path="/docente/asistencia" element={<TeacherAttendancePage />} />
+              <Route path="/docente/puntuaciones" element={<TeacherScoresPage />} /> {/* Nueva ruta */}
               {/* Aquí se añadirán más rutas protegidas para el docente en el futuro */}
             </Route>
 
