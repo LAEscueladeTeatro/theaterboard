@@ -1,5 +1,6 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const pool = require('../config/db'); // <--- AÑADIR ESTA LÍNEA
 // const bcrypt = require('bcryptjs'); // Para uso futuro con contraseñas hasheadas
 
 const router = express.Router();
