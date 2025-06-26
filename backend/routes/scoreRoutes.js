@@ -49,9 +49,7 @@ const DEFAULT_POINTS = {
  *            students_non_compliant: ["ET003"] }
  */
 router.post('/group', async (req, res) => {
-  const { score_type, score_date, students_compliant = [], students_non_compliant = [] } = req.body;
-
-  // Validación de entrada
+  // Desestructurar todas las posibles variables del body una sola vez
   const { score_type, score_date, students_compliant = [], students_non_compliant = [], student_ids = [] } = req.body;
   // student_ids se usará para CINCO_VALIENTES y PRIMER_GRUPO
 
