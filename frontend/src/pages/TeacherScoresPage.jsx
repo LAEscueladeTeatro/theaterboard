@@ -94,7 +94,8 @@ const TeacherScoresPage = () => {
       setLoadingStudents(true);
       try {
         const token = getToken();
-        const response = await axios.get(`${API_URL}/students`, { headers: { 'x-auth-token': token } });
+        // Usar el nuevo endpoint que filtra por activos por defecto si no se especifica
+        const response = await axios.get(`${API_URL}/admin/students?active=true`, { headers: { 'x-auth-token': token } });
         setAllStudents(response.data);
       } catch (err) {
         console.error("Error fetching all students:", err);

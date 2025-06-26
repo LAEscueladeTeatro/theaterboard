@@ -21,7 +21,7 @@ const TeacherSummaryPage = () => {
     const fetchStudents = async () => {
       try {
         const token = getToken();
-        const response = await axios.get(`${API_URL}/students`, { headers: { 'x-auth-token': token } });
+        const response = await axios.get(`${API_URL}/admin/students?active=true`, { headers: { 'x-auth-token': token } });
         setStudents(response.data);
         if (response.data.length > 0) {
           // setSelectedStudent(response.data[0].id); // Opcional: seleccionar el primero por defecto

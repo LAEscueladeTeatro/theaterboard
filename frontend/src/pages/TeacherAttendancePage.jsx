@@ -101,8 +101,8 @@ const TeacherAttendancePage = () => {
         const token = getToken();
         const headers = { 'x-auth-token': token };
 
-        // 1. Obtener lista de todos los estudiantes
-        const studentsResponse = await axios.get(`${API_URL}/students`, { headers });
+        // 1. Obtener lista de todos los estudiantes ACTIVOS
+        const studentsResponse = await axios.get(`${API_URL}/admin/students?active=true`, { headers });
         setAllStudents(studentsResponse.data);
         setStudents(studentsResponse.data); // Inicialmente mostrar todos
 

@@ -5,13 +5,14 @@ import './App.css';
 import TeacherLoginPage from './pages/TeacherLoginPage';
 import TeacherDashboardPage from './pages/TeacherDashboardPage';
 import StudentListPage from './pages/StudentListPage';
+import DisabledStudentListPage from './pages/DisabledStudentListPage'; // Nueva página de inhabilitados
 import TeacherAttendancePage from './pages/TeacherAttendancePage';
 import TeacherScoresPage from './pages/TeacherScoresPage';
 import TeacherSummaryPage from './pages/TeacherSummaryPage';
 import TeacherRankingPage from './pages/TeacherRankingPage';
 import StudentLoginPage from './pages/StudentLoginPage';
 import StudentDashboardPage from './pages/StudentDashboardPage';
-import StudentScoresDetailPage from './pages/StudentScoresDetailPage'; // Nueva página de detalle de scores
+import StudentScoresDetailPage from './pages/StudentScoresDetailPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -45,6 +46,7 @@ function App() {
             <Route element={<ProtectedRoute tokenType="teacherToken" redirectTo="/docente/login" />}>
               <Route path="/docente/dashboard" element={<TeacherDashboardPage />} />
               <Route path="/docente/lista-estudiantes" element={<StudentListPage />} />
+              <Route path="/docente/lista-estudiantes/inhabilitados" element={<DisabledStudentListPage />} /> {/* Nueva ruta */}
               <Route path="/docente/asistencia" element={<TeacherAttendancePage />} />
               <Route path="/docente/puntuaciones" element={<TeacherScoresPage />} />
               <Route path="/docente/resumen" element={<TeacherSummaryPage />} />
