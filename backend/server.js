@@ -7,7 +7,8 @@ const authRoutes = require('./routes/authRoutes');
 const attendanceRoutes = require('./routes/attendanceRoutes');
 const scoreRoutes = require('./routes/scoreRoutes');
 const reportRoutes = require('./routes/reportRoutes');
-const studentRoutes = require('./routes/studentRoutes'); // Nuevas rutas de estudiante
+const studentRoutes = require('./routes/studentRoutes'); // Rutas para el panel del estudiante
+const studentAdminRoutes = require('./routes/studentAdminRoutes'); // Nuevas rutas para CRUD de estudiantes
 
 // Importar Middleware (si es necesario globalmente o para rutas específicas aquí)
 const authMiddleware = require('./middleware/authMiddleware');
@@ -24,19 +25,12 @@ app.use('/api/auth', authRoutes);
 app.use('/api/attendance', authMiddleware, attendanceRoutes);
 app.use('/api/scores', authMiddleware, scoreRoutes);
 app.use('/api/reports', authMiddleware, reportRoutes);
-app.use('/api/student', authMiddleware, studentRoutes); // Nuevas rutas de estudiante, protegidas
+app.use('/api/student', authMiddleware, studentRoutes); // Rutas para el panel del estudiante
+app.use('/api/admin/students', authMiddleware, studentAdminRoutes); // Rutas para CRUD de estudiantes por admin/docente
 
-// Ruta de estudiantes (considerar si también debe ser protegida)
-// Por ahora, la dejamos como estaba, pero podría requerir authMiddleware si solo docentes deben verla.
-app.get('/api/students', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT id, full_name, nickname FROM students ORDER BY id');
-    res.json(result.rows);
-  } catch (err) {
-    console.error('Error fetching students from DB:', err); // Log completo del error
-    res.status(500).send('Server error: Could not fetch students');
-  }
-});
+// La ruta GET /api/students original se elimina, ya que su funcionalidad ahora está en GET /api/admin/students
+// y es más completa (permite filtrar por is_active).
+// El frontend deberá actualizarse para usar /api/admin/students?active=true para la lista principal.
 
 // Ejemplo de ruta protegida
 app.get('/api/teacher/profile', authMiddleware, (req, res) => {
