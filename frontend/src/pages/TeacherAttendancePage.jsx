@@ -2,20 +2,32 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 
-// Simulación de la hora de Perú (Lima) - en una app real, usar una librería como moment-timezone o date-fns-tz
-const getCurrentPeruTime = () => {
+// Función para obtener la hora actual en Perú (Lima, UTC-5)
+const getCurrentPeruDateTimeObject = () => {
+  // Usamos el objeto Intl.DateTimeFormat para obtener las partes de la fecha y hora en la zona horaria de Perú.
+  // Esto es más robusto que los cálculos manuales de offset.
   const now = new Date();
-  // Ajustar a UTC-5 (Lima). Esto es una simplificación.
-  // new Date().toLocaleString("en-US", {timeZone: "America/Lima"}) es mejor si el navegador lo soporta bien.
-  // O manejarlo puramente en el backend si la precisión es crítica.
-  // Por ahora, para la UI, una estimación es suficiente.
-  // Esta es una forma muy básica y puede no ser precisa con DST si Perú lo tuviera.
-  // Para una solución robusta, se recomienda una librería de manejo de fechas/zonas horarias.
-  const peruOffset = -5 * 60; // UTC-5 en minutos
-  const localOffset = now.getTimezoneOffset(); // en minutos
-  const peruTime = new Date(now.getTime() + (peruOffset - localOffset) * 60000);
-  return peruTime;
+  const options = {
+    timeZone: 'America/Lima',
+    year: 'numeric', month: 'numeric', day: 'numeric',
+    hour: 'numeric', minute: 'numeric', second: 'numeric',
+    hour12: false // Usar formato de 24 horas para facilitar la lógica
+  };
+  const formatter = new Intl.DateTimeFormat('en-CA', options); // 'en-CA' da YYYY-MM-DD, HH:MM:SS
+  const parts = formatter.formatToParts(now);
+
+  const dateParts = {};
+  for (const part of parts) {
+    if (part.type !== 'literal') {
+      dateParts[part.type] = parseInt(part.value, 10);
+    }
+  }
+  // Crear un nuevo objeto Date a partir de las partes. OJO: Esto lo crea en la zona horaria local del navegador
+  // pero los valores numéricos corresponden a Perú. La lógica de comparación horaria deberá usar estos valores numéricos.
+  // O, mejor aún, la función puede devolver directamente los componentes numéricos.
+  return new Date(dateParts.year, dateParts.month - 1, dateParts.day, dateParts.hour, dateParts.minute, dateParts.second);
 };
+
 
 const TeacherAttendancePage = () => {
   const [students, setStudents] = useState([]);
@@ -23,12 +35,36 @@ const TeacherAttendancePage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [currentPeruDateTime, setCurrentPeruDateTime] = useState(getCurrentPeruTime());
+  const [currentPeruDateTime, setCurrentPeruDateTime] = useState(getCurrentPeruDateTimeObject());
   const [attendanceData, setAttendanceData] = useState({}); // { student_id: { status: 'PUNTUAL', notes: '' } }
   const [dailyStatus, setDailyStatus] = useState({ attendance_records: [], bonus_awarded_today: null });
 
+  // Estado para el modal de tardanza
+  const [tardanzaModalOpen, setTardanzaModalOpen] = useState(false);
+  const [tardanzaStudent, setTardanzaStudent] = useState(null); // { id, name }
+  const [tardanzaJustification, setTardanzaJustification] = useState(''); // 'JUSTIFICADA' o 'INJUSTIFICADA'
+  const [tardanzaNotes, setTardanzaNotes] = useState('');
+
+  // Estado para el bono madrugador
+  const [selectedStudentForBonus, setSelectedStudentForBonus] = useState('');
+
+  // Estados para el modal de Cierre de Asistencia
+  const [closeAttendanceModalOpen, setCloseAttendanceModalOpen] = useState(false);
+  const [absentStudentsForModal, setAbsentStudentsForModal] = useState([]); // [{id, full_name, nickname}]
+  const [absentJustifications, setAbsentJustifications] = useState({}); // { student_id: { is_justified: false, notes: '' } }
+
+
   const API_URL = 'http://localhost:3001/api';
-  const todayDateString = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  // Obtener la fecha de hoy en formato YYYY-MM-DD para la zona horaria de Perú
+  const getTodayPeruDateString = () => {
+    const nowInPeru = getCurrentPeruDateTimeObject(); // Esta función ya devuelve un objeto Date con valores de Perú
+    const year = nowInPeru.getFullYear();
+    const month = (nowInPeru.getMonth() + 1).toString().padStart(2, '0');
+    const day = nowInPeru.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+  const [todayDateString, setTodayDateString] = useState(getTodayPeruDateString());
+
 
   // Obtener token
   const getToken = useCallback(() => localStorage.getItem('teacherToken'), []);
@@ -113,9 +149,11 @@ const TeacherAttendancePage = () => {
     return currentPeruDateTime;
   };
 
-  const determineStatusBasedOnTime = (studentId) => {
+  const determineStatusBasedOnTime = () => { // Ya no necesita studentId aquí
     const nowPeru = getPeruTimeForAttendance();
-    const hours = nowPeru.getHours();
+    // Asegurarse que getHours() y getMinutes() se aplican al objeto Date correcto
+    // currentPeruDateTime ya es el objeto Date con los valores de Perú
+    const hours = currentPeruDateTime.getHours();
     const minutes = nowPeru.getMinutes();
 
     // Lógica de horas:
@@ -132,85 +170,323 @@ const TeacherAttendancePage = () => {
     }
   };
 
-  const handleMarkAttendance = async (studentId, explicitStatus = null) => {
-    let statusToSave;
-    let notesToSave = attendanceData[studentId]?.notes || '';
+  const handleOpenTardanzaModal = (student) => {
+    setTardanzaStudent(student);
+    setTardanzaNotes(attendanceData[student.id]?.notes || ''); // Cargar notas existentes si las hay
+    setTardanzaJustification(''); // Resetear justificación
+    setTardanzaModalOpen(true);
+  };
 
-    if (explicitStatus) { // Ej: TARDANZA_JUSTIFICADA, TARDANZA_INJUSTIFICADA desde un modal
-        statusToSave = explicitStatus;
-    } else {
-        const timeBasedStatus = determineStatusBasedOnTime(studentId);
-        if (timeBasedStatus === 'TARDANZA') {
-            // Aquí se abriría un modal para preguntar si es Justificada o Injustificada
-            // y para recoger las notas. Por ahora, lo marcaremos como TARDANZA_INJUSTIFICADA por defecto.
-            // Esta lógica se refinará.
-            console.log(`Estudiante ${studentId} llegó tarde. Implementar modal para justificación.`);
-            // Simulación: Preguntar al usuario (esto debería ser un modal)
-            const isJustified = window.confirm("El estudiante llegó tarde. ¿Es una tardanza justificada?");
-            if (isJustified) {
-                statusToSave = 'TARDANZA_JUSTIFICADA';
-                const reason = window.prompt("Motivo de la tardanza justificada:", notesToSave);
-                notesToSave = reason || '';
-            } else {
-                statusToSave = 'TARDANZA_INJUSTIFICADA';
-                 const reason = window.prompt("Notas para tardanza injustificada (opcional):", notesToSave);
-                notesToSave = reason || '';
-            }
-        } else {
-            statusToSave = timeBasedStatus;
-        }
+  const handleCloseTardanzaModal = () => {
+    setTardanzaModalOpen(false);
+    setTardanzaStudent(null);
+    setTardanzaJustification('');
+    setTardanzaNotes('');
+  };
+
+  const handleSubmitTardanzaModal = () => {
+    if (!tardanzaStudent || !tardanzaJustification) {
+      alert("Por favor, seleccione si la tardanza es justificada o injustificada.");
+      return;
     }
+    const statusToSave = tardanzaJustification === 'JUSTIFICADA' ? 'TARDANZA_JUSTIFICADA' : 'TARDANZA_INJUSTIFICADA';
+    // Llamar a la función principal de guardado con el estado de tardanza y las notas
+    saveAttendanceRecord(tardanzaStudent.id, statusToSave, tardanzaNotes);
+    handleCloseTardanzaModal();
+  };
 
-    if (!statusToSave) return; // Si no se pudo determinar el estado
-
+  // Función refactorizada para guardar/actualizar el registro de asistencia
+  const saveAttendanceRecord = async (studentId, status, notes) => {
     try {
       const token = getToken();
       const response = await axios.post(`${API_URL}/attendance/record`, {
         student_id: studentId,
         attendance_date: todayDateString,
-        status: statusToSave,
-        notes: notesToSave,
+        status: status,
+        notes: notes,
       }, { headers: { 'x-auth-token': token } });
 
       // Actualizar estado local
       setAttendanceData(prev => ({
         ...prev,
-        [studentId]: { status: statusToSave, notes: notesToSave, is_synced: true }
+        [studentId]: { status: status, notes: notes, is_synced: true }
       }));
-      // Actualizar dailyStatus si es necesario (para reflejar el cambio inmediatamente)
+
+      // Actualizar dailyStatus para reflejar el cambio inmediatamente
       setDailyStatus(prev => {
+        const studentData = allStudents.find(s => s.id === studentId);
         const updatedRecords = prev.attendance_records.filter(r => r.student_id !== studentId);
         updatedRecords.push({
             student_id: studentId,
-            status: statusToSave,
-            notes: notesToSave,
-            // ... otros campos del record devuelto por el backend
-            full_name: students.find(s => s.id === studentId)?.full_name || '',
-            nickname: students.find(s => s.id === studentId)?.nickname || '',
+            status: status,
+            notes: notes,
+            full_name: studentData?.full_name || '',
+            nickname: studentData?.nickname || '',
             points_earned: response.data.record.points_earned,
             base_attendance_points: response.data.record.base_attendance_points,
             recorded_at: response.data.record.recorded_at,
         });
+        // Ordenar para mantener consistencia si se desea
+        // updatedRecords.sort((a, b) => (a.full_name || "").localeCompare(b.full_name || ""));
         return { ...prev, attendance_records: updatedRecords };
       });
 
-      alert(`Asistencia para ${studentId} registrada como ${statusToSave}.`);
+      alert(`Asistencia para ${studentData?.full_name || studentId} registrada como ${status}.`);
 
     } catch (err) {
       console.error("Error saving attendance:", err);
-      setError(err.response?.data?.message || err.message || 'Error al guardar asistencia.');
-      // Revertir el cambio optimista si falla
-       handleAttendanceChange(studentId, 'is_synced', true); // O volver al estado anterior si se guardó
+      const errorMsg = err.response?.data?.message || err.message || 'Error al guardar asistencia.';
+      setError(errorMsg);
+      alert(`Error al guardar: ${errorMsg}`); // Mostrar alerta al usuario
+      // Considerar revertir el cambio optimista si es necesario, aunque aquí el estado se actualiza post-llamada.
+      // Si `is_synced` se usara para UI optimista, aquí se resetearía.
     }
   };
 
-  // TODO: Implementar handleApplyEarlyBonus
-  // TODO: Implementar handleCloseAttendance
+
+  const handleProcessAttendanceClick = (student) => {
+    const timeBasedStatus = determineStatusBasedOnTime();
+    if (timeBasedStatus === 'TARDANZA') {
+      handleOpenTardanzaModal(student);
+    } else {
+      // Para PUNTUAL o A_TIEMPO, se guardan directamente sin notas adicionales (a menos que ya existan)
+      const currentNotes = attendanceData[student.id]?.notes || '';
+      saveAttendanceRecord(student.id, timeBasedStatus, currentNotes);
+    }
+  };
+
+  const handleApplyEarlyBonus = async () => {
+    if (!selectedStudentForBonus) {
+      alert("Por favor, seleccione un estudiante para otorgar el bono.");
+      return;
+    }
+
+    if (dailyStatus.bonus_awarded_today) {
+      alert(`El bono madrugador ya fue otorgado a ${dailyStatus.bonus_awarded_today.bonus_student_name}.`);
+      return;
+    }
+
+    try {
+      const token = getToken();
+      const response = await axios.post(`${API_URL}/attendance/early-bonus`, {
+        student_id: selectedStudentForBonus,
+        bonus_date: todayDateString,
+      }, { headers: { 'x-auth-token': token } });
+
+      // Actualizar el estado de dailyStatus para reflejar que el bono fue otorgado
+      setDailyStatus(prev => ({
+        ...prev,
+        bonus_awarded_today: {
+          student_id: response.data.bonus_record.student_id,
+          bonus_student_name: allStudents.find(s => s.id === response.data.bonus_record.student_id)?.full_name || response.data.bonus_record.student_id,
+          points_awarded: response.data.bonus_record.points_awarded,
+        }
+      }));
+      setSelectedStudentForBonus(''); // Limpiar selección
+      alert(`Bono madrugador otorgado a ${allStudents.find(s => s.id === response.data.bonus_record.student_id)?.full_name || selectedStudentForBonus}.`);
+
+    } catch (err) {
+      console.error("Error applying early bonus:", err);
+      const errorMsg = err.response?.data?.message || err.message || 'Error al aplicar el bono madrugador.';
+      setError(errorMsg); // Podría mostrarse en un área de error general
+      alert(`Error al aplicar bono: ${errorMsg}`);
+    }
+  };
+
+  const handleOpenCloseAttendanceModal = () => {
+    const recordedStudentIds = new Set(dailyStatus.attendance_records.map(r => r.student_id));
+    const absent = allStudents.filter(student => !recordedStudentIds.has(student.id));
+
+    setAbsentStudentsForModal(absent);
+
+    // Inicializar justificaciones para los ausentes
+    const initialJustifications = {};
+    absent.forEach(student => {
+      initialJustifications[student.id] = { is_justified: false, notes: '' };
+    });
+    setAbsentJustifications(initialJustifications);
+    setCloseAttendanceModalOpen(true);
+  };
+
+  const handleCloseModalOfAttendance = () => { // Renombrado para evitar conflicto
+    setCloseAttendanceModalOpen(false);
+    // No resetear absentStudentsForModal o absentJustifications aquí si queremos que se mantengan
+    // si el modal se cierra y se vuelve a abrir sin un submit. O sí resetearlos si es preferible.
+  };
+
+  const handleAbsentJustificationChange = (studentId, field, value) => {
+    setAbsentJustifications(prev => ({
+      ...prev,
+      [studentId]: {
+        ...prev[studentId],
+        [field]: value,
+      }
+    }));
+  };
+
+  const handleSubmitCloseAttendance = async () => {
+    const justificationsPayload = Object.entries(absentJustifications)
+      .map(([student_id, data]) => ({
+        student_id,
+        is_justified: data.is_justified,
+        notes: data.notes,
+      }));
+
+    try {
+      const token = getToken();
+      const response = await axios.post(`${API_URL}/attendance/close`, {
+        attendance_date: todayDateString,
+        absent_students_justifications: justificationsPayload,
+      }, { headers: { 'x-auth-token': token } });
+
+      alert(response.data.message || "Cierre de asistencia procesado.");
+
+      // Refrescar el estado diario para incluir los nuevos registros de ausencia
+      const updatedDailyStatusResponse = await axios.get(`${API_URL}/attendance/status/${todayDateString}`, { headers: { 'x-auth-token': token } });
+      setDailyStatus(updatedDailyStatusResponse.data);
+       // Pre-rellenar attendanceData con los registros existentes, incluyendo las nuevas ausencias
+      const newAttendanceData = { ...attendanceData }; // Mantener los registros que ya estaban
+      updatedDailyStatusResponse.data.attendance_records.forEach(record => {
+        if (!newAttendanceData[record.student_id] || record.status.startsWith("AUSENCIA")) { // Solo añadir/sobrescribir si es nuevo o es una ausencia
+             newAttendanceData[record.student_id] = {
+                status: record.status,
+                notes: record.notes || '',
+                is_synced: true
+             };
+        }
+      });
+      setAttendanceData(newAttendanceData);
+
+      setCloseAttendanceModalOpen(false);
+      // Aquí se podría setear un estado `isAttendanceClosedForToday = true` si el backend lo confirma.
+      // Por ahora, la UI se actualizará con los nuevos datos.
+
+    } catch (err) {
+      console.error("Error closing attendance:", err);
+      const errorMsg = err.response?.data?.message || err.message || 'Error al procesar el cierre de asistencia.';
+      setError(errorMsg);
+      alert(`Error: ${errorMsg}`);
+    }
+  };
 
   if (loading) return <p>Cargando datos de asistencia...</p>;
   if (error) return <div><p>Error: {error}</p><Link to="/docente/dashboard">Volver al Panel</Link></div>;
 
-  const isAttendanceClosedForToday = false; // Lógica para determinar si la asistencia ya se cerró
+  // Modal para Tardanza
+  const renderTardanzaModal = () => {
+    if (!tardanzaModalOpen || !tardanzaStudent) return null;
+
+    return (
+      <div className="modal-overlay">
+        <div className="modal-content">
+          <h3>Registrar Tardanza para: {tardanzaStudent.full_name} ({tardanzaStudent.id})</h3>
+          <div>
+            <label>
+              <input
+                type="radio"
+                name="justification"
+                value="JUSTIFICADA"
+                checked={tardanzaJustification === 'JUSTIFICADA'}
+                onChange={(e) => setTardanzaJustification(e.target.value)}
+              />
+              Justificada
+            </label>
+            <label style={{ marginLeft: '10px' }}>
+              <input
+                type="radio"
+                name="justification"
+                value="INJUSTIFICADA"
+                checked={tardanzaJustification === 'INJUSTIFICADA'}
+                onChange={(e) => setTardanzaJustification(e.target.value)}
+              />
+              Injustificada
+            </label>
+          </div>
+          <div style={{ marginTop: '10px' }}>
+            <label htmlFor="tardanzaNotes">Notas:</label>
+            <textarea
+              id="tardanzaNotes"
+              value={tardanzaNotes}
+              onChange={(e) => setTardanzaNotes(e.target.value)}
+              rows="3"
+              style={{ width: '90%', marginTop: '5px' }}
+            />
+          </div>
+          <div style={{ marginTop: '15px' }}>
+            <button onClick={handleSubmitTardanzaModal}>Guardar Tardanza</button>
+            <button onClick={handleCloseTardanzaModal} style={{ marginLeft: '10px' }}>Cancelar</button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const isAllStudentsRecorded = () => {
+    if (!allStudents || allStudents.length === 0) return false; // No hay estudiantes para registrar
+    const recordedStudentIds = new Set(dailyStatus.attendance_records.map(r => r.student_id));
+    return allStudents.every(student => recordedStudentIds.has(student.id));
+  };
+
+  // Considerar que la asistencia está "cerrada" si todos los estudiantes tienen un registro.
+  // Una lógica más robusta podría venir del backend o un estado explícito.
+  const isAttendanceEffectivelyClosed = isAllStudentsRecorded();
+
+
+  // Modal para Cierre de Asistencia
+  const renderCloseAttendanceModal = () => {
+    if (!closeAttendanceModalOpen) return null;
+
+    return (
+      <div className="modal-overlay">
+        <div className="modal-content">
+          <h3>Cerrar Asistencia del Día: {todayDateString}</h3>
+          <p>Los siguientes estudiantes no tienen un registro de asistencia. Por favor, marque sus ausencias:</p>
+          {absentStudentsForModal.length === 0 ? (
+            <p>Todos los estudiantes ya tienen un registro.</p>
+          ) : (
+            <table>
+              <thead>
+                <tr>
+                  <th>Estudiante</th>
+                  <th>Justificada</th>
+                  <th>Notas</th>
+                </tr>
+              </thead>
+              <tbody>
+                {absentStudentsForModal.map(student => (
+                  <tr key={student.id}>
+                    <td>{student.full_name} ({student.id})</td>
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={absentJustifications[student.id]?.is_justified || false}
+                        onChange={(e) => handleAbsentJustificationChange(student.id, 'is_justified', e.target.checked)}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="text"
+                        value={absentJustifications[student.id]?.notes || ''}
+                        onChange={(e) => handleAbsentJustificationChange(student.id, 'notes', e.target.value)}
+                        placeholder="Motivo (opcional)"
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          <div style={{ marginTop: '15px' }}>
+            <button onClick={handleSubmitCloseAttendance} disabled={absentStudentsForModal.length === 0}>
+              Confirmar Cierre y Registrar Ausencias
+            </button>
+            <button onClick={handleCloseModalOfAttendance} style={{ marginLeft: '10px' }}>Cancelar</button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
 
   return (
     <div>
@@ -228,13 +504,42 @@ const TeacherAttendancePage = () => {
         />
       </div>
 
-      {dailyStatus.bonus_awarded_today && (
-        <p style={{color: 'green'}}>
-          Bono Madrugador ya otorgado a: {dailyStatus.bonus_awarded_today.bonus_student_name} ({dailyStatus.bonus_awarded_today.student_id})
-        </p>
-      )}
-      {/* TODO: Botón para Bono Madrugador si aún no se ha otorgado */}
-
+      <div style={{ margin: '20px 0' }}>
+        <h4>Bono Madrugador</h4>
+        {dailyStatus.bonus_awarded_today ? (
+          <p style={{ color: 'green' }}>
+            Bono Madrugador ya otorgado a: {dailyStatus.bonus_awarded_today.bonus_student_name} ({dailyStatus.bonus_awarded_today.student_id}) por +{dailyStatus.bonus_awarded_today.points_awarded} puntos.
+          </p>
+        ) : (
+          <div>
+            <select
+              value={selectedStudentForBonus}
+              onChange={(e) => setSelectedStudentForBonus(e.target.value)}
+              disabled={!!dailyStatus.bonus_awarded_today || isAttendanceEffectivelyClosed}
+            >
+              <option value="">Seleccione un estudiante</option>
+              {allStudents
+                .filter(student => {
+                  // Incluir solo estudiantes que tienen un registro de asistencia y no es ausencia
+                  const attendanceRecord = dailyStatus.attendance_records.find(r => r.student_id === student.id);
+                  return attendanceRecord && !attendanceRecord.status.startsWith('AUSENCIA');
+                })
+                .map(student => (
+                  <option key={student.id} value={student.id}>
+                    {student.full_name} ({student.id})
+                  </option>
+                ))}
+            </select>
+            <button
+              onClick={handleApplyEarlyBonus}
+              disabled={!selectedStudentForBonus || !!dailyStatus.bonus_awarded_today || isAttendanceEffectivelyClosed}
+              style={{ marginLeft: '10px' }}
+            >
+              Otorgar Bono Madrugador
+            </button>
+          </div>
+        )}
+      </div>
 
       <table>
         <thead>
@@ -258,20 +563,25 @@ const TeacherAttendancePage = () => {
                 <td>{student.full_name}</td>
                 <td>{student.nickname}</td>
                 <td>
-                  {currentStudentAttendance.status}
-                  {!currentStudentAttendance.is_synced && <em style={{color: 'orange'}}>(Pendiente)</em>}
+                  {currentStudentAttendance.status === 'NO_REGISTRADO' && !isRecorded ? (
+                    <span style={{ color: 'grey' }}>No Registrado</span>
+                  ) : (
+                    <>
+                      {currentStudentAttendance.status}
+                      {!currentStudentAttendance.is_synced && currentStudentAttendance.status !== 'NO_REGISTRADO' && <em style={{color: 'orange'}}> (Pendiente)</em>}
+                    </>
+                  )}
                 </td>
                 <td>
                   {isRecorded && currentStudentAttendance.status.startsWith('AUSENCIA') ? (
-                    <span>Ausente (Cerrado)</span>
-                  ) : isRecorded ? (
-                    <button onClick={() => handleMarkAttendance(student.id)}>Re-Marcar/Corregir</button>
+                    <span style={{ color: 'red' }}>Ausente (Cierre Realizado)</span>
                   ) : (
-                    <>
-                      <button onClick={() => handleMarkAttendance(student.id, 'PUNTUAL')}>Puntual</button>
-                      <button onClick={() => handleMarkAttendance(student.id, 'A_TIEMPO')}>A Tiempo</button>
-                      <button onClick={() => handleMarkAttendance(student.id /* Dejar que determine TARDANZA y abra modal */)}>Tardanza</button>
-                    </>
+                    <button
+                        onClick={() => handleProcessAttendanceClick(student)}
+                        disabled={tardanzaModalOpen || isAttendanceEffectivelyClosed}
+                    >
+                      {isRecorded ? 'Corregir Asistencia' : 'Marcar Asistencia'}
+                    </button>
                   )}
                 </td>
                 <td>
@@ -280,7 +590,7 @@ const TeacherAttendancePage = () => {
                     value={currentStudentAttendance.notes}
                     onChange={(e) => handleAttendanceChange(student.id, 'notes', e.target.value)}
                     placeholder="Notas..."
-                    disabled={isRecorded && currentStudentAttendance.status.startsWith('AUSENCIA')}
+                    disabled={(isRecorded && currentStudentAttendance.status.startsWith('AUSENCIA')) || isAttendanceEffectivelyClosed}
                   />
                 </td>
               </tr>
@@ -293,6 +603,35 @@ const TeacherAttendancePage = () => {
       <button disabled={isAttendanceClosedForToday}>
         {isAttendanceClosedForToday ? 'Asistencia Cerrada' : 'Realizar Cierre de Asistencia'}
       </button>
+
+      {/* Renderizar el modal de tardanza */}
+      {renderTardanzaModal()}
+
+      {/* Renderizar el modal de cierre de asistencia */}
+      {renderCloseAttendanceModal()}
+
+      {/* Estilos básicos para el modal (se pueden mover a un archivo CSS) */}
+      <style jsx global>{`
+        .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: rgba(0, 0, 0, 0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+        }
+        .modal-content {
+          background-color: white;
+          padding: 20px;
+          border-radius: 5px;
+          min-width: 300px;
+          max-width: 500px;
+        }
+      `}</style>
     </div>
   );
 };
