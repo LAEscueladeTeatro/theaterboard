@@ -2,6 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
+const ArrowRightOnRectangleIcon = () => (
+  <svg className="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+    <path fillRule="evenodd" d="M7.5 3.75A1.5 1.5 0 006 5.25v13.5a1.5 1.5 0 001.5 1.5h6a1.5 1.5 0 001.5-1.5V15a.75.75 0 011.5 0v3.75a3 3 0 01-3 3h-6a3 3 0 01-3-3V5.25a3 3 0 013-3h6a3 3 0 013 3V9A.75.75 0 0115 9V5.25a1.5 1.5 0 00-1.5-1.5h-6zm5.03 4.72a.75.75 0 010 1.06l-1.72 1.72h10.94a.75.75 0 010 1.5H10.81l1.72 1.72a.75.75 0 11-1.06 1.06l-3-3a.75.75 0 010-1.06l3-3a.75.75 0 011.06 0z" clipRule="evenodd" />
+  </svg>
+);
+
 const TeacherLoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -10,19 +16,13 @@ const TeacherLoginPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(''); // Limpiar errores previos
-
+    setError('');
     if (!email || !password) {
       setError('Por favor, ingrese email y contraseña.');
       return;
     }
-
     try {
-      const response = await axios.post('http://localhost:3001/api/auth/login/teacher', {
-        email,
-        password,
-      });
-
+      const response = await axios.post('http://localhost:3001/api/auth/login/teacher', { email, password });
       if (response.data.token) {
         localStorage.setItem('teacherToken', response.data.token);
         navigate('/docente/dashboard');
@@ -48,29 +48,15 @@ const TeacherLoginPage = () => {
         <form onSubmit={handleSubmit}>
           <div>
             <label htmlFor="email">Correo Electrónico:</label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="ejemplo@correo.com"
-              required
-            />
+            <input type="email" id="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="ejemplo@correo.com" required />
           </div>
           <div>
             <label htmlFor="password">Contraseña:</label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-            />
+            <input type="password" id="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required />
           </div>
-          {error && <p style={{ color: 'var(--primary-color-teacher)', fontWeight: '500', marginTop: '1rem' }}>{error}</p>}
+          {error && <p style={{ color: 'var(--primary-color-teacher)', fontWeight: '500', marginTop: '1rem', textAlign:'center' }}>{error}</p>}
           <button type="submit" className="btn-action btn-teacher">
-            <span className="icon">[&rarr;]</span>Ingresar
+            <ArrowRightOnRectangleIcon />Ingresar
           </button>
         </form>
         {/* <Link to="/recuperar-password" className="secondary-link">¿Olvidaste tu contraseña?</Link> */}
