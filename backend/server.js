@@ -5,7 +5,8 @@ const pool = require('./config/db');
 // Importar Rutas
 const authRoutes = require('./routes/authRoutes');
 const attendanceRoutes = require('./routes/attendanceRoutes');
-const scoreRoutes = require('./routes/scoreRoutes'); // Nuevas rutas de puntuaciones
+const scoreRoutes = require('./routes/scoreRoutes');
+const reportRoutes = require('./routes/reportRoutes'); // Nuevas rutas de reportes
 
 // Importar Middleware (si es necesario globalmente o para rutas específicas aquí)
 const authMiddleware = require('./middleware/authMiddleware');
@@ -20,7 +21,8 @@ app.use(express.json()); // Para parsear JSON en las requests
 // Definición de Rutas
 app.use('/api/auth', authRoutes);
 app.use('/api/attendance', authMiddleware, attendanceRoutes);
-app.use('/api/scores', authMiddleware, scoreRoutes); // Nuevas rutas de puntuaciones, protegidas
+app.use('/api/scores', authMiddleware, scoreRoutes);
+app.use('/api/reports', authMiddleware, reportRoutes); // Nuevas rutas de reportes, protegidas
 
 // Ruta de estudiantes (considerar si también debe ser protegida)
 // Por ahora, la dejamos como estaba, pero podría requerir authMiddleware si solo docentes deben verla.
