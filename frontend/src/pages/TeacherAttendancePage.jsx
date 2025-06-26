@@ -28,6 +28,29 @@ const getCurrentPeruDateTimeObject = () => {
   return new Date(dateParts.year, dateParts.month - 1, dateParts.day, dateParts.hour, dateParts.minute, dateParts.second);
 };
 
+const STATUS_DISPLAY_MAP = {
+  PUNTUAL: { text: 'Puntual', basePoints: 2 },
+  A_TIEMPO: { text: 'A Tiempo', basePoints: 1 },
+  TARDANZA_JUSTIFICADA: { text: 'Tardanza Justificada', basePoints: -1 },
+  TARDANZA_INJUSTIFICADA: { text: 'Tardanza Injustificada', basePoints: -2 },
+  AUSENCIA_JUSTIFICADA: { text: 'Ausencia Justificada', basePoints: -1 },
+  AUSENCIA_INJUSTIFICADA: { text: 'Ausencia Injustificada', basePoints: -3 },
+  NO_REGISTRADO: { text: 'No Registrado', basePoints: 0 },
+};
+
+const getDisplayableAttendanceInfo = (status, points_earned = 0, base_attendance_points = 0) => {
+  const displayInfo = STATUS_DISPLAY_MAP[status] || { text: status, basePoints: 0 };
+  let totalPoints = 0;
+
+  if (status && !status.startsWith('AUSENCIA') && status !== 'NO_REGISTRADO') {
+    totalPoints = (points_earned || 0) + (base_attendance_points || 0);
+  } else if (status) { // Para ausencias, los puntos ya están en points_earned
+    totalPoints = (points_earned || 0);
+  }
+
+  return `${displayInfo.text} (${totalPoints >= 0 ? '+' : ''}${totalPoints} pts)`;
+};
+
 
 const TeacherAttendancePage = () => {
   const [students, setStudents] = useState([]);
@@ -231,7 +254,8 @@ const TeacherAttendancePage = () => {
         return { ...prev, attendance_records: updatedRecords };
       });
 
-      alert(`Asistencia para ${studentData?.full_name || studentId} registrada como ${status}.`);
+      const studentNameForAlert = studentData?.full_name || studentId;
+      alert(`Asistencia para ${studentNameForAlert} registrada como ${status}.`);
 
     } catch (err) {
       console.error("Error saving attendance:", err);
@@ -563,14 +587,19 @@ const TeacherAttendancePage = () => {
                 <td>{student.full_name}</td>
                 <td>{student.nickname}</td>
                 <td>
-                  {currentStudentAttendance.status === 'NO_REGISTRADO' && !isRecorded ? (
-                    <span style={{ color: 'grey' }}>No Registrado</span>
-                  ) : (
-                    <>
-                      {currentStudentAttendance.status}
-                      {!currentStudentAttendance.is_synced && currentStudentAttendance.status !== 'NO_REGISTRADO' && <em style={{color: 'orange'}}> (Pendiente)</em>}
-                    </>
-                  )}
+                  {(() => {
+                    const record = dailyStatus.attendance_records.find(r => r.student_id === student.id);
+                    if (record) {
+                      return getDisplayableAttendanceInfo(record.status, record.points_earned, record.base_attendance_points);
+                    }
+                    // Si es un cambio local no sincronizado (aunque la lógica actual no lo permite mucho tiempo)
+                    if (currentStudentAttendance.status !== 'NO_REGISTRADO' && !currentStudentAttendance.is_synced) {
+                       // Para cambios locales, no tenemos los puntos exactos del backend aún, podríamos mostrar solo el texto
+                       const statusText = STATUS_DISPLAY_MAP[currentStudentAttendance.status]?.text || currentStudentAttendance.status;
+                       return `${statusText} (Pendiente de guardar)`;
+                    }
+                    return <span style={{ color: 'grey' }}>No Registrado</span>;
+                  })()}
                 </td>
                 <td>
                   {isRecorded && currentStudentAttendance.status.startsWith('AUSENCIA') ? (
