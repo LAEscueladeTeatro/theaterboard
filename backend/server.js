@@ -6,7 +6,8 @@ const pool = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const attendanceRoutes = require('./routes/attendanceRoutes');
 const scoreRoutes = require('./routes/scoreRoutes');
-const reportRoutes = require('./routes/reportRoutes'); // Nuevas rutas de reportes
+const reportRoutes = require('./routes/reportRoutes');
+const studentRoutes = require('./routes/studentRoutes'); // Nuevas rutas de estudiante
 
 // Importar Middleware (si es necesario globalmente o para rutas específicas aquí)
 const authMiddleware = require('./middleware/authMiddleware');
@@ -22,7 +23,8 @@ app.use(express.json()); // Para parsear JSON en las requests
 app.use('/api/auth', authRoutes);
 app.use('/api/attendance', authMiddleware, attendanceRoutes);
 app.use('/api/scores', authMiddleware, scoreRoutes);
-app.use('/api/reports', authMiddleware, reportRoutes); // Nuevas rutas de reportes, protegidas
+app.use('/api/reports', authMiddleware, reportRoutes);
+app.use('/api/student', authMiddleware, studentRoutes); // Nuevas rutas de estudiante, protegidas
 
 // Ruta de estudiantes (considerar si también debe ser protegida)
 // Por ahora, la dejamos como estaba, pero podría requerir authMiddleware si solo docentes deben verla.

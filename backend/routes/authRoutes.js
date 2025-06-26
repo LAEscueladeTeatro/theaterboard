@@ -44,4 +44,51 @@ router.post('/login/teacher', async (req, res) => {
   }
 });
 
+// Endpoint de login para estudiantes
+router.post('/login/student', async (req, res) => {
+  const { student_id, password } = req.body;
+
+  if (!student_id || !password) {
+    return res.status(400).json({ message: 'ID de estudiante y contraseña son requeridos.' });
+  }
+
+  try {
+    const result = await pool.query('SELECT * FROM students WHERE id = $1', [student_id]);
+
+    if (result.rows.length === 0) {
+      return res.status(401).json({ message: 'Credenciales inválidas.' }); // Estudiante no encontrado
+    }
+
+    const student = result.rows[0];
+
+    // Comparación directa de contraseña (NO SEGURO PARA PRODUCCIÓN)
+    if (password === student.password) {
+      const payload = {
+        user: {
+          id: student.id,
+          role: 'student',
+        },
+      };
+
+      jwt.sign(
+        payload,
+        process.env.JWT_SECRET,
+        { expiresIn: '1h' }, // Token expira en 1 hora
+        (err, token) => {
+          if (err) {
+            console.error('Error signing JWT for student:', err);
+            return res.status(500).json({ message: 'Error al generar el token.' });
+          }
+          res.json({ token });
+        }
+      );
+    } else {
+      return res.status(401).json({ message: 'Credenciales inválidas.' }); // Contraseña incorrecta
+    }
+  } catch (err) {
+    console.error('Error en login de estudiante:', err);
+    res.status(500).json({ message: 'Error interno del servidor.' });
+  }
+});
+
 module.exports = router;
