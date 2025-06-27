@@ -1,6 +1,6 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react'; // useEffect añadido
 import axios from 'axios';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom'; // useNavigate no se usa, se puede quitar si no hay redirección
 
 const PublicRegistrationPage = () => {
   const initialFormData = {
