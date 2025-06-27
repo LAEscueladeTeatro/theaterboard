@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import { API_BASE_URL as TEACHER_API_URL_BASE } from '../../config'; // Usar alias para claridad si es necesario
+import { API_BASE_URL as TEACHER_API_URL_BASE } from "../config"; // Corregir ruta de importación
 
 // Basic styling (can be moved to App.css or a dedicated CSS file)
 const styles = {

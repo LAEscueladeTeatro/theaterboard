@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
-import { API_BASE_URL } from '../../config'; // Importar URL base
+import { API_BASE_URL } from "../config"; // Corregir ruta de importación
 
 const PublicRegistrationPage = () => {
   const initialFormData = {
