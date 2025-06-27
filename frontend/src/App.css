@@ -42,15 +42,21 @@
 .btn-action a:visited,
 .btn-action a:hover,
 .btn-action a:active {
-  color: var(--text-color-light); /* !important removido */
-  text-decoration: none !important; /* Mantener !important para text-decoration */
+  color: var(--text-color-light) !important; /* Ensure light text */
+  text-decoration: none !important;
 }
 
 
 .btn-action:hover {
   transform: translateY(-2px); /* Efecto hover sutil */
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  color: var(--text-color-light) !important; /* Ensure text remains light on main button hover */
 }
+/* Ensure inner <a> tag also keeps light text if .btn-action is a Link and has its own hover state */
+.btn-action:hover a {
+  color: var(--text-color-light) !important;
+}
+
 
 .btn-action:active {
   transform: translateY(0px);
@@ -108,12 +114,38 @@ header nav {
 
 header nav a {
   color: var(--text-color-main);
-  margin: 0 0.75rem;
-  font-weight: 400;
-  font-size: 0.95rem;
+  margin: 0 0.5rem; /* Adjusted margin slightly */
+  font-weight: 500; /* Slightly bolder */
+  font-size: 0.9rem; /* Adjusted size */
+  padding: 0.4em 0.8em; /* Make them more button-like */
+  border-radius: var(--border-radius-small);
+  transition: background-color 0.2s ease, color 0.2s ease;
+  text-decoration: none;
 }
+
+/* Default hover for header nav links - general subtle highlight */
 header nav a:hover {
-  color: var(--primary-color-teacher);
+  color: var(--text-color-light) !important;
+  background-color: rgba(255, 255, 255, 0.05); /* Very subtle background highlight for unspecified links */
+}
+
+/* Specific hovers for other nav links */
+header nav a[href="/"]:hover { /* Home */
+  color: var(--text-color-light) !important;
+  /* Using a slightly different, neutral hover for Home, or could be a specific color */
+  background-color: color-mix(in srgb, var(--primary-color-student) 30%, transparent 70%);
+}
+header nav a[href="/docente/login"]:hover {
+  background-color: var(--primary-color-teacher);
+  color: var(--text-color-light) !important;
+}
+header nav a[href="/estudiante/login"]:hover {
+  background-color: var(--primary-color-student);
+  color: var(--text-color-light) !important;
+}
+header nav a[href="/registro"]:hover {
+  background-color: var(--primary-color-register);
+  color: var(--text-color-light) !important;
 }
 
 main {

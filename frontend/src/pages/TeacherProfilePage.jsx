@@ -69,8 +69,8 @@ const styles = {
     height: '128px',
     borderRadius: '50%',
     objectFit: 'cover',
-    border: '3px solid #ccc',
-    backgroundColor: '#e0e0e0'
+    border: '3px solid var(--primary-color-teacher, #9D4EDD)', // Teacher theme color for border
+    backgroundColor: '#e0e0e0' // Fallback bg for image loading
   }
 };
 

@@ -115,7 +115,7 @@ const TeacherDashboardPage = () => {
             src={teacherProfile.photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(teacherProfile.full_name || 'Docente')}&background=2A2A3E&color=E0E0E0&size=100&font-size=0.4&bold=true`}
             alt={`${teacherProfile.nickname || teacherProfile.full_name}`}
             className="profile-photo"
-            style={{ width: '100px', height: '100px', borderRadius: '50%' }}
+            style={{ width: '100px', height: '100px', borderRadius: '50%', border: '3px solid var(--primary-color-teacher)' }}
           />
           <div className="profile-info">
             <h2 style={{marginTop: 0, marginBottom: '0.25rem'}}>¡Hola, {teacherProfile.nickname || teacherProfile.full_name}!</h2>
