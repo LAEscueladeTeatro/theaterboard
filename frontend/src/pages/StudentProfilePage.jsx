@@ -8,39 +8,44 @@ const styles = {
     maxWidth: '800px', // Slightly wider for potentially more fields
     margin: '2rem auto',
     padding: '2rem',
-    border: '1px solid #ddd',
+    // backgroundColor: '#f9f9f9', // Removed to allow dark background inheritance/setting
+    border: '1px solid var(--border-color-subtle, #4A4A60)', // Use theme border color
     borderRadius: '8px',
-    backgroundColor: '#f9f9f9',
   },
   formSection: {
     marginBottom: '2rem',
     padding: '1.5rem',
-    border: '1px solid #eee',
+    border: '1px solid var(--border-color-subtle, #4A4A60)', // Use theme border color
     borderRadius: '8px',
-    backgroundColor: '#fff',
+    backgroundColor: 'var(--container-background, rgba(30, 30, 50, 0.75))', // Dark container background
   },
   formGroup: {
     marginBottom: '1rem',
   },
-  label: { // Will be styled by .profile-form-label in App.css
+  label: {
     display: 'block',
     marginBottom: '0.5rem',
     fontWeight: 'bold',
+    color: 'var(--text-color-main, #E0E0E0)', // Light text for labels
   },
-  input: { // Will be styled by .profile-form-input in App.css
+  input: {
     width: '100%',
     padding: '0.75rem',
-    border: '1px solid #ccc',
+    border: '1px solid var(--border-color-subtle, #4A4A60)', // Theme border
     borderRadius: '4px',
     boxSizing: 'border-box',
+    backgroundColor: 'var(--input-background, #2A2A3E)', // Dark input background
+    color: 'var(--text-color-main, #E0E0E0)', // Light text for inputs
   },
-  textarea: { // Will be styled by .profile-form-input in App.css (shared class)
+  textarea: {
     width: '100%',
     padding: '0.75rem',
-    border: '1px solid #ccc',
+    border: '1px solid var(--border-color-subtle, #4A4A60)', // Theme border
     borderRadius: '4px',
     boxSizing: 'border-box',
     minHeight: '80px',
+    backgroundColor: 'var(--input-background, #2A2A3E)', // Dark input background
+    color: 'var(--text-color-main, #E0E0E0)', // Light text for inputs
   },
   button: {
     padding: '0.75rem 1.5rem',
@@ -301,69 +306,70 @@ const StudentProfilePage = () => {
         <form onSubmit={handleProfileSubmit}>
           {/* Non-editable fields for display */}
           <div style={styles.formGroup}>
-            <label style={styles.label} className="profile-form-label">Nombre Completo (No editable):</label>
-            <input type="text" value={profile.full_name || ''} style={{...styles.input, backgroundColor: '#f0f0f0'}} readOnly className="profile-form-input" />
+            <label style={styles.label}>Nombre Completo (No editable):</label>
+            {/* Specific style for readonly inputs to make them look slightly different if needed, but still dark-themed */}
+            <input type="text" value={profile.full_name || ''} style={{...styles.input, backgroundColor: 'var(--input-background-readonly, #3a3a5e)'}} readOnly />
           </div>
            <div style={styles.gridContainer}>
             <div style={styles.formGroup}>
-                <label style={styles.label} className="profile-form-label">ID Estudiante (No editable):</label>
-                <input type="text" value={profile.id || ''} style={{...styles.input, backgroundColor: '#f0f0f0'}} readOnly className="profile-form-input" />
+                <label style={styles.label}>ID Estudiante (No editable):</label>
+                <input type="text" value={profile.id || ''} style={{...styles.input, backgroundColor: 'var(--input-background-readonly, #3a3a5e)'}} readOnly />
             </div>
             <div style={styles.formGroup}>
-                <label style={styles.label} className="profile-form-label">Edad (No editable):</label>
-                <input type="text" value={profile.age || ''} style={{...styles.input, backgroundColor: '#f0f0f0'}} readOnly className="profile-form-input" />
+                <label style={styles.label}>Edad (No editable):</label>
+                <input type="text" value={profile.age || ''} style={{...styles.input, backgroundColor: 'var(--input-background-readonly, #3a3a5e)'}} readOnly />
             </div>
           </div>
 
 
           <div style={styles.formGroup}>
-            <label htmlFor="nickname" style={styles.label} className="profile-form-label">Sobrenombre (Nickname):</label>
-            <input type="text" id="nickname" name="nickname" value={profile.nickname || ''} onChange={handleProfileChange} style={styles.input} className="profile-form-input" />
+            <label htmlFor="nickname" style={styles.label}>Sobrenombre (Nickname):</label>
+            <input type="text" id="nickname" name="nickname" value={profile.nickname || ''} onChange={handleProfileChange} style={styles.input} />
           </div>
           <div style={styles.gridContainer}>
             <div style={styles.formGroup}>
-              <label htmlFor="email" style={styles.label} className="profile-form-label">Correo Electrónico:</label>
-              <input type="email" id="email" name="email" value={profile.email || ''} onChange={handleProfileChange} style={styles.input} className="profile-form-input" required />
+              <label htmlFor="email" style={styles.label}>Correo Electrónico:</label>
+              <input type="email" id="email" name="email" value={profile.email || ''} onChange={handleProfileChange} style={styles.input} required />
             </div>
             <div style={styles.formGroup}>
-              <label htmlFor="phone" style={styles.label} className="profile-form-label">Celular:</label>
-              <input type="tel" id="phone" name="phone" value={profile.phone || ''} onChange={handleProfileChange} style={styles.input} className="profile-form-input" pattern="\d{9,15}" title="Debe ser un número de 9 a 15 dígitos."/>
+              <label htmlFor="phone" style={styles.label}>Celular:</label>
+              <input type="tel" id="phone" name="phone" value={profile.phone || ''} onChange={handleProfileChange} style={styles.input} pattern="\d{9,15}" title="Debe ser un número de 9 a 15 dígitos."/>
             </div>
           </div>
 
           <h4 style={{marginTop: '2rem', marginBottom: '1rem'}}>Datos del Apoderado</h4>
           <div style={styles.gridContainer}>
             <div style={styles.formGroup}>
-              <label htmlFor="guardian_full_name" style={styles.label} className="profile-form-label">Nombre Completo del Apoderado:</label>
-              <input type="text" id="guardian_full_name" name="guardian_full_name" value={profile.guardian_full_name || ''} onChange={handleProfileChange} style={styles.input} className="profile-form-input" />
+              <label htmlFor="guardian_full_name" style={styles.label}>Nombre Completo del Apoderado:</label>
+              <input type="text" id="guardian_full_name" name="guardian_full_name" value={profile.guardian_full_name || ''} onChange={handleProfileChange} style={styles.input} />
             </div>
             <div style={styles.formGroup}>
-              <label htmlFor="guardian_relationship" style={styles.label} className="profile-form-label">Relación/Parentesco:</label>
-              <input type="text" id="guardian_relationship" name="guardian_relationship" value={profile.guardian_relationship || ''} onChange={handleProfileChange} style={styles.input} className="profile-form-input" />
+              <label htmlFor="guardian_relationship" style={styles.label}>Relación/Parentesco:</label>
+              <input type="text" id="guardian_relationship" name="guardian_relationship" value={profile.guardian_relationship || ''} onChange={handleProfileChange} style={styles.input} />
             </div>
             <div style={styles.formGroup}>
-              <label htmlFor="guardian_phone" style={styles.label} className="profile-form-label">Teléfono del Apoderado:</label>
-              <input type="tel" id="guardian_phone" name="guardian_phone" value={profile.guardian_phone || ''} onChange={handleProfileChange} style={styles.input} className="profile-form-input" pattern="\d{9,15}" title="Debe ser un número de 9 a 15 dígitos."/>
+              <label htmlFor="guardian_phone" style={styles.label}>Teléfono del Apoderado:</label>
+              <input type="tel" id="guardian_phone" name="guardian_phone" value={profile.guardian_phone || ''} onChange={handleProfileChange} style={styles.input} pattern="\d{9,15}" title="Debe ser un número de 9 a 15 dígitos."/>
             </div>
             <div style={styles.formGroup}>
-              <label htmlFor="guardian_email" style={styles.label} className="profile-form-label">Email del Apoderado:</label>
-              <input type="email" id="guardian_email" name="guardian_email" value={profile.guardian_email || ''} onChange={handleProfileChange} style={styles.input} className="profile-form-input" />
+              <label htmlFor="guardian_email" style={styles.label}>Email del Apoderado:</label>
+              <input type="email" id="guardian_email" name="guardian_email" value={profile.guardian_email || ''} onChange={handleProfileChange} style={styles.input} />
             </div>
           </div>
 
           <h4 style={{marginTop: '2rem', marginBottom: '1rem'}}>Datos Médicos y de Emergencia</h4>
           <div style={styles.formGroup}>
-            <label htmlFor="medical_conditions" style={styles.label} className="profile-form-label">Condiciones Médicas Relevantes:</label>
-            <textarea id="medical_conditions" name="medical_conditions" value={profile.medical_conditions || ''} onChange={handleProfileChange} style={styles.textarea} className="profile-form-input"></textarea>
+            <label htmlFor="medical_conditions" style={styles.label}>Condiciones Médicas Relevantes:</label>
+            <textarea id="medical_conditions" name="medical_conditions" value={profile.medical_conditions || ''} onChange={handleProfileChange} style={styles.textarea}></textarea>
           </div>
           <div style={styles.gridContainer}>
             <div style={styles.formGroup}>
-              <label htmlFor="emergency_contact_name" style={styles.label} className="profile-form-label">Nombre Contacto de Emergencia:</label>
-              <input type="text" id="emergency_contact_name" name="emergency_contact_name" value={profile.emergency_contact_name || ''} onChange={handleProfileChange} style={styles.input} className="profile-form-input" />
+              <label htmlFor="emergency_contact_name" style={styles.label}>Nombre Contacto de Emergencia:</label>
+              <input type="text" id="emergency_contact_name" name="emergency_contact_name" value={profile.emergency_contact_name || ''} onChange={handleProfileChange} style={styles.input} />
             </div>
             <div style={styles.formGroup}>
-              <label htmlFor="emergency_contact_phone" style={styles.label} className="profile-form-label">Teléfono Contacto de Emergencia:</label>
-              <input type="tel" id="emergency_contact_phone" name="emergency_contact_phone" value={profile.emergency_contact_phone || ''} onChange={handleProfileChange} style={styles.input} className="profile-form-input" pattern="\d{9,15}" title="Debe ser un número de 9 a 15 dígitos."/>
+              <label htmlFor="emergency_contact_phone" style={styles.label}>Teléfono Contacto de Emergencia:</label>
+              <input type="tel" id="emergency_contact_phone" name="emergency_contact_phone" value={profile.emergency_contact_phone || ''} onChange={handleProfileChange} style={styles.input} pattern="\d{9,15}" title="Debe ser un número de 9 a 15 dígitos."/>
             </div>
           </div>
 
@@ -380,16 +386,16 @@ const StudentProfilePage = () => {
         {passwordSuccess && <p style={styles.successMessage}>{passwordSuccess}</p>}
         <form onSubmit={handlePasswordSubmit}>
            <div style={styles.formGroup}>
-            <label htmlFor="current_password_student" style={styles.label} className="profile-form-label">Contraseña Actual:</label>
-            <input type="password" id="current_password_student" name="current_password" value={passwordData.current_password} onChange={handlePasswordChange} style={styles.input} className="profile-form-input" required />
+            <label htmlFor="current_password_student" style={styles.label}>Contraseña Actual:</label>
+            <input type="password" id="current_password_student" name="current_password" value={passwordData.current_password} onChange={handlePasswordChange} style={styles.input} required />
           </div>
           <div style={styles.formGroup}>
-            <label htmlFor="new_password_student" style={styles.label} className="profile-form-label">Nueva Contraseña:</label>
-            <input type="password" id="new_password_student" name="new_password" value={passwordData.new_password} onChange={handlePasswordChange} style={styles.input} className="profile-form-input" required minLength="6"/>
+            <label htmlFor="new_password_student" style={styles.label}>Nueva Contraseña:</label>
+            <input type="password" id="new_password_student" name="new_password" value={passwordData.new_password} onChange={handlePasswordChange} style={styles.input} required minLength="6"/>
           </div>
           <div style={styles.formGroup}>
-            <label htmlFor="confirm_new_password_student" style={styles.label} className="profile-form-label">Confirmar Nueva Contraseña:</label>
-            <input type="password" id="confirm_new_password_student" name="confirm_new_password" value={passwordData.confirm_new_password} onChange={handlePasswordChange} style={styles.input} className="profile-form-input" required minLength="6"/>
+            <label htmlFor="confirm_new_password_student" style={styles.label}>Confirmar Nueva Contraseña:</label>
+            <input type="password" id="confirm_new_password_student" name="confirm_new_password" value={passwordData.confirm_new_password} onChange={handlePasswordChange} style={styles.input} required minLength="6"/>
           </div>
           <button type="submit" style={{...styles.button, ...(loadingPassword && styles.buttonDisabled)}} disabled={loadingPassword}>
             {loadingPassword ? 'Cambiando...' : 'Cambiar Contraseña'}

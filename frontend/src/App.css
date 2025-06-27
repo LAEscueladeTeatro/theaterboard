@@ -1167,26 +1167,25 @@ input:checked + .toggle-slider:before {
   margin-bottom: 0.6rem; /* Si el texto está debajo */
 }
 
-/* Styles for Profile Edit Forms */
-/* These styles aim to override global styles for inputs/labels within profile forms,
-   which are on a white background section (.formSection in component's inline style) */
+/* Profile form classes removed as styles are now inline in components for dark mode */
+/*
 .profile-form-label {
-  color: var(--text-color-dark, #333333) !important; /* Dark text for labels */
-  font-weight: 500; /* Ensuring consistent weight */
+  color: var(--text-color-dark, #333333) !important;
+  font-weight: 500;
 }
 
 .profile-form-input,
-.profile-form-input:focus { /* Apply to focus state as well */
-  background-color: var(--input-bg-light, #ffffff) !important; /* White background for inputs */
-  color: var(--text-color-dark, #333333) !important; /* Dark text for inputs */
-  border: 1px solid var(--border-color-subtle, #ccc) !important; /* Standard border */
+.profile-form-input:focus {
+  background-color: var(--input-bg-light, #ffffff) !important;
+  color: var(--text-color-dark, #333333) !important;
+  border: 1px solid var(--border-color-subtle, #ccc) !important;
 }
 
-/* Ensure read-only inputs in profile also have good contrast if they use profile-form-input */
 .profile-form-input[readOnly] {
-  background-color: var(--input-bg-readonly, #f0f0f0) !important; /* Slightly different bg for readonly */
-  color: var(--text-color-dark, #555555) !important; /* Darker gray for readonly text */
+  background-color: var(--input-bg-readonly, #f0f0f0) !important;
+  color: var(--text-color-dark, #555555) !important;
   cursor: not-allowed;
 }
+*/
 
 [end of frontend/src/App.css]
