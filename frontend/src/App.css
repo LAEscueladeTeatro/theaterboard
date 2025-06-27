@@ -742,7 +742,7 @@ footer {
 
 .page-header-controls {
   display: flex;
-  justify-content: space-between; /* Ajustado para alinear elementos a los extremos */
+  justify-content: space-between;
   align-items: center;
   margin-bottom: 1.5rem;
 }
@@ -917,3 +917,59 @@ footer {
 .form-group.full-width-grid { /* Para elementos que ocupen todo el ancho del grid */
   grid-column: 1 / -1;
 }
+
+/* Estilos para Resumen de Puntos */
+.summary-results-container {
+  margin-top: 2rem;
+  background-color: var(--container-background);
+  padding: 2rem;
+  border-radius: var(--border-radius-medium);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+}
+
+.summary-results-container .section-title { /* Para h4 dentro de los resultados */
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  font-size: 1.4rem;
+  color: var(--primary-color-teacher); /* Resaltar con color primario */
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-color-subtle);
+}
+
+.summary-detail-card p { /* Párrafos dentro del resumen mensual de estudiante */
+  margin-bottom: 0.6rem;
+  font-size: 1rem;
+  color: var(--text-color-main);
+}
+.summary-detail-card p strong {
+  color: var(--text-color-light);
+  font-weight: 600;
+}
+.summary-detail-card ul {
+  list-style-type: none;
+  padding-left: 0;
+  margin-bottom: 1rem;
+}
+.summary-detail-card li {
+  padding: 0.4rem 0; /* Aumentar padding vertical */
+  color: var(--text-color-main);
+  border-bottom: 1px dashed var(--border-color-subtle);
+  display: flex; /* Para alinear tipo y puntos */
+  justify-content: space-between; /* Espaciar tipo y puntos */
+}
+.summary-detail-card li:last-child {
+  border-bottom: none;
+}
+.summary-detail-card .grand-total {
+  font-size: 1.3rem; /* Más grande */
+  font-weight: 700;
+  color: var(--primary-color-register); /* Usar el color Teal para el total */
+  margin-top: 1.5rem;
+  padding: 1rem; /* Padding alrededor del total */
+  border-top: 2px solid var(--primary-color-teacher); /* Línea más gruesa */
+  background-color: rgba(0,0,0,0.1); /* Fondo sutil para el total */
+  border-radius: var(--border-radius-small);
+  text-align: center;
+}
+
+[end of frontend/src/App.css]
