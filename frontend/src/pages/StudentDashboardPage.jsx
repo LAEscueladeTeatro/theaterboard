@@ -166,7 +166,7 @@ const StudentDashboardPage = () => {
             textTransform: 'uppercase',
             letterSpacing: '1px'
           }}>
-            Tu Frase del Día
+            Y RECUERDA:
           </h5>
           <p style={{
             fontSize: '1.15rem',
