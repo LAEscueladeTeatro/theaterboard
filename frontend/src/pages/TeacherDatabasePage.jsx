@@ -18,12 +18,26 @@ const TeacherDatabasePage = () => {
   const [currentStudentToEdit, setCurrentStudentToEdit] = useState(null);
   const [editFormData, setEditFormData] = useState({});
 
-  const API_URL = 'http://localhost:3001/api/admin/students';
+  // Corrección: La importación dinámica no es ideal dentro del cuerpo del componente para una constante.
+  // Se asume que config.js exporta API_BASE_URL directamente.
+  // Si config.js es CJS (module.exports), necesitaría un manejo diferente o ser convertido a ESM.
+  // Por ahora, vamos a importar estáticamente.
+  // No es necesario importar API_BASE_URL aquí si config.js ya lo exporta y es usado por otros módulos que sí lo necesitan.
+  // El TeacherDatabasePage usará la constante API_URL_BASE_FOR_STUDENTS que se define abajo.
+  // import { API_BASE_URL } from '../../config'; // Comentado o eliminado si no se usa directamente aquí.
+
+  // Definimos API_URL_BASE_FOR_STUDENTS usando la variable global VITE_API_BASE_URL o un fallback.
+  // Esto asume que config.js no es necesario para este componente específico si solo define VITE_API_BASE_URL.
+  // Si config.js hiciera más cosas, la importación sería necesaria.
+  // Para mantenerlo simple y consistente con el uso previo de config.js:
+  import { API_BASE_URL } from '../../config';
+  const API_URL_BASE_FOR_STUDENTS = `${API_BASE_URL}/admin/students`;
+
   const getToken = useCallback(() => localStorage.getItem('teacherToken'), []);
 
   const fetchStudents = useCallback(async () => {
     setLoading(true); setError('');
-    let url = API_URL;
+    let url = API_URL_BASE_FOR_STUDENTS; // Usar la variable renombrada
     if (filter === 'active') url += '?active=true';
     else if (filter === 'inactive') url += '?active=false';
     try {
@@ -32,7 +46,7 @@ const TeacherDatabasePage = () => {
       setStudents(response.data);
     } catch (err) { console.error("Error fetching students for database view:", err); setError(err.response?.data?.message || 'Error al cargar estudiantes.'); }
     finally { setLoading(false); }
-  }, [getToken, API_URL, filter]);
+  }, [getToken, API_URL_BASE_FOR_STUDENTS, filter]); // Añadir API_URL_BASE_FOR_STUDENTS a las dependencias
 
   useEffect(() => { fetchStudents(); }, [fetchStudents]);
 
@@ -68,7 +82,8 @@ const TeacherDatabasePage = () => {
 
     try {
       const token = getToken();
-      await axios.put(`${API_URL}/${currentStudentToEdit.id}/edit-full`, payload, { headers: { 'x-auth-token': token } });
+      // Usar API_URL_BASE_FOR_STUDENTS para la URL de la solicitud PUT
+      await axios.put(`${API_URL_BASE_FOR_STUDENTS}/${currentStudentToEdit.id}/edit-full`, payload, { headers: { 'x-auth-token': token } });
       fetchStudents();
       handleCloseEditFullModal();
       alert("Datos del estudiante actualizados con éxito.");
