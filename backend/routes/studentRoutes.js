@@ -383,4 +383,85 @@ router.put('/password', async (req, res) => {
   }
 });
 
+// @route   GET /api/student/me/daily-quote
+// @desc    Get or assign a daily inspirational quote for the authenticated student
+// @access  Private (Student)
+router.get('/me/daily-quote', async (req, res) => {
+  if (!req.user || req.user.role !== 'student') {
+    return res.status(403).json({ message: 'Acceso denegado.' });
+  }
+  const studentId = req.user.id;
+  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+
+  const client = await pool.connect();
+  try {
+    // 1. Check student status and get name
+    const studentResult = await client.query(
+      'SELECT nickname, full_name, is_active FROM students WHERE id = $1',
+      [studentId]
+    );
+
+    if (studentResult.rows.length === 0) {
+      client.release();
+      return res.status(404).json({ message: 'Estudiante no encontrado.' });
+    }
+
+    const student = studentResult.rows[0];
+    if (!student.is_active) {
+      client.release();
+      return res.status(200).json({ quote: null, message: 'Estudiante inactivo, no se asignan frases.' });
+    }
+
+    const studentName = student.nickname || student.full_name.split(' ')[0]; // Use nickname or first name
+
+    // 2. Check if a quote is already assigned for today
+    const assignedQuoteResult = await client.query(
+      `SELECT q.template
+       FROM daily_student_quotes dsq
+       JOIN quotes q ON dsq.quote_id = q.id
+       WHERE dsq.student_id = $1 AND dsq.assigned_date = $2`,
+      [studentId, today]
+    );
+
+    if (assignedQuoteResult.rows.length > 0) {
+      // Quote already assigned for today
+      const personalizedQuote = assignedQuoteResult.rows[0].template.replace('{name}', studentName);
+      client.release();
+      return res.json({ quote: personalizedQuote });
+    } else {
+      // No quote assigned for today, assign a new one
+      // a. Select a random quote
+      // Note: For very large quotes table, ORDER BY RANDOM() can be inefficient.
+      // Consider other strategies like fetching all IDs and picking one in JS, or specific DB functions.
+      // For a small number of quotes, this is fine.
+      const randomQuoteResult = await client.query(
+        'SELECT id, template FROM quotes ORDER BY RANDOM() LIMIT 1'
+      );
+
+      if (randomQuoteResult.rows.length === 0) {
+        client.release();
+        return res.status(404).json({ message: 'No hay frases inspiradoras disponibles en este momento.' });
+      }
+
+      const chosenQuote = randomQuoteResult.rows[0];
+
+      // b. Create a new record in daily_student_quotes
+      await client.query(
+        'INSERT INTO daily_student_quotes (student_id, quote_id, assigned_date) VALUES ($1, $2, $3)',
+        [studentId, chosenQuote.id, today]
+      );
+
+      // c. Personalize and return
+      const personalizedQuote = chosenQuote.template.replace('{name}', studentName);
+      client.release();
+      return res.json({ quote: personalizedQuote });
+    }
+  } catch (err) {
+    if (client) client.release(); // Ensure client is released on error
+    console.error('Error en GET /api/student/me/daily-quote:', err);
+    res.status(500).json({ message: 'Error interno del servidor al obtener la frase del día.' });
+  }
+});
+
+
 module.exports = router;

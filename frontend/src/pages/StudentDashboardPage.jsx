@@ -17,29 +17,36 @@ const StudentDashboardPage = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [dailyQuote, setDailyQuote] = useState('');
+  const [quoteError, setQuoteError] = useState('');
   const navigate = useNavigate();
   const API_URL = 'http://localhost:3001/api';
 
   const getToken = useCallback(() => localStorage.getItem('studentToken'), []);
 
   useEffect(() => {
+    const token = getToken();
+    if (!token) {
+      setError("No autenticado. Redirigiendo a login...");
+      setTimeout(() => navigate('/estudiante/login'), 2000);
+      setLoading(false);
+      return;
+    }
+
     const fetchDashboardData = async () => {
       setLoading(true);
       setError('');
-      const token = getToken();
-
-      if (!token) {
-        setError("No autenticado. Redirigiendo a login...");
-        setTimeout(() => navigate('/estudiante/login'), 2000);
-        setLoading(false);
-        return;
-      }
-
       try {
         const response = await axios.get(`${API_URL}/student/dashboard-data`, {
           headers: { 'x-auth-token': token },
         });
         setDashboardData(response.data);
+
+        // Fetch daily quote only if student is active (studentInfo is part of dashboardData)
+        if (response.data && response.data.studentInfo && response.data.studentInfo.is_active !== false) { // Check explicitly for false if is_active can be undefined initially
+          fetchDailyQuote(token);
+        }
+
       } catch (err) {
         console.error("Error fetching student dashboard data:", err);
         if (err.response && (err.response.status === 401 || err.response.status === 403)) {
@@ -53,8 +60,24 @@ const StudentDashboardPage = () => {
         setLoading(false);
       }
     };
+
+    const fetchDailyQuote = async (token) => {
+      setQuoteError('');
+      try {
+        const quoteResponse = await axios.get(`${API_URL}/student/me/daily-quote`, {
+          headers: { 'x-auth-token': token },
+        });
+        if (quoteResponse.data && quoteResponse.data.quote) {
+          setDailyQuote(quoteResponse.data.quote);
+        }
+      } catch (err) {
+        console.error("Error fetching daily quote:", err);
+        setQuoteError(err.response?.data?.message || 'No se pudo cargar la frase del día.');
+      }
+    };
+
     fetchDashboardData();
-  }, [getToken, navigate, API_URL]);
+  }, [getToken, navigate, API_URL]); // API_URL might not be needed if it's constant
 
   const handleLogout = () => {
     localStorage.removeItem('studentToken');
@@ -121,6 +144,39 @@ const StudentDashboardPage = () => {
               <p style={{margin: 0}}><strong>Ranking ({currentMonth}):</strong> {rankingInfo.positionText}</p>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Daily Inspirational Quote Section */}
+      {quoteError && <p className="error-message-page" style={{textAlign: 'center', marginTop: '1rem'}}>{quoteError}</p>}
+      {dailyQuote && !quoteError && (
+        <div style={{
+          backgroundColor: 'var(--container-background-lighter, rgba(50, 50, 70, 0.85))', // Darker than main container bg
+          padding: '1.5rem',
+          borderRadius: 'var(--border-radius-medium, 12px)',
+          marginBottom: '2rem',
+          textAlign: 'center',
+          borderLeft: `5px solid var(--primary-color-student, #3498DB)`,
+          boxShadow: '0 4px 15px rgba(0,0,0,0.2)'
+        }}>
+          <h5 style={{
+            fontSize: '0.9rem',
+            color: 'var(--text-color-placeholder, #a0a0a0)',
+            marginBottom: '0.75rem',
+            textTransform: 'uppercase',
+            letterSpacing: '1px'
+          }}>
+            Tu Frase del Día
+          </h5>
+          <p style={{
+            fontSize: '1.15rem',
+            color: 'var(--text-color-light, #FFFFFF)',
+            fontStyle: 'italic',
+            margin: 0,
+            lineHeight: '1.6'
+          }}>
+            "{dailyQuote}"
+          </p>
         </div>
       )}
 
