@@ -11,6 +11,7 @@ const studentRoutes = require('./routes/studentRoutes');
 const studentAdminRoutes = require('./routes/studentAdminRoutes');
 const publicRoutes = require('./routes/publicRoutes'); // Nuevas rutas públicas
 const adminSettingsRoutes = require('./routes/adminSettingsRoutes'); // <-- Importar nuevas rutas
+const teacherRoutes = require('./routes/teacherRoutes'); // <-- Importar rutas de docente
 
 // Importar Middleware (si es necesario globalmente o para rutas específicas aquí)
 const authMiddleware = require('./middleware/authMiddleware');
@@ -24,6 +25,7 @@ app.use(express.json()); // Para parsear JSON en las requests
 
 // Definición de Rutas
 app.use('/api/auth', authRoutes);
+app.use('/api/teachers', teacherRoutes); // Rutas para el perfil del docente (ya usan authMiddleware internamente)
 app.use('/api/attendance', authMiddleware, attendanceRoutes);
 app.use('/api/scores', authMiddleware, scoreRoutes);
 app.use('/api/reports', authMiddleware, reportRoutes);
@@ -36,14 +38,7 @@ app.use('/api/public', publicRoutes); // Rutas públicas (ej: /api/public/regist
 // y es más completa (permite filtrar por is_active).
 // El frontend deberá actualizarse para usar /api/admin/students?active=true para la lista principal.
 
-// Ejemplo de ruta protegida
-app.get('/api/teacher/profile', authMiddleware, (req, res) => {
-  // req.user es accesible aquí gracias al authMiddleware
-  res.json({
-    message: 'Este es un perfil de docente protegido.',
-    user: req.user
-  });
-});
+// El ejemplo de ruta protegida /api/teacher/profile se elimina ya que está cubierto por teacherRoutes.js
 
 
 // Iniciar servidor

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../config/db');
+const bcrypt = require('bcryptjs'); // Importar bcryptjs
 
 const REGISTRATION_SETTING_KEY = 'public_registration_enabled';
 
@@ -107,15 +108,19 @@ router.post('/register', async (req, res) => {
     const newId = `ET${nextNumericId.toString().padStart(3, '0')}`;
     const defaultPassword = `${newId}pass`; // Contraseña por defecto
 
+    // Hashear la contraseña por defecto
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(defaultPassword, salt);
+
     const newStudentResult = await client.query(
       `INSERT INTO students (
-         id, full_name, nickname, password, is_active, age, birth_date, phone, email,
+         id, full_name, nickname, password_hash, is_active, age, birth_date, phone, email,
          guardian_full_name, guardian_relationship, guardian_phone, guardian_email,
-         medical_conditions, comments, emergency_contact_name, emergency_contact_phone
-       ) VALUES ($1, $2, $3, $4, true, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
-       RETURNING id, full_name, email`,
+         medical_conditions, comments, emergency_contact_name, emergency_contact_phone, photo_url
+       ) VALUES ($1, $2, $3, $4, true, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NULL)
+       RETURNING id, full_name, email`, // Se inserta NULL para photo_url inicialmente
       [
-        newId, full_name, nickname, defaultPassword, studentAge, birth_date, phone, email,
+        newId, full_name, nickname, hashedPassword, studentAge, birth_date, phone, email, // Usar hashedPassword
         guardian_full_name || null, guardian_relationship || null, guardian_phone || null, guardian_email || null,
         medical_conditions || null, comments || null, emergency_contact_name || null, emergency_contact_phone || null
       ]

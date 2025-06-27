@@ -1,13 +1,9 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
-const pool = require('../config/db'); // <--- AÑADIR ESTA LÍNEA
-// const bcrypt = require('bcryptjs'); // Para uso futuro con contraseñas hasheadas
+const pool = require('../config/db');
+const bcrypt = require('bcryptjs'); // Asegurarse que bcryptjs está importado
 
 const router = express.Router();
-
-// Credenciales fijas del docente
-const TEACHER_EMAIL = 'luisacunach@teacherboard.com';
-const TEACHER_PASSWORD = '3ddv6e5N'; // En un caso real, esto debería ser un hash
 
 // Endpoint de login para docentes
 router.post('/login/teacher', async (req, res) => {
@@ -17,31 +13,47 @@ router.post('/login/teacher', async (req, res) => {
     return res.status(400).json({ message: 'Email y contraseña son requeridos.' });
   }
 
-  // Verificar credenciales (comparación directa por ahora)
-  if (email === TEACHER_EMAIL && password === TEACHER_PASSWORD) {
-    // Generar JWT
-    const payload = {
-      user: {
-        id: 'teacher001', // Un ID de ejemplo para el docente
-        email: TEACHER_EMAIL,
-        role: 'teacher',
-      },
-    };
+  try {
+    const result = await pool.query('SELECT * FROM teachers WHERE email = $1', [email]);
 
-    jwt.sign(
-      payload,
-      process.env.JWT_SECRET,
-      { expiresIn: '1h' }, // Token expira en 1 hora
-      (err, token) => {
-        if (err) {
-            console.error('Error signing JWT:', err);
+    if (result.rows.length === 0) {
+      return res.status(401).json({ message: 'Credenciales inválidas.' }); // Usuario no encontrado
+    }
+
+    const teacher = result.rows[0];
+
+    // Verificar contraseña hasheada
+    // Nota: La contraseña en init.sql ('$2a$10$exampleHashValueForTheTeacher123') es un placeholder.
+    // Para que este login funcione, se debe usar el hash real de '3ddv6e5N'.
+    const isMatch = await bcrypt.compare(password, teacher.password_hash);
+
+    if (isMatch) {
+      const payload = {
+        user: {
+          id: teacher.id, // Usar el ID de la base de datos
+          email: teacher.email,
+          role: 'teacher',
+        },
+      };
+
+      jwt.sign(
+        payload,
+        process.env.JWT_SECRET,
+        { expiresIn: '1h' }, // Token expira en 1 hora
+        (err, token) => {
+          if (err) {
+            console.error('Error signing JWT for teacher:', err);
             return res.status(500).json({ message: 'Error al generar el token.' });
+          }
+          res.json({ token });
         }
-        res.json({ token });
-      }
-    );
-  } else {
-    res.status(401).json({ message: 'Credenciales inválidas.' });
+      );
+    } else {
+      return res.status(401).json({ message: 'Credenciales inválidas.' }); // Contraseña incorrecta
+    }
+  } catch (err) {
+    console.error('Error en login de docente:', err);
+    res.status(500).json({ message: 'Error interno del servidor.' });
   }
 });
 
@@ -54,16 +66,20 @@ router.post('/login/student', async (req, res) => {
   }
 
   try {
-    const result = await pool.query('SELECT * FROM students WHERE id = $1', [student_id]);
+    // Asegurarse de seleccionar password_hash en lugar de password
+    const result = await pool.query('SELECT id, password_hash FROM students WHERE id = $1 AND is_active = TRUE', [student_id]);
 
     if (result.rows.length === 0) {
-      return res.status(401).json({ message: 'Credenciales inválidas.' }); // Estudiante no encontrado
+      return res.status(401).json({ message: 'Credenciales inválidas o estudiante inactivo.' });
     }
 
     const student = result.rows[0];
 
-    // Comparación directa de contraseña (NO SEGURO PARA PRODUCCIÓN)
-    if (password === student.password) {
+    // Comparar la contraseña proporcionada con el hash almacenado
+    // Los placeholders en init.sql deben ser hashes reales para que esto funcione.
+    const isMatch = await bcrypt.compare(password, student.password_hash);
+
+    if (isMatch) {
       const payload = {
         user: {
           id: student.id,

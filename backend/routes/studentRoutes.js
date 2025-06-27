@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../config/db');
-// El authMiddleware se aplicará globalmente a estas rutas en server.js
+const bcrypt = require('bcryptjs'); // Import bcryptjs for password operations
+// El authMiddleware se aplicará globalmente a estas rutas en server.js (confirm from server.js)
 
 // Umbrales para el Estado de Acceso a Casting (actualizados)
 const CASTING_THRESHOLDS = {
@@ -39,17 +40,15 @@ router.get('/dashboard-data', async (req, res) => {
   const client = await pool.connect();
   try {
     // 1. Información del estudiante
-    const studentInfoQuery = 'SELECT id, full_name, nickname FROM students WHERE id = $1';
-    // En el futuro, añadir photo_url: 'SELECT id, full_name, nickname, photo_url FROM students WHERE id = $1';
+    // Incluir photo_url real en la consulta
+    const studentInfoQuery = 'SELECT id, full_name, nickname, photo_url FROM students WHERE id = $1 AND is_active = TRUE';
     const studentInfoResult = await client.query(studentInfoQuery, [studentId]);
 
     if (studentInfoResult.rows.length === 0) {
-      return res.status(404).json({ message: 'Estudiante no encontrado.' });
+      return res.status(404).json({ message: 'Estudiante no encontrado o inactivo.' });
     }
     const studentInfo = studentInfoResult.rows[0];
-    // Simular photo_url por ahora
-    studentInfo.photo_url = `https://via.placeholder.com/150?text=${studentInfo.nickname || studentInfo.id}`;
-
+    // No más simulación de photo_url, se obtiene de la DB. Si es NULL, el frontend lo manejará.
 
     // 2. Calcular puntaje total del mes actual (similar a la lógica de /monthly-ranking)
     // (Esta lógica podría refactorizarse en una función helper si se usa en múltiples lugares)
@@ -237,5 +236,151 @@ router.get('/my-scores-summary', async (req, res) => {
   }
 });
 
+
+// @route   GET /api/student/profile
+// @desc    Get current student's full profile for editing
+// @access  Private (Student)
+router.get('/profile', async (req, res) => {
+  if (!req.user || req.user.role !== 'student') {
+    return res.status(403).json({ message: 'Acceso denegado.' });
+  }
+  const studentId = req.user.id;
+
+  try {
+    const result = await pool.query(
+      `SELECT id, full_name, nickname, email, phone, photo_url,
+              age, birth_date,
+              guardian_full_name, guardian_relationship, guardian_phone, guardian_email,
+              medical_conditions, comments,
+              emergency_contact_name, emergency_contact_phone
+       FROM students
+       WHERE id = $1 AND is_active = TRUE`,
+      [studentId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Perfil de estudiante no encontrado o inactivo.' });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error fetching student profile:', err);
+    res.status(500).json({ message: 'Error interno del servidor al obtener el perfil.' });
+  }
+});
+
+// @route   PUT /api/student/profile
+// @desc    Update current student's profile
+// @access  Private (Student)
+router.put('/profile', async (req, res) => {
+  if (!req.user || req.user.role !== 'student') {
+    return res.status(403).json({ message: 'Acceso denegado.' });
+  }
+  const studentId = req.user.id;
+  const {
+    nickname, email, phone, // 'phone' is used as 'celular'
+    // Guardian data
+    guardian_full_name, guardian_relationship, guardian_phone, guardian_email,
+    // Medical data
+    medical_conditions,
+    // Emergency contact
+    emergency_contact_name, emergency_contact_phone,
+    // comments // Student might not edit their own general comments field, usually by admin.
+    // full_name, age, birth_date are typically not editable by student directly after registration.
+  } = req.body;
+
+  // Basic validation (example for email and phone)
+  if (email && !/\S+@\S+\.\S+/.test(email)) {
+    return res.status(400).json({ message: 'Por favor, introduce un email válido.' });
+  }
+  if (phone && !/^\d{9,15}$/.test(phone)) {
+     return res.status(400).json({ message: 'El número de celular/teléfono debe tener entre 9 y 15 dígitos.' });
+  }
+
+  try {
+    // Check if email is being changed and if it's already taken by another student
+    const currentUser = await pool.query('SELECT email FROM students WHERE id = $1', [studentId]);
+    if (currentUser.rows.length === 0) {
+        return res.status(404).json({ message: 'Estudiante no encontrado.' });
+    }
+    if (email && email !== currentUser.rows[0].email) {
+      const emailCheck = await pool.query('SELECT id FROM students WHERE email = $1 AND id != $2', [email, studentId]);
+      if (emailCheck.rows.length > 0) {
+        return res.status(400).json({ message: 'El email ya está en uso por otra cuenta.' });
+      }
+    }
+
+    const result = await pool.query(
+      `UPDATE students
+       SET nickname = $1, email = $2, phone = $3,
+           guardian_full_name = $4, guardian_relationship = $5, guardian_phone = $6, guardian_email = $7,
+           medical_conditions = $8,
+           emergency_contact_name = $9, emergency_contact_phone = $10
+       WHERE id = $11 AND is_active = TRUE
+       RETURNING id, full_name, nickname, email, phone, photo_url, age, birth_date, guardian_full_name, guardian_relationship, guardian_phone, guardian_email, medical_conditions, comments, emergency_contact_name, emergency_contact_phone`,
+      [
+        nickname, email, phone,
+        guardian_full_name, guardian_relationship, guardian_phone, guardian_email,
+        medical_conditions,
+        emergency_contact_name, emergency_contact_phone,
+        studentId
+      ]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'No se pudo actualizar el perfil del estudiante (no encontrado o inactivo).' });
+    }
+    res.json({ message: 'Perfil actualizado exitosamente.', student: result.rows[0] });
+  } catch (err) {
+    console.error('Error updating student profile:', err);
+    if (err.code === '23505' && err.constraint === 'students_email_key') {
+        return res.status(400).json({ message: 'El email ya está en uso.' });
+    }
+    res.status(500).json({ message: 'Error interno del servidor al actualizar el perfil.' });
+  }
+});
+
+// @route   PUT /api/student/password
+// @desc    Change current student's password
+// @access  Private (Student)
+router.put('/password', async (req, res) => {
+  if (!req.user || req.user.role !== 'student') {
+    return res.status(403).json({ message: 'Acceso denegado.' });
+  }
+  const studentId = req.user.id;
+  const { current_password, new_password, confirm_new_password } = req.body;
+
+  if (!current_password || !new_password || !confirm_new_password) {
+    return res.status(400).json({ message: 'Todos los campos de contraseña son requeridos.' });
+  }
+  if (new_password !== confirm_new_password) {
+    return res.status(400).json({ message: 'La nueva contraseña y su confirmación no coinciden.' });
+  }
+  if (new_password.length < 6) { // Example minimum length
+    return res.status(400).json({ message: 'La nueva contraseña debe tener al menos 6 caracteres.' });
+  }
+
+  try {
+    const userResult = await pool.query('SELECT password_hash FROM students WHERE id = $1 AND is_active = TRUE', [studentId]);
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Estudiante no encontrado o inactivo.' });
+    }
+
+    const student = userResult.rows[0];
+    const isMatch = await bcrypt.compare(current_password, student.password_hash);
+
+    if (!isMatch) {
+      return res.status(400).json({ message: 'La contraseña actual es incorrecta.' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const newPasswordHash = await bcrypt.hash(new_password, salt);
+
+    await pool.query('UPDATE students SET password_hash = $1 WHERE id = $2', [newPasswordHash, studentId]);
+    res.json({ message: 'Contraseña actualizada exitosamente.' });
+  } catch (err) {
+    console.error('Error changing student password:', err);
+    res.status(500).json({ message: 'Error interno del servidor al cambiar la contraseña.' });
+  }
+});
 
 module.exports = router;

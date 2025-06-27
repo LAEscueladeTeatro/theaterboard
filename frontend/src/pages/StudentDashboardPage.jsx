@@ -5,6 +5,7 @@ import { useNavigate, Link } from 'react-router-dom';
 // Iconos SVG
 const LogoutIcon = () => <svg className="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fillRule="evenodd" d="M3 3.25A2.25 2.25 0 015.25 1h5.5A2.25 2.25 0 0113 3.25V4.5a.75.75 0 01-1.5 0V3.25a.75.75 0 00-.75-.75h-5.5a.75.75 0 00-.75.75v13.5a.75.75 0 00.75.75h5.5a.75.75 0 00.75-.75v-1.25a.75.75 0 011.5 0V16.75a2.25 2.25 0 01-2.25 2.25h-5.5A2.25 2.25 0 013 16.75V3.25zm10.97 9.22a.75.75 0 001.06-1.06l-1.72-1.72h3.44a.75.75 0 000-1.5H12.81l1.72-1.72a.75.75 0 00-1.06-1.06l-3 3a.75.75 0 000 1.06l3 3z" clipRule="evenodd" /></svg>;
 const ScoresIcon = () => <svg className="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><path fillRule="evenodd" d="M4.5 3.75A.75.75 0 015.25 3h13.5a.75.75 0 01.75.75v16.5a.75.75 0 01-.75.75H5.25a.75.75 0 01-.75-.75V3.75zM9 6a.75.75 0 01.75.75v.008c0 .414.336.75.75.75h3a.75.75 0 00.75-.75V6.75A.75.75 0 0115 6h.75a.75.75 0 01.75.75v3.75a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75V6.75A.75.75 0 019 6zm0 6.75a.75.75 0 01.75.75v.008c0 .414.336.75.75.75h3a.75.75 0 00.75-.75V13.5a.75.75 0 01.75-.75H15A.75.75 0 0115.75 12v3.75a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75V13.5a.75.75 0 01.75-.75z" clipRule="evenodd" /></svg>;
+const UserCircleIcon = () => <svg className="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24"><path fillRule="evenodd" d="M18.685 19.097A9.723 9.723 0 0021.75 12c0-5.385-4.365-9.75-9.75-9.75S2.25 6.615 2.25 12a9.723 9.723 0 003.065 7.097A9.716 9.716 0 0012 21.75a9.716 9.716 0 006.685-2.653zm-12.54-1.285A7.486 7.486 0 0112 15a7.486 7.486 0 015.855 2.812A8.224 8.224 0 0112 20.25a8.224 8.224 0 01-5.855-2.438zM15.75 9a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" clipRule="evenodd" /></svg>;
 
 
 const StudentDashboardPage = () => {
@@ -132,6 +133,9 @@ const StudentDashboardPage = () => {
       <div className="dashboard-actions-grid" style={{marginTop: '1.5rem'}}>
         <Link to="/estudiante/mis-puntajes" className="dashboard-action-card">
           <ScoresIcon /> Ver Mis Puntajes Detallados
+        </Link>
+        <Link to="/estudiante/mi-perfil" className="dashboard-action-card">
+          <UserCircleIcon /> Mi Perfil
         </Link>
       </div>
        <div style={{textAlign: 'center', marginTop: '2.5rem'}}>
