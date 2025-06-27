@@ -26,7 +26,7 @@ const styles = {
     display: 'block',
     marginBottom: '0.5rem',
     fontWeight: 'bold',
-    color: 'var(--text-color-main, #333333)', // Explicit label color
+    color: 'var(--text-color-dark, #333333) !important', // Ensure dark text for labels
   },
   input: {
     width: '100%',
@@ -34,8 +34,8 @@ const styles = {
     border: '1px solid #ccc',
     borderRadius: '4px',
     boxSizing: 'border-box',
-    backgroundColor: 'var(--input-bg-color, #ffffff)', // Explicit input background
-    color: 'var(--text-color-input, #333333)', // Explicit input text color
+    backgroundColor: 'var(--input-bg-light, #ffffff) !important', // Ensure light background for inputs
+    color: 'var(--text-color-dark, #333333) !important', // Ensure dark text for inputs
   },
   button: {
     padding: '0.75rem 1.5rem',
