@@ -431,7 +431,9 @@ footer {
 }
 
 
-.controls-section select {
+.controls-section select,
+.controls-section input[type="month"], /* Añadir input[type="month"] aquí */
+.controls-section input[type="date"] {  /* Añadir input[type="date"] aquí */
   padding: 0.7em 1em;
   flex-grow: 1;
   min-width: 200px;
@@ -441,7 +443,9 @@ footer {
   border-radius: var(--border-radius-small);
   font-size: 1rem;
 }
-.controls-section select:focus {
+.controls-section select:focus,
+.controls-section input[type="month"]:focus,
+.controls-section input[type="date"]:focus {
   outline: none;
   border-color: var(--border-color-focus);
   background-color: var(--input-background-focus);
@@ -458,7 +462,9 @@ footer {
     margin-bottom: 0;
     white-space: nowrap;
 }
-.controls-section .control-group select {
+.controls-section .control-group select,
+.controls-section .control-group input[type="month"], /* Asegurar que estos también puedan crecer */
+.controls-section .control-group input[type="date"] {
     flex-grow: 1;
     min-width: 180px;
 }
