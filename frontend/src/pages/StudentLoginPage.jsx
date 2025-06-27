@@ -26,7 +26,7 @@ const StudentLoginPage = () => {
     }
     setIsLoading(true); // Activar spinner
     try {
-      const response = await axios.post(`${API_BASE_URL}/auth/login/student`, { student_id: studentId, password });
+      const response = await axios.post(`${API_BASE_URL}/auth/student`, { student_id: studentId, password });
       if (response.data.token) {
         localStorage.setItem('studentToken', response.data.token);
         navigate('/estudiante/dashboard');
