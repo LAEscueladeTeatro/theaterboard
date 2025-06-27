@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../config/db');
+const bcrypt = require('bcryptjs'); // Importar bcryptjs
 
 // Middleware de autenticación (se asume que se aplica a nivel de app.use('/api/admin/students', authMiddleware, studentAdminRoutes) en server.js)
 
@@ -82,9 +83,12 @@ router.post('/add-quick', async (req, res) => {
     const newId = `ET${nextNumericId.toString().padStart(3, '0')}`;
     const defaultPassword = `${newId}pass`;
 
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(defaultPassword, salt);
+
     const newStudentResult = await client.query(
-      "INSERT INTO students (id, full_name, nickname, password, is_active) VALUES ($1, $2, $3, $4, true) RETURNING id, full_name, nickname, is_active",
-      [newId, full_name, nickname || null, defaultPassword]
+      "INSERT INTO students (id, full_name, nickname, password_hash, is_active) VALUES ($1, $2, $3, $4, true) RETURNING id, full_name, nickname, is_active", // Columna corregida a password_hash
+      [newId, full_name, nickname || null, hashedPassword] // Usar hashedPassword
     );
 
     await client.query('COMMIT');
