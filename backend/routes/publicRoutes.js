@@ -1,6 +1,33 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../config/db'); // Necesario para la lógica de generación de ID y la inserción
+const pool = require('../config/db');
+
+const REGISTRATION_SETTING_KEY = 'public_registration_enabled';
+
+// @route   GET /api/public/settings/registration-status-check
+// @desc    Verificar públicamente si las inscripciones están habilitadas
+// @access  Public
+router.get('/settings/registration-status-check', async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT setting_value FROM system_settings WHERE setting_key = $1',
+      [REGISTRATION_SETTING_KEY]
+    );
+    if (result.rows.length === 0) {
+      // Si no existe la configuración, se asume habilitado por defecto como medida de seguridad para no bloquear.
+      // El script init.sql debería asegurar que este valor exista.
+      return res.json({ enabled: true, message: "Configuración no encontrada, asumiendo habilitado." });
+    }
+    const isEnabled = result.rows[0].setting_value === 'true';
+    res.json({ enabled: isEnabled });
+  } catch (err) {
+    console.error('Error fetching public registration status:', err.message);
+    // En caso de error de BD al consultar, es más seguro asumir que podría estar deshabilitado o que hay un problema.
+    // Devolver un estado que el frontend pueda interpretar como "no se pudo verificar, intente más tarde".
+    res.status(503).json({ enabled: false, message: 'No se pudo verificar el estado del registro en este momento.' });
+  }
+});
+
 
 /**
  * @route   POST /api/public/register
@@ -32,7 +59,20 @@ router.post('/register', async (req, res) => {
     return res.status(400).json({ message: 'Campos obligatorios faltantes: Apellidos y Nombres, Sobrenombre, Edad, Fecha de Nacimiento, Celular, Correo.' });
   }
 
-  // Validación de edad para datos del apoderado
+  const client = await pool.connect(); // Mover la conexión aquí para usarla antes
+  try {
+    // Verificar si el registro público está habilitado
+    const registrationSetting = await client.query(
+      "SELECT setting_value FROM system_settings WHERE setting_key = 'public_registration_enabled'"
+    );
+
+    if (registrationSetting.rows.length === 0 || registrationSetting.rows[0].setting_value !== 'true') {
+      // Si no está definido o no es 'true', se considera deshabilitado
+      client.release(); // Liberar cliente antes de retornar
+      return res.status(403).json({ message: 'Las inscripciones públicas están cerradas temporalmente.' });
+    }
+
+    // Validación de edad para datos del apoderado (continuar solo si el registro está habilitado)
   const studentAge = parseInt(age, 10);
   if (isNaN(studentAge)) {
       return res.status(400).json({ message: 'La edad debe ser un número.' });
@@ -44,8 +84,8 @@ router.post('/register', async (req, res) => {
     }
   }
 
-  const client = await pool.connect();
-  try {
+    // La conexión a la BD ya se hizo arriba para chequear el setting.
+    // Continuar con la transacción.
     await client.query('BEGIN');
 
     // Lógica para encontrar el siguiente ID disponible (reutilizada de studentAdminRoutes)
