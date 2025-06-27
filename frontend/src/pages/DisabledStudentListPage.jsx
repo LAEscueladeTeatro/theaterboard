@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
-import { API_BASE_URL } from "../config"; // Corregir ruta de importación
+import { API_BASE_URL } from "../config";
+import Spinner from '../components/Spinner'; // Importar Spinner
 
 // Iconos SVG
 const EnableIcon = () => <svg className="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" /></svg>;
@@ -30,7 +31,12 @@ const DisabledStudentListPage = () => {
 
   useEffect(() => { fetchDisabledStudents(); }, [fetchDisabledStudents]);
 
+  // Estados para spinners de acciones (si se añaden más adelante)
+  // const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  // const [isDeleting, setIsDeleting] = useState(false);
+
   const handleSetStudentStatus = async (studentId, isActive) => {
+    // TODO: Considerar añadir spinner para esta acción si puede ser lenta
     const action = isActive ? "habilitar" : "inhabilitar";
     if (!window.confirm(`¿Está seguro que desea ${action} a este estudiante?`)) return;
 
@@ -61,7 +67,13 @@ const DisabledStudentListPage = () => {
   };
 
 
-  if (loading) return <div className="content-page-container"><p className="text-center" style={{padding: '2rem'}}>Cargando lista de estudiantes inhabilitados...</p></div>;
+  if (loading) {
+    return (
+      <div className="content-page-container loading-container">
+        <Spinner />
+      </div>
+    );
+  }
 
   return (
     <div className="content-page-container">

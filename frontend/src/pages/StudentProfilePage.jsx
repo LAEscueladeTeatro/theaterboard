@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import { API_BASE_URL } from "../config"; // Importar config
+import Spinner from '../components/Spinner'; // Importar Spinner
 
 // Re-using styles from TeacherProfilePage for consistency, or define separately
 const styles = {
@@ -92,7 +94,7 @@ const styles = {
 
 const StudentProfilePage = () => {
   const navigate = useNavigate();
-  const API_BASE_URL = 'http://localhost:3001/api/student'; // Corrected API base
+  const STUDENT_API_URL = `${API_BASE_URL}/student`; // Usar constante importada
   const getToken = useCallback(() => localStorage.getItem('studentToken'), []);
 
   const initialProfileData = {
@@ -123,7 +125,8 @@ const StudentProfilePage = () => {
     confirm_new_password: ''
   });
 
-  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [loadingProfile, setLoadingProfile] = useState(true); // Para carga inicial
+  const [isUpdatingProfile, setIsUpdatingProfile] = useState(false); // Para spinner de actualización de perfil
   const [profileError, setProfileError] = useState('');
   const [profileSuccess, setProfileSuccess] = useState('');
 
@@ -141,14 +144,12 @@ const StudentProfilePage = () => {
           navigate('/estudiante/login');
           return;
         }
-        // Corrected endpoint to /profile
-        const response = await axios.get(`${API_BASE_URL}/profile`, {
+        const response = await axios.get(`${STUDENT_API_URL}/profile`, { // Usar STUDENT_API_URL
           headers: { 'x-auth-token': token }
         });
-        // Ensure all fields in initialProfileData are present in response or set to default
         const fetchedData = { ...initialProfileData, ...response.data };
         setProfile(fetchedData);
-        setInitialFetchedProfile(fetchedData); // Store initial fetched data
+        setInitialFetchedProfile(fetchedData);
       } catch (err) {
         console.error("Error fetching student profile:", err);
         setProfileError(err.response?.data?.message || 'No se pudo cargar el perfil.');
@@ -160,7 +161,7 @@ const StudentProfilePage = () => {
       }
     };
     fetchProfile();
-  }, [getToken, navigate, API_BASE_URL]);
+  }, [getToken, navigate, STUDENT_API_URL]); // Usar STUDENT_API_URL
 
   const handleProfileChange = (e) => {
     setProfile({ ...profile, [e.target.name]: e.target.value });
@@ -176,34 +177,34 @@ const StudentProfilePage = () => {
 
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
-    setLoadingProfile(true);
+    setIsUpdatingProfile(true); // Usar nuevo estado para actualización
     setProfileError('');
     setProfileSuccess('');
 
     // Client-side validation (basic examples)
     if (profile.email && !/\S+@\S+\.\S+/.test(profile.email)) {
         setProfileError('Por favor, introduce un email válido.');
-        setLoadingProfile(false);
+        setIsUpdatingProfile(false);
         return;
     }
-    if (profile.phone && !/^\d{9,15}$/.test(profile.phone)) {
+    if (profile.phone && profile.phone.trim() !== '' && !/^\d{9,15}$/.test(profile.phone)) {
         setProfileError('El número de celular debe tener entre 9 y 15 dígitos.');
-        setLoadingProfile(false);
+        setIsUpdatingProfile(false);
         return;
     }
     if (profile.guardian_phone && profile.guardian_phone.trim() !== '' && !/^\d{9,15}$/.test(profile.guardian_phone)) {
       setProfileError('El teléfono del apoderado debe tener entre 9 y 15 dígitos.');
-      setLoadingProfile(false);
+      setIsUpdatingProfile(false);
       return;
     }
     if (profile.emergency_contact_phone && profile.emergency_contact_phone.trim() !== '' && !/^\d{9,15}$/.test(profile.emergency_contact_phone)) {
       setProfileError('El teléfono de emergencia debe tener entre 9 y 15 dígitos.');
-      setLoadingProfile(false);
+      setIsUpdatingProfile(false);
       return;
     }
     if (profile.guardian_email && profile.guardian_email.trim() !== '' && !/\S+@\S+\.\S+/.test(profile.guardian_email)) {
         setProfileError('Por favor, introduce un email de apoderado válido.');
-        setLoadingProfile(false);
+        setIsUpdatingProfile(false);
         return;
     }
 
@@ -225,20 +226,19 @@ const StudentProfilePage = () => {
 
     try {
       const token = getToken();
-      // Corrected endpoint to /profile
-      const response = await axios.put(`${API_BASE_URL}/profile`, updatePayload, {
+      const response = await axios.put(`${STUDENT_API_URL}/profile`, updatePayload, { // Usar STUDENT_API_URL
         headers: { 'x-auth-token': token }
       });
       setProfileSuccess(response.data.message || 'Perfil actualizado exitosamente.');
       // Update profile with the response, which should include all fields
       const updatedData = { ...initialProfileData, ...response.data.student };
       setProfile(updatedData);
-      setInitialFetchedProfile(updatedData); // Update initial fetched profile
+      setInitialFetchedProfile(updatedData);
     } catch (err) {
       console.error("Error updating student profile:", err);
       setProfileError(err.response?.data?.message || 'Error al actualizar el perfil.');
     } finally {
-      setLoadingProfile(false);
+      setIsUpdatingProfile(false); // Usar nuevo estado
     }
   };
 
@@ -261,8 +261,7 @@ const StudentProfilePage = () => {
 
     try {
       const token = getToken();
-      // Corrected endpoint to /password
-      const response = await axios.put(`${API_BASE_URL}/password`, passwordData, {
+      const response = await axios.put(`${STUDENT_API_URL}/password`, passwordData, { // Usar STUDENT_API_URL
         headers: { 'x-auth-token': token }
       });
       setPasswordSuccess(response.data.message || 'Contraseña actualizada exitosamente.');
@@ -277,8 +276,8 @@ const StudentProfilePage = () => {
 
   const profileHasChanged = JSON.stringify(profile) !== JSON.stringify(initialFetchedProfile);
 
-  if (loadingProfile && !profile.id && !profile.full_name) { // Show loading only on initial full fetch
-    return <div style={styles.pageContainer}><p>Cargando perfil...</p></div>;
+  if (loadingProfile && (!initialFetchedProfile || !initialFetchedProfile.id)) {
+    return <div style={{...styles.pageContainer, ...styles.loadingContainer}} className="loading-container"><Spinner /></div>;
   }
 
   return (
@@ -330,16 +329,16 @@ const StudentProfilePage = () => {
 
           <div style={styles.formGroup}>
             <label htmlFor="nickname" style={styles.label}>Sobrenombre (Nickname):</label>
-            <input type="text" id="nickname" name="nickname" value={profile.nickname || ''} onChange={handleProfileChange} style={styles.input} />
+            <input type="text" id="nickname" name="nickname" value={profile.nickname || ''} onChange={handleProfileChange} style={styles.input} disabled={isUpdatingProfile} />
           </div>
           <div style={styles.gridContainer}>
             <div style={styles.formGroup}>
               <label htmlFor="email" style={styles.label}>Correo Electrónico:</label>
-              <input type="email" id="email" name="email" value={profile.email || ''} onChange={handleProfileChange} style={styles.input} required />
+              <input type="email" id="email" name="email" value={profile.email || ''} onChange={handleProfileChange} style={styles.input} required disabled={isUpdatingProfile} />
             </div>
             <div style={styles.formGroup}>
               <label htmlFor="phone" style={styles.label}>Celular:</label>
-              <input type="tel" id="phone" name="phone" value={profile.phone || ''} onChange={handleProfileChange} style={styles.input} pattern="\d{9,15}" title="Debe ser un número de 9 a 15 dígitos."/>
+              <input type="tel" id="phone" name="phone" value={profile.phone || ''} onChange={handleProfileChange} style={styles.input} pattern="\d{9,15}" title="Debe ser un número de 9 a 15 dígitos." disabled={isUpdatingProfile}/>
             </div>
           </div>
 
@@ -347,40 +346,40 @@ const StudentProfilePage = () => {
           <div style={styles.gridContainer}>
             <div style={styles.formGroup}>
               <label htmlFor="guardian_full_name" style={styles.label}>Nombre Completo del Apoderado:</label>
-              <input type="text" id="guardian_full_name" name="guardian_full_name" value={profile.guardian_full_name || ''} onChange={handleProfileChange} style={styles.input} />
+              <input type="text" id="guardian_full_name" name="guardian_full_name" value={profile.guardian_full_name || ''} onChange={handleProfileChange} style={styles.input} disabled={isUpdatingProfile} />
             </div>
             <div style={styles.formGroup}>
               <label htmlFor="guardian_relationship" style={styles.label}>Relación/Parentesco:</label>
-              <input type="text" id="guardian_relationship" name="guardian_relationship" value={profile.guardian_relationship || ''} onChange={handleProfileChange} style={styles.input} />
+              <input type="text" id="guardian_relationship" name="guardian_relationship" value={profile.guardian_relationship || ''} onChange={handleProfileChange} style={styles.input} disabled={isUpdatingProfile} />
             </div>
             <div style={styles.formGroup}>
               <label htmlFor="guardian_phone" style={styles.label}>Teléfono del Apoderado:</label>
-              <input type="tel" id="guardian_phone" name="guardian_phone" value={profile.guardian_phone || ''} onChange={handleProfileChange} style={styles.input} pattern="\d{9,15}" title="Debe ser un número de 9 a 15 dígitos."/>
+              <input type="tel" id="guardian_phone" name="guardian_phone" value={profile.guardian_phone || ''} onChange={handleProfileChange} style={styles.input} pattern="\d{9,15}" title="Debe ser un número de 9 a 15 dígitos." disabled={isUpdatingProfile}/>
             </div>
             <div style={styles.formGroup}>
               <label htmlFor="guardian_email" style={styles.label}>Email del Apoderado:</label>
-              <input type="email" id="guardian_email" name="guardian_email" value={profile.guardian_email || ''} onChange={handleProfileChange} style={styles.input} />
+              <input type="email" id="guardian_email" name="guardian_email" value={profile.guardian_email || ''} onChange={handleProfileChange} style={styles.input} disabled={isUpdatingProfile} />
             </div>
           </div>
 
           <h4 style={{marginTop: '2rem', marginBottom: '1rem'}}>Datos Médicos y de Emergencia</h4>
           <div style={styles.formGroup}>
             <label htmlFor="medical_conditions" style={styles.label}>Condiciones Médicas Relevantes:</label>
-            <textarea id="medical_conditions" name="medical_conditions" value={profile.medical_conditions || ''} onChange={handleProfileChange} style={styles.textarea}></textarea>
+            <textarea id="medical_conditions" name="medical_conditions" value={profile.medical_conditions || ''} onChange={handleProfileChange} style={styles.textarea} disabled={isUpdatingProfile}></textarea>
           </div>
           <div style={styles.gridContainer}>
             <div style={styles.formGroup}>
               <label htmlFor="emergency_contact_name" style={styles.label}>Nombre Contacto de Emergencia:</label>
-              <input type="text" id="emergency_contact_name" name="emergency_contact_name" value={profile.emergency_contact_name || ''} onChange={handleProfileChange} style={styles.input} />
+              <input type="text" id="emergency_contact_name" name="emergency_contact_name" value={profile.emergency_contact_name || ''} onChange={handleProfileChange} style={styles.input} disabled={isUpdatingProfile} />
             </div>
             <div style={styles.formGroup}>
               <label htmlFor="emergency_contact_phone" style={styles.label}>Teléfono Contacto de Emergencia:</label>
-              <input type="tel" id="emergency_contact_phone" name="emergency_contact_phone" value={profile.emergency_contact_phone || ''} onChange={handleProfileChange} style={styles.input} pattern="\d{9,15}" title="Debe ser un número de 9 a 15 dígitos."/>
+              <input type="tel" id="emergency_contact_phone" name="emergency_contact_phone" value={profile.emergency_contact_phone || ''} onChange={handleProfileChange} style={styles.input} pattern="\d{9,15}" title="Debe ser un número de 9 a 15 dígitos." disabled={isUpdatingProfile}/>
             </div>
           </div>
 
-          <button type="submit" style={{...styles.button, ...( (loadingProfile || !profileHasChanged) && styles.buttonDisabled)}} disabled={loadingProfile || !profileHasChanged}>
-            {loadingProfile ? 'Guardando...' : 'Guardar Cambios de Perfil'}
+          <button type="submit" style={{...styles.button, ...(isUpdatingProfile || !profileHasChanged) && styles.buttonDisabled}} disabled={isUpdatingProfile || !profileHasChanged}>
+            {isUpdatingProfile ? <><Spinner size="20px" color="white" /> Guardando...</> : 'Guardar Cambios de Perfil'}
           </button>
         </form>
       </div>
@@ -393,18 +392,18 @@ const StudentProfilePage = () => {
         <form onSubmit={handlePasswordSubmit}>
            <div style={styles.formGroup}>
             <label htmlFor="current_password_student" style={styles.label}>Contraseña Actual:</label>
-            <input type="password" id="current_password_student" name="current_password" value={passwordData.current_password} onChange={handlePasswordChange} style={styles.input} required />
+            <input type="password" id="current_password_student" name="current_password" value={passwordData.current_password} onChange={handlePasswordChange} style={styles.input} required disabled={loadingPassword} />
           </div>
           <div style={styles.formGroup}>
             <label htmlFor="new_password_student" style={styles.label}>Nueva Contraseña:</label>
-            <input type="password" id="new_password_student" name="new_password" value={passwordData.new_password} onChange={handlePasswordChange} style={styles.input} required minLength="6"/>
+            <input type="password" id="new_password_student" name="new_password" value={passwordData.new_password} onChange={handlePasswordChange} style={styles.input} required minLength="6" disabled={loadingPassword}/>
           </div>
           <div style={styles.formGroup}>
             <label htmlFor="confirm_new_password_student" style={styles.label}>Confirmar Nueva Contraseña:</label>
-            <input type="password" id="confirm_new_password_student" name="confirm_new_password" value={passwordData.confirm_new_password} onChange={handlePasswordChange} style={styles.input} required minLength="6"/>
+            <input type="password" id="confirm_new_password_student" name="confirm_new_password" value={passwordData.confirm_new_password} onChange={handlePasswordChange} style={styles.input} required minLength="6" disabled={loadingPassword}/>
           </div>
           <button type="submit" style={{...styles.button, ...(loadingPassword && styles.buttonDisabled)}} disabled={loadingPassword}>
-            {loadingPassword ? 'Cambiando...' : 'Cambiar Contraseña'}
+            {loadingPassword ? <><Spinner size="20px" color="white" /> Cambiando...</> : 'Cambiar Contraseña'}
           </button>
         </form>
       </div>

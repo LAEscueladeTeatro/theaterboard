@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
-import { API_BASE_URL } from "../config"; // Corregir ruta de importación
+import { API_BASE_URL } from "../config";
+import Spinner from '../components/Spinner'; // Importar Spinner
 
 const PublicRegistrationPage = () => {
   const initialFormData = {
@@ -117,15 +118,20 @@ const PublicRegistrationPage = () => {
    );
 
   return (
-    <div className="centered-form-page public-registration-page"> {/* Clase adicional para posible override de max-width */}
-      <div className="form-card"> {/* Usar form-card, pero podría necesitar un max-width mayor */}
+    <div className="centered-form-page public-registration-page">
+      <div className="form-card">
         <h2>¡Bienvenid@ a TheaterBoard!</h2>
         <p style={{fontSize: '1rem', marginBottom: '1rem'}}>Estamos muy contentos de que quieras unirte a nuestra familia teatral.</p>
         <p style={{fontSize: '0.9rem', marginBottom: '1.5rem'}}>
           Antes de empezar, por favor, dale una leída a nuestro <a href="https://drive.google.com/file/d/1jB6jiBouFFCbMo45FGiidC499eLyBjlt/view" target="_blank" rel="noopener noreferrer" style={{color: 'var(--primary-color-student)', fontWeight:'500'}}>Reglamento Interno</a>. Es importante que lo conozcas.
         </p>
 
-        {loadingStatus && <p className="text-center" style={{margin: '2rem 0'}}>Verificando estado de inscripciones...</p>}
+        {loadingStatus && (
+          <div className="loading-container" style={{margin: '2rem 0'}}>
+            <Spinner />
+            <p style={{marginLeft: '10px'}}>Verificando estado de inscripciones...</p>
+          </div>
+        )}
         {globalStatusError && <div className="error-message-page" style={{textAlign:'center'}}>{globalStatusError}</div>}
 
         {!loadingStatus && !isRegistrationGloballyEnabled && !successMessage && (
@@ -182,7 +188,11 @@ const PublicRegistrationPage = () => {
 
             <div style={{marginTop:'1.5rem', textAlign: 'center'}}>
               <button type="submit" disabled={loading} className="btn-action btn-register">
-                <PencilIcon /> {loading ? 'Enviando Registro...' : 'Completar Inscripción'}
+                {loading ? (
+                  <><Spinner size="20px" color="white" /> Enviando Registro...</>
+                ) : (
+                  <><PencilIcon /> Completar Inscripción</>
+                )}
               </button>
             </div>
           </form>
