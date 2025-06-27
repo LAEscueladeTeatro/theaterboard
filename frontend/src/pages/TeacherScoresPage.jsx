@@ -113,7 +113,18 @@ const TeacherScoresPage = () => {
       }
     });
     setGroupStudentStatus(newStatus);
-  }, [presentStudents, groupScoreType]); // Se ejecuta cuando cambian los presentes o el tipo de puntaje
+  }, [presentStudents, groupScoreType]);
+
+  // Efecto para resetear personalSelectedStudent si ya no está en la lista de presentes
+  useEffect(() => {
+    if (personalSelectedStudent && !presentStudents.find(p => p.id === personalSelectedStudent)) {
+      setPersonalSelectedStudent('');
+    }
+    // Si no hay estudiantes presentes y alguno estaba seleccionado, limpiarlo
+    if (presentStudents.length === 0 && personalSelectedStudent) {
+        setPersonalSelectedStudent('');
+    }
+  }, [presentStudents, personalSelectedStudent]);
 
   const handleGroupStudentStatusChange = (studentId, status) => {
     setGroupStudentStatus(prev => ({ ...prev, [studentId]: status }));
@@ -261,8 +272,8 @@ const TeacherScoresPage = () => {
           <div className="score-form-group">
             <label htmlFor="personalSelectedStudent">Estudiante:</label>
             <select id="personalSelectedStudent" value={personalSelectedStudent} onChange={(e) => setPersonalSelectedStudent(e.target.value)} required>
-              <option value="">Seleccione un estudiante</option>
-              {allStudents.map(student => (
+              <option value="">Seleccione un estudiante presente</option>
+              {presentStudents.map(student => (
                 <option key={student.id} value={student.id}>{student.full_name} ({student.id})</option>
               ))}
             </select>
