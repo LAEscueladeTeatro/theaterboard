@@ -414,11 +414,10 @@ footer {
   margin-bottom: 1.5rem;
 }
 
-.controls-bar input[type="text"] { /* Ajuste para input de búsqueda en esta barra */
+.controls-bar input[type="text"] {
   padding: 0.7em 1em;
-  /* flex-grow: 1; */ /* Quitado para que no crezca excesivamente si hay otros elementos */
-  min-width: 250px; /* Ancho mínimo responsive */
-  max-width: 400px; /* Límite para que no sea demasiado grande */
+  min-width: 250px;
+  max-width: 400px;
   background-color: var(--input-background);
   color: var(--text-color-main);
   border: 1px solid var(--border-color-subtle);
@@ -573,6 +572,24 @@ footer {
    color: var(--text-color-placeholder);
    cursor: not-allowed;
 }
+.btn-danger-row {
+  background-color: var(--color-danger);
+}
+.btn-danger-row:hover {
+  background-color: color-mix(in srgb, var(--color-danger) 85%, #000000 15%);
+}
+.btn-success-row {
+  background-color: var(--color-success);
+  color: var(--text-color-light);
+}
+.btn-success-row:hover {
+  background-color: color-mix(in srgb, var(--color-success) 85%, #000000 15%);
+}
+.btn-success-row:disabled, .btn-danger-row:disabled { /* Estado disabled para variantes de color */
+   background-color: var(--border-color-subtle);
+   color: var(--text-color-placeholder);
+}
+
 .btn-action-row .icon {
     margin-right: 0.4em;
     width: 16px;
@@ -604,6 +621,11 @@ footer {
   max-width: 550px;
   border: 1px solid var(--border-color-subtle);
 }
+/* Clase opcional para modales más anchos/altos */
+.modal-content.large-modal {
+  max-width: 750px;
+}
+
 
 .modal-content h3 {
   font-size: 1.6rem;
@@ -638,7 +660,11 @@ footer {
 
 .modal-content select,
 .modal-content textarea,
-.modal-content input[type="text"] {
+.modal-content input[type="text"],
+.modal-content input[type="number"],
+.modal-content input[type="email"],
+.modal-content input[type="tel"],
+.modal-content input[type="date"] {
   margin-bottom: 1rem;
   /* Estilos base de input de index.css aplican aquí */
 }
@@ -716,7 +742,7 @@ footer {
 
 .page-header-controls {
   display: flex;
-  justify-content: flex-start;
+  justify-content: space-between; /* Ajustado para alinear elementos a los extremos */
   align-items: center;
   margin-bottom: 1.5rem;
 }
@@ -875,4 +901,19 @@ footer {
   border-radius: var(--border-radius-small);
 }
 
-[end of frontend/src/App.css]
+/* Para el modal de edición completa si tiene muchos campos */
+.modal-content.large-modal {
+  max-width: 750px;
+}
+
+.modal-form-grid { /* Para el grid de campos dentro del modal */
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem 1.5rem; /* row-gap column-gap */
+}
+.modal-form-grid .form-group {
+  margin-bottom: 0; /* El gap del grid ya maneja el espaciado vertical */
+}
+.form-group.full-width-grid { /* Para elementos que ocupen todo el ancho del grid */
+  grid-column: 1 / -1;
+}
