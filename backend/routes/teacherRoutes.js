@@ -17,7 +17,7 @@ router.get('/profile', authMiddleware, async (req, res) => {
   try {
     const result = await pool.query(
       'SELECT id, full_name, nickname, email, cellphone_number, photo_url FROM teachers WHERE id = $1',
-      [req.user.id]
+      [parseInt(req.user.id, 10)] // Explicitly parse id to integer
     );
 
     if (result.rows.length === 0) {
