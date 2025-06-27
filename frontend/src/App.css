@@ -194,15 +194,19 @@ footer {
   text-decoration: underline;
 }
 
-/* Estilos para el Dashboard del Docente */
+/* Estilos para el Dashboard del Docente y Estudiante */
 .dashboard-page-container {
   padding: 2rem;
   width: 100%;
-  max-width: 1200px;
+  max-width: 900px; /* Ancho base para dashboards */
   margin: 0 auto;
 }
+.student-dashboard .page-title { /* Título específico para dashboard estudiante */
+  color: var(--primary-color-student); /* Color azul para el título */
+}
 
-.dashboard-page-container h2 {
+
+.dashboard-page-container h2 { /* Título general de la página del dashboard */
   text-align: center;
   margin-bottom: 2.5rem;
   font-size: 2.2rem;
@@ -210,7 +214,7 @@ footer {
 
 .dashboard-actions-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Ajustado para tarjetas más pequeñas */
   gap: 1.5rem;
   list-style: none;
   padding: 0;
@@ -232,19 +236,32 @@ footer {
   transition: background-color 0.25s ease, transform 0.2s ease, box-shadow 0.25s ease, border-color 0.25s ease;
   box-shadow: 0 4px 8px rgba(0,0,0,0.15);
   font-weight: 500;
-  min-height: 120px;
+  min-height: 100px; /* Ligeramente menos altura */
 }
+.dashboard-action-card .icon { /* Iconos dentro de las tarjetas de acción */
+  width: 28px;
+  height: 28px;
+  margin-bottom: 0.75rem;
+}
+
 .dashboard-action-card a, .dashboard-action-card a:visited {
    color: var(--text-color-light) !important;
    text-decoration: none !important;
 }
 
-.dashboard-action-card:hover {
+.dashboard-action-card:hover { /* Hover para docente (morado por defecto) */
   background-color: color-mix(in srgb, var(--primary-color-teacher) 15%, var(--container-background) 85%);
   transform: translateY(-4px);
   box-shadow: 0 7px 20px rgba(157, 78, 221, 0.2);
   border-color: var(--primary-color-teacher);
 }
+/* Variante para dashboard de estudiante */
+.student-dashboard .dashboard-action-card:hover { /* Hover específico para estudiante (azul) */
+  background-color: color-mix(in srgb, var(--primary-color-student) 15%, var(--container-background) 85%);
+  border-color: var(--primary-color-student);
+  box-shadow: 0 7px 20px rgba(52, 152, 219, 0.2);
+}
+
 
 .dashboard-action-card.button-as-card {
   width: 100%;
@@ -432,8 +449,8 @@ footer {
 
 
 .controls-section select,
-.controls-section input[type="month"], /* Añadir input[type="month"] aquí */
-.controls-section input[type="date"] {  /* Añadir input[type="date"] aquí */
+.controls-section input[type="month"],
+.controls-section input[type="date"] {
   padding: 0.7em 1em;
   flex-grow: 1;
   min-width: 200px;
@@ -463,7 +480,7 @@ footer {
     white-space: nowrap;
 }
 .controls-section .control-group select,
-.controls-section .control-group input[type="month"], /* Asegurar que estos también puedan crecer */
+.controls-section .control-group input[type="month"],
 .controls-section .control-group input[type="date"] {
     flex-grow: 1;
     min-width: 180px;
@@ -591,7 +608,7 @@ footer {
 .btn-success-row:hover {
   background-color: color-mix(in srgb, var(--color-success) 85%, #000000 15%);
 }
-.btn-success-row:disabled, .btn-danger-row:disabled { /* Estado disabled para variantes de color */
+.btn-success-row:disabled, .btn-danger-row:disabled {
    background-color: var(--border-color-subtle);
    color: var(--text-color-placeholder);
 }
@@ -627,7 +644,6 @@ footer {
   max-width: 550px;
   border: 1px solid var(--border-color-subtle);
 }
-/* Clase opcional para modales más anchos/altos */
 .modal-content.large-modal {
   max-width: 750px;
 }
@@ -1003,6 +1019,75 @@ footer {
   color: var(--primary-color-register); /* Color Teal */
   font-size: 1.1em;
   font-weight: 700;
+}
+
+/* Estilos para el Dashboard del Estudiante */
+.student-dashboard .profile-card {
+  background-color: var(--container-background);
+  padding: 2rem;
+  border-radius: var(--border-radius-medium);
+  margin-bottom: 2rem;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+  border: 1px solid var(--border-color-subtle);
+  display: flex;
+  align-items: center;
+  gap: 2rem; /* Espacio entre foto e info */
+}
+.profile-photo {
+  width: 100px; height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--primary-color-student); /* Borde con color de estudiante */
+  box-shadow: 0 0 15px rgba(52, 152, 219, 0.3); /* Sombra suave con color de estudiante */
+}
+.profile-info h3 { /* Nombre del estudiante */
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  font-size: 1.6rem;
+  color: var(--text-color-light);
+}
+.profile-info p {
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  color: var(--text-color-main);
+}
+.profile-info p strong {
+  color: var(--text-color-light);
+  font-weight: 500;
+}
+
+.summary-info-card { /* Tarjeta para el resumen de puntaje y casting */
+  background-color: var(--container-background);
+  padding: 1.5rem 2rem;
+  border-radius: var(--border-radius-medium);
+  margin-bottom: 2rem;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+  border: 1px solid var(--border-color-subtle);
+}
+.summary-info-card .section-title { /* Para "Resumen del Mes" */
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  font-size: 1.4rem;
+  color: var(--primary-color-student); /* Azul para títulos de sección de estudiante */
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-color-subtle);
+  font-weight: 600;
+}
+.summary-info-card p { margin-bottom: 0.8rem; font-size: 1rem; }
+.summary-info-card .casting-status-apto { color: var(--color-success); font-weight: bold; }
+.summary-info-card .casting-status-evaluacion { color: var(--color-warning); font-weight: bold; }
+.summary-info-card .casting-status-no-apto { color: var(--color-danger); font-weight: bold; }
+
+.student-dashboard .dashboard-actions-grid {
+  grid-template-columns: 1fr; /* Para que "Ver Mis Puntajes" ocupe todo el ancho */
+  max-width: 400px; /* Limitar ancho del grid de acciones del estudiante */
+  margin-left: auto;
+  margin-right: auto;
+}
+.student-dashboard .dashboard-action-card .icon { /* Iconos en tarjetas de acción del estudiante */
+  width: 24px; /* Un poco más grandes */
+  height: 24px;
+  margin-bottom: 0.6rem; /* Si el texto está debajo */
 }
 
 [end of frontend/src/App.css]
