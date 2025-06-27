@@ -40,6 +40,19 @@ app.use('/api/admin/settings', authMiddleware, adminSettingsRoutes); // <-- Mont
 app.use('/api/public', publicRoutes); // Rutas públicas (ej: /api/public/register)
 
 // Iniciar servidor
-app.listen(port, () => {
+app.listen(port, async () => { // Convertir a función async
   console.log(`Backend server is running on port ${port}`);
+  // Verificar conexión a la base de datos al iniciar
+  try {
+    const client = await pool.connect();
+    console.log('Successfully connected to the database.');
+    await client.query('SELECT NOW()'); // Prueba una consulta simple
+    client.release();
+    console.log('Database connection test query successful.');
+  } catch (err) {
+    console.error('!!! CRITICAL: Failed to connect to the database on startup !!!');
+    console.error(err.stack);
+    // Opcionalmente, podrías querer que el proceso termine si no puede conectarse a la BD:
+    // process.exit(1);
+  }
 });
