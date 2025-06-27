@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import ToggleSwitch from '../components/ToggleSwitch';
+import Spinner from '../components/Spinner'; // Import Spinner
 
 const LogoutIcon = () => (
   <svg className="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
@@ -19,6 +20,7 @@ const SettingsIcon = ({ width = "28", height = "28" }) => (
 const TeacherDashboardPage = () => {
   const navigate = useNavigate();
   const [teacherProfile, setTeacherProfile] = useState({ full_name: '', nickname: '', photo_url: '' });
+  const [profileLoading, setProfileLoading] = useState(true); // New state for profile loading
   const [profileLoadingError, setProfileLoadingError] = useState('');
   const [isRegistrationEnabled, setIsRegistrationEnabled] = useState(false);
   const [settingsLoading, setSettingsLoading] = useState(true);
@@ -37,6 +39,7 @@ const TeacherDashboardPage = () => {
       }
 
       // Fetch Teacher Profile
+      setProfileLoading(true);
       try {
         const profileResponse = await axios.get(`${TEACHER_API_URL}/profile`, {
           headers: { 'x-auth-token': token },
@@ -48,13 +51,15 @@ const TeacherDashboardPage = () => {
         if (err.response && (err.response.status === 401 || err.response.status === 403)) {
           navigate('/docente/login');
         }
+      } finally {
+        setProfileLoading(false); // Set profile loading to false
       }
 
       // Fetch Registration Status
-      setSettingsLoading(true);
+      // setSettingsLoading(true); // This is already true by default, can be set here if preferred
       setSettingsError('');
       try {
-        const response = await axios.get(`${ADMIN_API_URL}/registration-status`, { // Corrected: Use ADMIN_API_URL
+        const response = await axios.get(`${ADMIN_API_URL}/registration-status`, {
           headers: { 'x-auth-token': token },
         });
         setIsRegistrationEnabled(response.data.enabled);
@@ -76,7 +81,7 @@ const TeacherDashboardPage = () => {
 
     try {
       const token = getToken();
-      await axios.put(`${ADMIN_API_URL}/registration-status`, // Corrected: Use ADMIN_API_URL
+      await axios.put(`${ADMIN_API_URL}/registration-status`,
         { enabled: newStatus },
         { headers: { 'x-auth-token': token } }
       );

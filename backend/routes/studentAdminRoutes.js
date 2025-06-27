@@ -166,13 +166,6 @@ router.put('/:studentId/set-status', async (req, res) => {
 router.delete('/:studentId/permanent-delete', async (req, res) => {
   const { studentId } = req.params;
 
-  // Opcional: Verificar si el estudiante está inactivo antes de permitir el borrado.
-  // Por ahora, se permite borrar directamente, pero en una app real se podría añadir esta capa.
-  // const studentCheck = await pool.query("SELECT is_active FROM students WHERE id = $1", [studentId]);
-  // if (studentCheck.rows.length > 0 && studentCheck.rows[0].is_active) {
-  //   return res.status(400).json({ message: 'Solo se pueden eliminar permanentemente estudiantes inactivos. Por favor, inhabilítelo primero.' });
-  // }
-
   try {
     const deleteResult = await pool.query(
       "DELETE FROM students WHERE id = $1 RETURNING id",
@@ -222,8 +215,9 @@ router.put('/:studentId/edit-full', async (req, res) => {
         guardian_phone = $10, guardian_email = $11, medical_conditions = $12,
         comments = $13, emergency_contact_name = $14, emergency_contact_phone = $15
       WHERE id = $16
-      RETURNING *;
-      -- Devuelve todos los campos excepto password
+      RETURNING id, full_name, nickname, is_active, age, birth_date, phone, email,
+                guardian_full_name, guardian_relationship, guardian_phone, guardian_email,
+                medical_conditions, comments, emergency_contact_name, emergency_contact_phone, photo_url;
     `;
     const values = [
       full_name, nickname, is_active, age, birth_date, phone, email,
@@ -237,9 +231,7 @@ router.put('/:studentId/edit-full', async (req, res) => {
     if (updatedStudent.rows.length === 0) {
       return res.status(404).json({ message: 'Estudiante no encontrado.' });
     }
-    // Excluir password de la respuesta explícitamente si estuviera en RETURNING * y la tabla lo tuviera visible
-    const { password, ...studentData } = updatedStudent.rows[0];
-    res.json(studentData);
+    res.json(updatedStudent.rows[0]); // password_hash is not included in RETURNING
 
   } catch (err) {
     console.error('Error updating student (full):', err);

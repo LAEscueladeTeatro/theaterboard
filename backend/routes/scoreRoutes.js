@@ -195,7 +195,6 @@ router.post('/personal', async (req, res) => {
 
   try {
     const client = await pool.connect();
-                                      // pero es buena práctica si la lógica se expandiera.
     try {
       const query = `
         INSERT INTO score_records (student_id, score_date, score_type, sub_category, points_assigned, notes)
