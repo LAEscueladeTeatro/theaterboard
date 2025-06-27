@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { Link } from 'react-router-dom'; // useNavigate no se usa aquí directamente pero puede ser útil
+import { Link } from 'react-router-dom';
+import { API_BASE_URL } from '../../config'; // Importar URL base
 
 // Iconos SVG
 const EnableIcon = () => <svg className="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" /></svg>;
@@ -12,20 +13,20 @@ const DisabledStudentListPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const API_URL = 'http://localhost:3001/api/admin/students';
+  const STUDENT_ADMIN_API_URL = `${API_BASE_URL}/admin/students`; // Usar URL base
   const getToken = useCallback(() => localStorage.getItem('teacherToken'), []);
 
   const fetchDisabledStudents = useCallback(async () => {
     setLoading(true); setError(null);
     try {
       const token = getToken();
-      const response = await axios.get(`${API_URL}?active=false`, { headers: { 'x-auth-token': token } });
+      const response = await axios.get(`${STUDENT_ADMIN_API_URL}?active=false`, { headers: { 'x-auth-token': token } });
       setDisabledStudents(response.data);
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Error al cargar estudiantes inhabilitados.');
       console.error("Error fetching disabled students:", err);
     } finally { setLoading(false); }
-  }, [getToken, API_URL]);
+  }, [getToken, STUDENT_ADMIN_API_URL]);
 
   useEffect(() => { fetchDisabledStudents(); }, [fetchDisabledStudents]);
 
@@ -35,7 +36,7 @@ const DisabledStudentListPage = () => {
 
     try {
       const token = getToken();
-      await axios.put(`${API_URL}/${studentId}/set-status`, { is_active: isActive }, { headers: { 'x-auth-token': token }});
+      await axios.put(`${STUDENT_ADMIN_API_URL}/${studentId}/set-status`, { is_active: isActive }, { headers: { 'x-auth-token': token }});
       fetchDisabledStudents();
       alert(`Estudiante ${action}do con éxito.`);
     } catch (err) {
@@ -50,7 +51,7 @@ const DisabledStudentListPage = () => {
 
     try {
       const token = getToken();
-      await axios.delete(`${API_URL}/${studentId}/permanent-delete`, { headers: { 'x-auth-token': token }});
+      await axios.delete(`${STUDENT_ADMIN_API_URL}/${studentId}/permanent-delete`, { headers: { 'x-auth-token': token }});
       fetchDisabledStudents();
       alert(`Estudiante ${studentName} (${studentId}) eliminado permanentemente.`);
     } catch (err) {

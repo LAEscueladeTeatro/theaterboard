@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
+import { API_BASE_URL } from '../../config'; // Importar URL base
 
 // Iconos SVG (ejemplos)
 const AddIcon = () => <svg className="icon" viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" /></svg>;
@@ -24,19 +25,19 @@ const StudentListPage = () => {
   const [newStudentData, setNewStudentData] = useState({ full_name: '', nickname: '' });
   const [editStudentData, setEditStudentData] = useState({ id: '', full_name: '', nickname: '' });
 
-  const API_URL = 'http://localhost:3001/api/admin/students';
+  const STUDENT_ADMIN_API_URL = `${API_BASE_URL}/admin/students`; // Usar URL base
   const getToken = useCallback(() => localStorage.getItem('teacherToken'), []);
 
   const fetchActiveStudents = useCallback(async () => {
     setLoading(true); setError(null);
     try {
       const token = getToken();
-      const response = await axios.get(`${API_URL}?active=true`, { headers: { 'x-auth-token': token } });
+      const response = await axios.get(`${STUDENT_ADMIN_API_URL}?active=true`, { headers: { 'x-auth-token': token } });
       setStudents(response.data);
       setAllStudentsForSearch(response.data);
     } catch (err) { setError(err.response?.data?.message || err.message || 'Error al cargar estudiantes activos.'); console.error("Error fetching active students:", err); }
     finally { setLoading(false); }
-  }, [getToken, API_URL]);
+  }, [getToken, STUDENT_ADMIN_API_URL]);
 
   useEffect(() => { fetchActiveStudents(); }, [fetchActiveStudents]);
 
@@ -54,7 +55,7 @@ const StudentListPage = () => {
     try {
       const token = getToken();
       const payload = { full_name: newStudentData.full_name, nickname: newStudentData.nickname };
-      await axios.post(`${API_URL}/add-quick`, payload, { headers: { 'x-auth-token': token }});
+      await axios.post(`${STUDENT_ADMIN_API_URL}/add-quick`, payload, { headers: { 'x-auth-token': token }});
       fetchActiveStudents();
       handleCloseAddQuickModal();
       alert("Estudiante añadido con éxito.");
@@ -71,7 +72,7 @@ const StudentListPage = () => {
     try {
       const token = getToken();
       const payload = { full_name: editStudentData.full_name, nickname: editStudentData.nickname };
-      await axios.put(`${API_URL}/${currentStudent.id}/edit-basic`, payload, { headers: { 'x-auth-token': token }});
+      await axios.put(`${STUDENT_ADMIN_API_URL}/${currentStudent.id}/edit-basic`, payload, { headers: { 'x-auth-token': token }});
       fetchActiveStudents();
       handleCloseEditModal();
       alert("Estudiante actualizado con éxito.");
@@ -83,7 +84,7 @@ const StudentListPage = () => {
     if (!window.confirm(`¿Está seguro que desea ${action} a este estudiante?`)) return;
     try {
       const token = getToken();
-      await axios.put(`${API_URL}/${studentId}/set-status`, { is_active: isActive }, { headers: { 'x-auth-token': token }});
+      await axios.put(`${STUDENT_ADMIN_API_URL}/${studentId}/set-status`, { is_active: isActive }, { headers: { 'x-auth-token': token }});
       fetchActiveStudents();
       alert(`Estudiante ${action}do con éxito.`);
     } catch (err) { console.error(`Error ${action}ing student:`, err); alert(`Error: ${err.response?.data?.message || `No se pudo ${action} el estudiante.`}`); }

@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
+import { getTodayPeruDateString as getTodayPeruDateStringForScores } from '../../utils/dateUtils'; // Renombrar para evitar colisión si se importa otra
+import { API_BASE_URL } from '../../config';
 
 // Iconos
 const SaveIcon = () => <svg className="icon" viewBox="0 0 20 20" fill="currentColor" width="16" height="16" style={{verticalAlign: 'middle', marginRight: '0.5em'}}><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.25a.75.75 0 00-1.5 0v2.5h-2.5a.75.75 0 000 1.5h2.5v2.5a.75.75 0 001.5 0v-2.5h2.5a.75.75 0 000-1.5h-2.5v-2.5z" clipRule="evenodd" /></svg>;
-
-// Color para diagnóstico (se mantendrá por ahora, pero idealmente se quita si las clases funcionan)
-const COLOR_TEACHER_PURPLE = '#9D4EDD';
 
 const TeacherScoresPage = () => {
   const [allStudents, setAllStudents] = useState([]);
@@ -14,25 +13,8 @@ const TeacherScoresPage = () => {
   const [loadingStudents, setLoadingStudents] = useState(true);
   const [loadingAttendance, setLoadingAttendance] = useState(false);
   const [error, setError] = useState('');
-  const API_URL = 'http://localhost:3001/api';
 
-  const getCurrentPeruDateTimeObjectForScores = () => {
-    const now = new Date();
-    const options = { timeZone: 'America/Lima', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: false };
-    const formatter = new Intl.DateTimeFormat('en-CA', options);
-    const parts = formatter.formatToParts(now);
-    const dateParts = {};
-    for (const part of parts) { if (part.type !== 'literal') dateParts[part.type] = parseInt(part.value, 10); }
-    return new Date(dateParts.year, dateParts.month - 1, dateParts.day, dateParts.hour, dateParts.minute, dateParts.second);
-  };
-  const getTodayPeruDateStringForScores = () => {
-    const nowInPeru = getCurrentPeruDateTimeObjectForScores();
-    const year = nowInPeru.getFullYear();
-    const month = (nowInPeru.getMonth() + 1).toString().padStart(2, '0');
-    const day = nowInPeru.getDate().toString().padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-  const todayDateString = getTodayPeruDateStringForScores();
+  const todayDateString = getTodayPeruDateStringForScores(); // Usar la función importada
 
   const [groupScoreType, setGroupScoreType] = useState('ROPA_TRABAJO');
   const [groupScoreDate, setGroupScoreDate] = useState(todayDateString);
@@ -46,7 +28,6 @@ const TeacherScoresPage = () => {
 
   const getToken = useCallback(() => localStorage.getItem('teacherToken'), []);
 
-  // 1. fetchAttendanceAndFilterStudents ahora solo setea presentStudents
   const fetchAttendanceAndFilterStudents = useCallback(async (dateForFilter) => {
     if (!dateForFilter || allStudents.length === 0) {
       setPresentStudents(allStudents.length > 0 ? allStudents : []);
@@ -57,7 +38,7 @@ const TeacherScoresPage = () => {
     setError('');
     try {
       const token = getToken();
-      const response = await axios.get(`${API_URL}/attendance/status/${dateForFilter}`, { headers: { 'x-auth-token': token } });
+      const response = await axios.get(`${API_BASE_URL}/attendance/status/${dateForFilter}`, { headers: { 'x-auth-token': token } });
       const attendanceRecords = response.data.attendance_records || [];
       const presentStudentIds = new Set(
         attendanceRecords
@@ -65,7 +46,7 @@ const TeacherScoresPage = () => {
           .map(record => record.student_id)
       );
       const filtered = allStudents.filter(student => presentStudentIds.has(student.id));
-      setPresentStudents(filtered); // Solo actualiza presentStudents
+      setPresentStudents(filtered);
     } catch (err) {
       console.error(`Error fetching attendance for ${dateForFilter}:`, err);
       setError(err.response?.data?.message || err.message || `Error al cargar asistencia para ${dateForFilter}.`);
@@ -73,7 +54,7 @@ const TeacherScoresPage = () => {
     } finally {
       setLoadingAttendance(false);
     }
-  }, [getToken, allStudents, API_URL]); // Dependencias correctas
+  }, [getToken, allStudents, API_BASE_URL]);
 
   // Carga inicial de todos los estudiantes
   useEffect(() => {
@@ -81,7 +62,7 @@ const TeacherScoresPage = () => {
       setLoadingStudents(true);
       try {
         const token = getToken();
-        const response = await axios.get(`${API_URL}/admin/students?active=true`, { headers: { 'x-auth-token': token } });
+        const response = await axios.get(`${API_BASE_URL}/admin/students?active=true`, { headers: { 'x-auth-token': token } });
         setAllStudents(response.data);
       } catch (err) {
         console.error("Error fetching all students:", err);
@@ -91,7 +72,7 @@ const TeacherScoresPage = () => {
       }
     };
     fetchAllStudents();
-  }, [getToken, API_URL]); // API_URL es constante, pero es bueno listarla si se usa
+  }, [getToken, API_BASE_URL]);
 
   // Efecto para obtener estudiantes presentes cuando cambia la fecha o la lista de todos los estudiantes
   useEffect(() => {
@@ -102,25 +83,23 @@ const TeacherScoresPage = () => {
     }
   }, [groupScoreDate, allStudents, fetchAttendanceAndFilterStudents]);
 
-  // 2. Nuevo useEffect para inicializar/resetear groupStudentStatus basado en presentStudents y groupScoreType
+  // useEffect para inicializar/resetear groupStudentStatus basado en presentStudents y groupScoreType
   useEffect(() => {
     const newStatus = {};
     presentStudents.forEach(student => {
       if (groupScoreType === 'CINCO_VALIENTES' || groupScoreType === 'PRIMER_GRUPO') {
         newStatus[student.id] = 'not_selected';
-      } else { // ROPA_TRABAJO, MATERIALES, LIMPIEZA
+      } else {
         newStatus[student.id] = 'compliant';
       }
     });
     setGroupStudentStatus(newStatus);
   }, [presentStudents, groupScoreType]);
 
-  // Efecto para resetear personalSelectedStudent si ya no está en la lista de presentes
   useEffect(() => {
     if (personalSelectedStudent && !presentStudents.find(p => p.id === personalSelectedStudent)) {
       setPersonalSelectedStudent('');
     }
-    // Si no hay estudiantes presentes y alguno estaba seleccionado, limpiarlo
     if (presentStudents.length === 0 && personalSelectedStudent) {
         setPersonalSelectedStudent('');
     }
@@ -150,14 +129,14 @@ const TeacherScoresPage = () => {
     e.preventDefault(); setError(''); let payload = { score_type: groupScoreType, score_date: groupScoreDate };
     if (groupScoreType === 'CINCO_VALIENTES' || groupScoreType === 'PRIMER_GRUPO') {
       const student_ids = Object.entries(groupStudentStatus)
-        .filter(([studentId, status]) => status === 'selected_for_bonus' && presentStudents.find(p => p.id === studentId)) // Asegurar que solo se envíen presentes
+        .filter(([studentId, status]) => status === 'selected_for_bonus' && presentStudents.find(p => p.id === studentId))
         .map(([studentId, _]) => studentId);
       if (student_ids.length === 0) { alert("Por favor, seleccione al menos un estudiante presente."); return; }
       if (groupScoreType === 'CINCO_VALIENTES' && student_ids.length > 5) { alert("'Cinco Valientes' no puede tener más de 5 estudiantes."); return; }
       payload.student_ids = student_ids;
     } else {
       const students_compliant = []; const students_non_compliant = [];
-      presentStudents.forEach(student => { // Iterar sobre presentStudents
+      presentStudents.forEach(student => {
         const status = groupStudentStatus[student.id];
         if (status === 'compliant') { students_compliant.push(student.id); }
         else if (status === 'non_compliant') { students_non_compliant.push(student.id); }
@@ -165,12 +144,11 @@ const TeacherScoresPage = () => {
       if (students_compliant.length === 0 && students_non_compliant.length === 0 && presentStudents.length > 0) {
         alert("Por favor, marque el estado de al menos un estudiante presente."); return;
       } else if (presentStudents.length === 0 && (students_compliant.length > 0 || students_non_compliant.length > 0)) {
-        // Esto no debería pasar si la lógica es correcta, pero como salvaguarda
         alert("No hay estudiantes presentes para asignar puntajes."); return;
       }
       payload.students_compliant = students_compliant; payload.students_non_compliant = students_non_compliant;
     }
-    try { const token = getToken(); const response = await axios.post(`${API_URL}/scores/group`, payload, { headers: { 'x-auth-token': token } }); alert(response.data.message || "Puntuaciones grupales registradas."); if (['ROPA_TRABAJO', 'LIMPIEZA', 'CINCO_VALIENTES', 'PRIMER_GRUPO'].includes(groupScoreType)) { /* El useEffect [presentStudents, groupScoreType] se encargará de resetear */ } }
+    try { const token = getToken(); const response = await axios.post(`${API_BASE_URL}/scores/group`, payload, { headers: { 'x-auth-token': token } }); alert(response.data.message || "Puntuaciones grupales registradas."); if (['ROPA_TRABAJO', 'LIMPIEZA', 'CINCO_VALIENTES', 'PRIMER_GRUPO'].includes(groupScoreType)) { /* El useEffect [presentStudents, groupScoreType] se encargará de resetear */ } }
     catch (err) { console.error("Error submitting group score:", err); setError(err.response?.data?.message || err.message || 'Error al registrar puntuaciones grupales.'); alert(`Error: ${err.response?.data?.message || err.message}`); }
   };
 
@@ -180,9 +158,9 @@ const TeacherScoresPage = () => {
     let pointsToAssign = parseInt(personalPoints, 10);
     if (personalScoreType === 'PARTICIPACION') { if (personalSubCategory === 'Participativo') pointsToAssign = 2; else if (personalSubCategory === 'Apático') pointsToAssign = -1; else { alert("Seleccione el nivel de participación."); return; } }
     else if (personalScoreType === 'EXTRA') { if (isNaN(pointsToAssign) || pointsToAssign === 0) { alert("Ingrese un valor numérico de puntos (diferente de cero) para Puntos Extra."); return; } }
-    else if (personalScoreType === 'CONDUCTA' || personalScoreType === 'USO_CELULAR') { if (isNaN(pointsToAssign)) {alert("Seleccione una opción de puntos válida."); return;} } // Para conducta y celular, los puntos vienen de un select
-    else if (isNaN(pointsToAssign)) { alert("Ingrese un valor numérico para los puntos."); return; } // Fallback
-    try { const token = getToken(); const payload = { student_id: personalSelectedStudent, score_type: personalScoreType, score_date: groupScoreDate, points_assigned: pointsToAssign, sub_category: personalSubCategory, notes: personalNotes }; const response = await axios.post(`${API_URL}/scores/personal`, payload, { headers: { 'x-auth-token': token } }); let alertMessage = response.data.message || "Puntuación personal registrada."; if (personalScoreType === 'CONDUCTA') { let timeOutMessage = ''; if (pointsToAssign === -3) timeOutMessage = "Recuerda: Enviar al alumno un tiempo fuera de 15 minutos."; else if (pointsToAssign === -2) timeOutMessage = "Recuerda: Enviar al alumno un tiempo fuera de 10 minutos."; else if (pointsToAssign === -1) timeOutMessage = "Recuerda: Enviar al alumno un tiempo fuera de 5 minutos."; if (timeOutMessage) { alertMessage += `\n${timeOutMessage}`; } } alert(alertMessage); setPersonalSelectedStudent(''); setPersonalPoints(''); setPersonalSubCategory(''); setPersonalNotes(''); }
+    else if (personalScoreType === 'CONDUCTA' || personalScoreType === 'USO_CELULAR') { if (isNaN(pointsToAssign)) {alert("Seleccione una opción de puntos válida."); return;} }
+    else if (isNaN(pointsToAssign)) { alert("Ingrese un valor numérico para los puntos."); return; }
+    try { const token = getToken(); const payload = { student_id: personalSelectedStudent, score_type: personalScoreType, score_date: groupScoreDate, points_assigned: pointsToAssign, sub_category: personalSubCategory, notes: personalNotes }; const response = await axios.post(`${API_BASE_URL}/scores/personal`, payload, { headers: { 'x-auth-token': token } }); let alertMessage = response.data.message || "Puntuación personal registrada."; if (personalScoreType === 'CONDUCTA') { let timeOutMessage = ''; if (pointsToAssign === -3) timeOutMessage = "Recuerda: Enviar al alumno un tiempo fuera de 15 minutos."; else if (pointsToAssign === -2) timeOutMessage = "Recuerda: Enviar al alumno un tiempo fuera de 10 minutos."; else if (pointsToAssign === -1) timeOutMessage = "Recuerda: Enviar al alumno un tiempo fuera de 5 minutos."; if (timeOutMessage) { alertMessage += `\n${timeOutMessage}`; } } alert(alertMessage); setPersonalSelectedStudent(''); setPersonalPoints(''); setPersonalSubCategory(''); setPersonalNotes(''); }
     catch (err) { console.error("Error submitting personal score:", err); setError(err.response?.data?.message || err.message || 'Error al registrar puntuación personal.'); alert(`Error: ${err.response?.data?.message || err.message}`); }
   };
 
@@ -262,7 +240,7 @@ const TeacherScoresPage = () => {
               }
             </div>
           )}
-          <button type="submit" className="btn-action btn-teacher" style={{width: '100%', marginTop: '1.5rem', backgroundColor: COLOR_TEACHER_PURPLE }}><SaveIcon /> Registrar Puntuación Grupal</button>
+          <button type="submit" className="btn-action btn-teacher" style={{width: '100%', marginTop: '1.5rem'}}><SaveIcon /> Registrar Puntuación Grupal</button>
         </form>
       </div>
 
@@ -340,7 +318,7 @@ const TeacherScoresPage = () => {
             <label htmlFor="personalNotes">Notas Adicionales (opcional):</label>
             <textarea id="personalNotes" value={personalNotes} onChange={(e) => setPersonalNotes(e.target.value)} rows="3" placeholder="Detalles..."></textarea>
           </div>
-          <button type="submit" className="btn-action btn-teacher" style={{width: '100%', marginTop: '1.5rem', backgroundColor: COLOR_TEACHER_PURPLE}}><SaveIcon/> Registrar Puntuación Personal</button>
+          <button type="submit" className="btn-action btn-teacher" style={{width: '100%', marginTop: '1.5rem'}}><SaveIcon/> Registrar Puntuación Personal</button>
         </form>
       </div>
     </div>

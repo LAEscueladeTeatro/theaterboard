@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
+import { API_BASE_URL } from '../../config'; // Importar URL base
 
 // Iconos SVG
 const LogoutIcon = () => <svg className="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fillRule="evenodd" d="M3 3.25A2.25 2.25 0 015.25 1h5.5A2.25 2.25 0 0113 3.25V4.5a.75.75 0 01-1.5 0V3.25a.75.75 0 00-.75-.75h-5.5a.75.75 0 00-.75.75v13.5a.75.75 0 00.75.75h5.5a.75.75 0 00.75-.75v-1.25a.75.75 0 011.5 0V16.75a2.25 2.25 0 01-2.25 2.25h-5.5A2.25 2.25 0 013 16.75V3.25zm10.97 9.22a.75.75 0 001.06-1.06l-1.72-1.72h3.44a.75.75 0 000-1.5H12.81l1.72-1.72a.75.75 0 00-1.06-1.06l-3 3a.75.75 0 000 1.06l3 3z" clipRule="evenodd" /></svg>;
@@ -19,7 +20,6 @@ const StudentDashboardPage = () => {
   const [dailyQuote, setDailyQuote] = useState('');
   const [quoteError, setQuoteError] = useState('');
   const navigate = useNavigate();
-  const API_URL = 'http://localhost:3001/api';
 
   const getToken = useCallback(() => localStorage.getItem('studentToken'), []);
 
@@ -36,7 +36,7 @@ const StudentDashboardPage = () => {
       setLoading(true);
       setError('');
       try {
-        const response = await axios.get(`${API_URL}/student/dashboard-data`, {
+        const response = await axios.get(`${API_BASE_URL}/student/dashboard-data`, {
           headers: { 'x-auth-token': token },
         });
         setDashboardData(response.data);
@@ -63,7 +63,7 @@ const StudentDashboardPage = () => {
     const fetchDailyQuote = async (token) => {
       setQuoteError('');
       try {
-        const quoteResponse = await axios.get(`${API_URL}/student/me/daily-quote`, {
+        const quoteResponse = await axios.get(`${API_BASE_URL}/student/me/daily-quote`, {
           headers: { 'x-auth-token': token },
         });
         if (quoteResponse.data && quoteResponse.data.quote) {
@@ -76,7 +76,7 @@ const StudentDashboardPage = () => {
     };
 
     fetchDashboardData();
-  }, [getToken, navigate, API_URL]); // API_URL might not be needed if it's constant
+  }, [getToken, navigate, API_BASE_URL]);
 
   const handleLogout = () => {
     localStorage.removeItem('studentToken');

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import { API_BASE_URL as TEACHER_API_URL_BASE } from '../../config'; // Usar alias para claridad si es necesario
 
 // Basic styling (can be moved to App.css or a dedicated CSS file)
 const styles = {
@@ -76,7 +77,7 @@ const styles = {
 
 const TeacherProfilePage = () => {
   const navigate = useNavigate();
-  const API_BASE_URL = 'http://localhost:3001/api/teachers';
+  const TEACHERS_API_URL = `${TEACHER_API_URL_BASE}/teachers`; // Construir URL específica
   const getToken = useCallback(() => localStorage.getItem('teacherToken'), []);
 
   const [profile, setProfile] = useState({
@@ -111,7 +112,7 @@ const TeacherProfilePage = () => {
           navigate('/docente/login');
           return;
         }
-        const response = await axios.get(`${API_BASE_URL}/profile`, {
+        const response = await axios.get(`${TEACHERS_API_URL}/profile`, { // Usar URL construida
           headers: { 'x-auth-token': token }
         });
         setProfile(response.data);
@@ -127,7 +128,7 @@ const TeacherProfilePage = () => {
       }
     };
     fetchProfile();
-  }, [getToken, navigate, API_BASE_URL]);
+  }, [getToken, navigate, TEACHERS_API_URL]);
 
   const handleProfileChange = (e) => {
     setProfile({ ...profile, [e.target.name]: e.target.value });
@@ -163,7 +164,7 @@ const TeacherProfilePage = () => {
     }
     try {
       const token = getToken();
-      const response = await axios.put(`${API_BASE_URL}/profile`, profile, {
+      const response = await axios.put(`${TEACHERS_API_URL}/profile`, profile, { // Usar URL construida
         headers: { 'x-auth-token': token }
       });
       setProfileSuccess(response.data.message || 'Perfil actualizado exitosamente.');
@@ -194,7 +195,7 @@ const TeacherProfilePage = () => {
     }
     try {
       const token = getToken();
-      const response = await axios.put(`${API_BASE_URL}/password`, passwordData, {
+      const response = await axios.put(`${TEACHERS_API_URL}/password`, passwordData, { // Usar URL construida
         headers: { 'x-auth-token': token }
       });
       setPasswordSuccess(response.data.message || 'Contraseña actualizada exitosamente.');
@@ -279,10 +280,6 @@ const TeacherProfilePage = () => {
           </button>
         </form>
       </div>
-       {/* Link moved to the top */}
-       {/* <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-        <Link to="/docente/dashboard" className="secondary-link">Volver al Panel</Link>
-      </div> */}
     </div>
   );
 };

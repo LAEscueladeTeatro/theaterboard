@@ -12,11 +12,11 @@ import TeacherSummaryPage from './pages/TeacherSummaryPage';
 import TeacherRankingPage from './pages/TeacherRankingPage';
 import TeacherDatabasePage from './pages/TeacherDatabasePage';
 import TeacherHistoricAttendancePage from './pages/TeacherHistoricAttendancePage';
-import TeacherProfilePage from './pages/TeacherProfilePage'; // Import TeacherProfilePage
+import TeacherProfilePage from './pages/TeacherProfilePage';
 import StudentLoginPage from './pages/StudentLoginPage';
 import StudentDashboardPage from './pages/StudentDashboardPage';
 import StudentScoresDetailPage from './pages/StudentScoresDetailPage';
-import StudentProfilePage from './pages/StudentProfilePage'; // Import StudentProfilePage
+import StudentProfilePage from './pages/StudentProfilePage';
 import PublicRegistrationPage from './pages/PublicRegistrationPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import WhatsAppButton from './components/WhatsAppButton';
@@ -83,13 +83,13 @@ function App() {
               <Route path="/docente/resumen" element={<TeacherSummaryPage />} />
               <Route path="/docente/ranking" element={<TeacherRankingPage />} />
               <Route path="/docente/ingreso-historico" element={<TeacherHistoricAttendancePage />} />
-              <Route path="/docente/mi-perfil" element={<TeacherProfilePage />} /> {/* Add route for TeacherProfilePage */}
+              <Route path="/docente/mi-perfil" element={<TeacherProfilePage />} />
             </Route>
             <Route path="/estudiante/login" element={<StudentLoginPage />} />
             <Route element={<ProtectedRoute tokenType="studentToken" redirectTo="/estudiante/login" />}>
               <Route path="/estudiante/dashboard" element={<StudentDashboardPage />} />
               <Route path="/estudiante/mis-puntajes" element={<StudentScoresDetailPage />} />
-              <Route path="/estudiante/mi-perfil" element={<StudentProfilePage />} /> {/* Add route for StudentProfilePage */}
+              <Route path="/estudiante/mi-perfil" element={<StudentProfilePage />} />
             </Route>
             <Route path="*" element={
               <div className="centered-form-page" style={{textAlign: 'center'}}>
