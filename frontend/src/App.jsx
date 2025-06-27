@@ -58,20 +58,22 @@ function App() {
                 secondary: 'white',
               },
               style: {
-                background: 'var(--container-background-lighter)',
-                color: 'var(--text-color-main)',
+                background: 'rgba(45, 45, 65, 0.95)', // Fondo más opaco
+                color: 'var(--text-color-main, #E0E0E0)', // Fallback por si la variable no está
                 border: '1px solid var(--color-success)',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)', // Sombra sutil
               },
             },
             error: {
               iconTheme: {
-                primary: 'var(--color-danger)', // Usar variable CSS para el color del icono
+                primary: 'var(--color-danger)',
                 secondary: 'white',
               },
               style: {
-                background: 'var(--container-background-lighter)',
-                color: 'var(--text-color-main)',
+                background: 'rgba(45, 45, 65, 0.95)', // Fondo más opaco
+                color: 'var(--text-color-main, #E0E0E0)', // Fallback
                 border: '1px solid var(--color-danger)',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)', // Sombra sutil
               },
             },
           }}
