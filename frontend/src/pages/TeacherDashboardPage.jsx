@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import ToggleSwitch from '../../components/ToggleSwitch'; // Ajustar ruta si es necesario
+import ToggleSwitch from '../components/ToggleSwitch'; // Ruta Corregida
 
 // Ícono para el botón Salir
 const LogoutIcon = () => ( // Renombrado para claridad, era ArrowLeftOnRectangleIcon
