@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { API_BASE_URL } from '../../config'; // Importar URL base
 
 const ArrowRightOnRectangleIcon = () => (
   <svg className="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
@@ -22,7 +23,7 @@ const TeacherLoginPage = () => {
       return;
     }
     try {
-      const response = await axios.post('http://localhost:3001/api/auth/login/teacher', { email, password });
+      const response = await axios.post(`${API_BASE_URL}/auth/login/teacher`, { email, password });
       if (response.data.token) {
         localStorage.setItem('teacherToken', response.data.token);
         navigate('/docente/dashboard');

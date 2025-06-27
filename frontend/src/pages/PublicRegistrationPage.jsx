@@ -1,6 +1,7 @@
-import React, { useState, useCallback, useEffect } from 'react'; // useEffect añadido
+import React, { useState, useCallback, useEffect } from 'react';
 import axios from 'axios';
-import { Link } from 'react-router-dom'; // useNavigate no se usa, se puede quitar si no hay redirección
+import { Link } from 'react-router-dom';
+import { API_BASE_URL } from '../../config'; // Importar URL base
 
 const PublicRegistrationPage = () => {
   const initialFormData = {
@@ -24,36 +25,32 @@ const PublicRegistrationPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  // const navigate = useNavigate(); // No se usa directamente si no hay redirección post-éxito
 
   // Estados para el estado global de registro
-  const [isRegistrationGloballyEnabled, setIsRegistrationGloballyEnabled] = useState(true); // Asumir true hasta verificar
+  const [isRegistrationGloballyEnabled, setIsRegistrationGloballyEnabled] = useState(true);
   const [loadingStatus, setLoadingStatus] = useState(true); // Cargando estado global al inicio
   const [globalStatusError, setGlobalStatusError] = useState('');
 
 
-  const API_PUBLIC_URL = 'http://localhost:3001/api/public'; // URL base para endpoints públicos
+  const PUBLIC_API_URL = `${API_BASE_URL}/public`; // Usar URL base
 
   useEffect(() => {
     const checkRegistrationStatus = async () => {
       setLoadingStatus(true);
       setGlobalStatusError('');
       try {
-        const response = await axios.get(`${API_PUBLIC_URL}/settings/registration-status-check`);
+        const response = await axios.get(`${PUBLIC_API_URL}/settings/registration-status-check`);
         setIsRegistrationGloballyEnabled(response.data.enabled);
       } catch (err) {
         console.error("Error checking registration status:", err);
-        // Si hay error al verificar, por precaución, podríamos deshabilitar el form o mostrar un error específico
-        // Por ahora, si falla, se mantendrá el valor de isRegistrationGloballyEnabled (que podría ser true por defecto)
-        // y el backend hará la validación final. O podríamos setearlo a false.
         setGlobalStatusError('No se pudo verificar el estado de las inscripciones. Intente más tarde.');
-        setIsRegistrationGloballyEnabled(false); // Más seguro deshabilitar si no se puede verificar
+        setIsRegistrationGloballyEnabled(false);
       } finally {
         setLoadingStatus(false);
       }
     };
     checkRegistrationStatus();
-  }, [API_PUBLIC_URL]);
+  }, [PUBLIC_API_URL]);
 
 
   const handleChange = (e) => {
@@ -96,8 +93,7 @@ const PublicRegistrationPage = () => {
     };
 
     try {
-      // Usar API_PUBLIC_URL para el endpoint de registro
-      const response = await axios.post(`${API_PUBLIC_URL}/register`, payload);
+      const response = await axios.post(`${PUBLIC_API_URL}/register`, payload);
       setSuccessMessage(response.data.message || '¡Registro exitoso! Revisa tu correo o contacta a la escuela para más detalles.');
       setFormData(initialFormData);
     } catch (err) {
@@ -193,7 +189,6 @@ const PublicRegistrationPage = () => {
         )}
         <Link to="/" className="secondary-link" style={{marginTop: '2rem'}}>Volver al Inicio</Link>
       </div>
-      {/* Eliminados los estilos <style jsx global> */}
     </div>
   );
 };

@@ -34,13 +34,6 @@ app.use('/api/admin/students', authMiddleware, studentAdminRoutes);
 app.use('/api/admin/settings', authMiddleware, adminSettingsRoutes); // <-- Montar nuevas rutas
 app.use('/api/public', publicRoutes); // Rutas públicas (ej: /api/public/register)
 
-// La ruta GET /api/students original se elimina, ya que su funcionalidad ahora está en GET /api/admin/students
-// y es más completa (permite filtrar por is_active).
-// El frontend deberá actualizarse para usar /api/admin/students?active=true para la lista principal.
-
-// El ejemplo de ruta protegida /api/teacher/profile se elimina ya que está cubierto por teacherRoutes.js
-
-
 // Iniciar servidor
 app.listen(port, () => {
   console.log(`Backend server is running on port ${port}`);

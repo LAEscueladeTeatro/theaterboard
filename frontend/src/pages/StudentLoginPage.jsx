@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import { API_BASE_URL } from '../../config'; // Importar URL base
 
 const ArrowRightOnRectangleIcon = () => (
   <svg className="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
@@ -13,7 +14,6 @@ const StudentLoginPage = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
-  const API_URL = 'http://localhost:3001/api';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,7 +23,7 @@ const StudentLoginPage = () => {
       return;
     }
     try {
-      const response = await axios.post(`${API_URL}/auth/login/student`, { student_id: studentId, password });
+      const response = await axios.post(`${API_BASE_URL}/auth/login/student`, { student_id: studentId, password });
       if (response.data.token) {
         localStorage.setItem('studentToken', response.data.token);
         navigate('/estudiante/dashboard');

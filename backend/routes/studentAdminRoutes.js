@@ -34,7 +34,6 @@ router.get('/', async (req, res) => {
   // Prefiero que el default sea activos si no se especifica, para la lista principal.
   // Para obtener TODOS, se podría añadir un ?active=all o similar, o dejarlo como está (undefined).
   // Por ahora, mantendré la lógica: ?active=true -> activos, ?active=false -> inactivos, sin query param -> todos.
-  // Y cambiaremos el orden.
 
   query += ' ORDER BY id ASC'; // Cambiado de full_name a id
 
