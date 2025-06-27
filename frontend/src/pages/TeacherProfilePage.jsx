@@ -8,31 +8,34 @@ const styles = {
     maxWidth: '700px',
     margin: '2rem auto',
     padding: '2rem',
-    border: '1px solid #ddd',
+    // backgroundColor: '#f9f9f9', // Removed to allow dark background inheritance/setting
+    border: '1px solid var(--border-color-subtle, #4A4A60)', // Use theme border color
     borderRadius: '8px',
-    backgroundColor: '#f9f9f9',
   },
   formSection: {
     marginBottom: '2rem',
     padding: '1.5rem',
-    border: '1px solid #eee',
+    border: '1px solid var(--border-color-subtle, #4A4A60)', // Use theme border color
     borderRadius: '8px',
-    backgroundColor: '#fff',
+    backgroundColor: 'var(--container-background, rgba(30, 30, 50, 0.75))', // Dark container background
   },
   formGroup: {
     marginBottom: '1rem',
   },
-  label: { // Will be styled by .profile-form-label in App.css
+  label: {
     display: 'block',
     marginBottom: '0.5rem',
     fontWeight: 'bold',
+    color: 'var(--text-color-main, #E0E0E0)', // Light text for labels
   },
-  input: { // Will be styled by .profile-form-input in App.css
+  input: {
     width: '100%',
     padding: '0.75rem',
-    border: '1px solid #ccc',
+    border: '1px solid var(--border-color-subtle, #4A4A60)', // Theme border
     borderRadius: '4px',
     boxSizing: 'border-box',
+    backgroundColor: 'var(--input-background, #2A2A3E)', // Dark input background
+    color: 'var(--text-color-main, #E0E0E0)', // Light text for inputs
   },
   button: {
     padding: '0.75rem 1.5rem',
@@ -228,20 +231,20 @@ const TeacherProfilePage = () => {
         {profileSuccess && <p style={styles.successMessage}>{profileSuccess}</p>}
         <form onSubmit={handleProfileSubmit}>
           <div style={styles.formGroup}>
-            <label htmlFor="full_name" style={styles.label} className="profile-form-label">Nombres Completos:</label>
-            <input type="text" id="full_name" name="full_name" value={profile.full_name} onChange={handleProfileChange} style={styles.input} className="profile-form-input" required />
+            <label htmlFor="full_name" style={styles.label}>Nombres Completos:</label>
+            <input type="text" id="full_name" name="full_name" value={profile.full_name} onChange={handleProfileChange} style={styles.input} required />
           </div>
           <div style={styles.formGroup}>
-            <label htmlFor="nickname" style={styles.label} className="profile-form-label">Sobrenombre (Nickname):</label>
-            <input type="text" id="nickname" name="nickname" value={profile.nickname} onChange={handleProfileChange} style={styles.input} className="profile-form-input" />
+            <label htmlFor="nickname" style={styles.label}>Sobrenombre (Nickname):</label>
+            <input type="text" id="nickname" name="nickname" value={profile.nickname} onChange={handleProfileChange} style={styles.input} />
           </div>
           <div style={styles.formGroup}>
-            <label htmlFor="email" style={styles.label} className="profile-form-label">Correo Electrónico:</label>
-            <input type="email" id="email" name="email" value={profile.email} onChange={handleProfileChange} style={styles.input} className="profile-form-input" required />
+            <label htmlFor="email" style={styles.label}>Correo Electrónico:</label>
+            <input type="email" id="email" name="email" value={profile.email} onChange={handleProfileChange} style={styles.input} required />
           </div>
           <div style={styles.formGroup}>
-            <label htmlFor="cellphone_number" style={styles.label} className="profile-form-label">Número de Celular:</label>
-            <input type="tel" id="cellphone_number" name="cellphone_number" value={profile.cellphone_number || ''} onChange={handleProfileChange} style={styles.input} className="profile-form-input" pattern="\d{9,15}" title="Debe ser un número de 9 a 15 dígitos." />
+            <label htmlFor="cellphone_number" style={styles.label}>Número de Celular:</label>
+            <input type="tel" id="cellphone_number" name="cellphone_number" value={profile.cellphone_number || ''} onChange={handleProfileChange} style={styles.input} pattern="\d{9,15}" title="Debe ser un número de 9 a 15 dígitos." />
           </div>
           <button type="submit" style={{...styles.button, backgroundColor: 'var(--primary-color-teacher)', ...( (loadingProfile || !profileHasChanged) && styles.buttonDisabled)}} disabled={loadingProfile || !profileHasChanged}>
             {loadingProfile ? 'Guardando...' : 'Guardar Cambios de Perfil'}
@@ -254,16 +257,16 @@ const TeacherProfilePage = () => {
         {passwordSuccess && <p style={styles.successMessage}>{passwordSuccess}</p>}
         <form onSubmit={handlePasswordSubmit}>
           <div style={styles.formGroup}>
-            <label htmlFor="current_password" style={styles.label} className="profile-form-label">Contraseña Actual:</label>
-            <input type="password" id="current_password" name="current_password" value={passwordData.current_password} onChange={handlePasswordChange} style={styles.input} className="profile-form-input" required />
+            <label htmlFor="current_password" style={styles.label}>Contraseña Actual:</label>
+            <input type="password" id="current_password" name="current_password" value={passwordData.current_password} onChange={handlePasswordChange} style={styles.input} required />
           </div>
           <div style={styles.formGroup}>
-            <label htmlFor="new_password" style={styles.label} className="profile-form-label">Nueva Contraseña:</label>
-            <input type="password" id="new_password" name="new_password" value={passwordData.new_password} onChange={handlePasswordChange} style={styles.input} className="profile-form-input" required minLength="6" />
+            <label htmlFor="new_password" style={styles.label}>Nueva Contraseña:</label>
+            <input type="password" id="new_password" name="new_password" value={passwordData.new_password} onChange={handlePasswordChange} style={styles.input} required minLength="6" />
           </div>
           <div style={styles.formGroup}>
-            <label htmlFor="confirm_new_password" style={styles.label} className="profile-form-label">Confirmar Nueva Contraseña:</label>
-            <input type="password" id="confirm_new_password" name="confirm_new_password" value={passwordData.confirm_new_password} onChange={handlePasswordChange} style={styles.input} className="profile-form-input" required minLength="6" />
+            <label htmlFor="confirm_new_password" style={styles.label}>Confirmar Nueva Contraseña:</label>
+            <input type="password" id="confirm_new_password" name="confirm_new_password" value={passwordData.confirm_new_password} onChange={handlePasswordChange} style={styles.input} required minLength="6" />
           </div>
           <button type="submit" style={{...styles.button, backgroundColor: 'var(--primary-color-teacher)', ...(loadingPassword && styles.buttonDisabled)}} disabled={loadingPassword}>
             {loadingPassword ? 'Cambiando...' : 'Cambiar Contraseña'}
