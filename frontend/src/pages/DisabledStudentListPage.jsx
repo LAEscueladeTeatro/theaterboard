@@ -3,7 +3,8 @@ import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { API_BASE_URL } from "../config";
 import Spinner from '../components/Spinner';
-import toast from 'react-hot-toast'; // Importar toast
+import toast from 'react-hot-toast';
+import ConfirmationModal from '../components/ConfirmationModal'; // Importar ConfirmationModal
 
 // Iconos SVG
 const EnableIcon = () => <svg className="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" /></svg>;
@@ -33,39 +34,52 @@ const DisabledStudentListPage = () => {
   useEffect(() => { fetchDisabledStudents(); }, [fetchDisabledStudents]);
 
   // Estados para spinners de acciones (si se añaden más adelante)
-  // const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
-  // const [isDeleting, setIsDeleting] = useState(false);
+  // Estados para el modal de confirmación
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [modalAction, setModalAction] = useState(null); // { type: 'enable' | 'delete', studentId: string, studentName: string }
+  const [isProcessingAction, setIsProcessingAction] = useState(false);
 
-  const handleSetStudentStatus = async (studentId, isActive) => {
-    // TODO: Considerar añadir spinner para esta acción si puede ser lenta
-    const action = isActive ? "habilitar" : "inhabilitar";
-    if (!window.confirm(`¿Está seguro que desea ${action} a este estudiante?`)) return;
+  const handleOpenConfirmModal = (type, student) => {
+    setModalAction({ type, studentId: student.id, studentName: student.full_name });
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmModalAction = async () => {
+    if (!modalAction) return;
+    setIsProcessingAction(true);
+    const { type, studentId, studentName } = modalAction;
 
     try {
       const token = getToken();
-      await axios.put(`${STUDENT_ADMIN_API_URL}/${studentId}/set-status`, { is_active: isActive }, { headers: { 'x-auth-token': token }});
-      fetchDisabledStudents();
-      toast.success(`Estudiante ${action}do con éxito.`);
+      if (type === 'enable') {
+        await axios.put(`${STUDENT_ADMIN_API_URL}/${studentId}/set-status`, { is_active: true }, { headers: { 'x-auth-token': token }});
+        fetchDisabledStudents(); // Recargar la lista de inhabilitados
+        toast.success(`Estudiante ${studentName} habilitado con éxito.`);
+      } else if (type === 'delete') {
+        await axios.delete(`${STUDENT_ADMIN_API_URL}/${studentId}/permanent-delete`, { headers: { 'x-auth-token': token }});
+        fetchDisabledStudents();
+        toast.success(`Estudiante ${studentName} (${studentId}) eliminado permanentemente.`);
+      }
     } catch (err) {
-      console.error(`Error ${action}ing student:`, err);
-      toast.error(`Error: ${err.response?.data?.message || `No se pudo ${action} el estudiante.`}`);
+      const actionText = type === 'enable' ? 'habilitar' : 'eliminar';
+      console.error(`Error al ${actionText} estudiante:`, err);
+      toast.error(`Error: ${err.response?.data?.message || `No se pudo ${actionText} el estudiante.`}`);
+    } finally {
+      setIsProcessingAction(false);
+      setShowConfirmModal(false);
+      setModalAction(null);
     }
   };
 
-  const handleDeletePermanent = async (studentId, studentName) => {
-    // Considerar reemplazar window.confirm con un modal más estilizado
-    if (!window.confirm(`¿ESTÁ ABSOLUTAMENTE SEGURO que desea ELIMINAR PERMANENTEMENTE a ${studentName} (${studentId})? Esta acción no se puede deshacer y borrará todos sus registros asociados.`)) return;
-    if (!window.confirm(`Confirmación final: ¿Realmente desea ELIMINAR PERMANENTEMENTE a ${studentName}?`)) return;
-
-    try {
-      const token = getToken();
-      await axios.delete(`${STUDENT_ADMIN_API_URL}/${studentId}/permanent-delete`, { headers: { 'x-auth-token': token }});
-      fetchDisabledStudents();
-      toast.success(`Estudiante ${studentName} (${studentId}) eliminado permanentemente.`);
-    } catch (err) {
-      console.error("Error deleting student permanently:", err);
-      toast.error(`Error: ${err.response?.data?.message || 'No se pudo eliminar el estudiante.'}`);
+  // Modificar las funciones originales para usar el modal
+  const handleSetStudentStatus = (student, isActive) => { // student es el objeto completo
+    if (isActive) { // Solo para habilitar
+      handleOpenConfirmModal('enable', student);
     }
+  };
+
+  const handleDeletePermanent = (student) => { // student es el objeto completo
+    handleOpenConfirmModal('delete', student);
   };
 
 
@@ -108,15 +122,17 @@ const DisabledStudentListPage = () => {
                   <td>{student.nickname || '-'}</td>
                   <td style={{whiteSpace: 'nowrap'}}>
                     <button
-                      onClick={() => handleSetStudentStatus(student.id, true)}
+                      onClick={() => handleSetStudentStatus(student, true)} // Pasar objeto student
                       className="btn-action-row btn-success-row"
+                      disabled={isProcessingAction}
                     >
                       <EnableIcon /> Habilitar
                     </button>
                     <button
-                      onClick={() => handleDeletePermanent(student.id, student.full_name)}
+                      onClick={() => handleDeletePermanent(student)} // Pasar objeto student
                       className="btn-action-row btn-danger-row"
                       style={{marginLeft: '0.5rem'}}
+                      disabled={isProcessingAction}
                     >
                       <TrashIcon/> Eliminar
                     </button>
@@ -126,6 +142,23 @@ const DisabledStudentListPage = () => {
             </tbody>
           </table>
         </div>
+      )}
+
+      {modalAction && (
+        <ConfirmationModal
+          isOpen={showConfirmModal}
+          onClose={() => { setShowConfirmModal(false); setModalAction(null); }}
+          onConfirm={handleConfirmModalAction}
+          title={modalAction.type === 'enable' ? "Confirmar Habilitación" : "Confirmar Eliminación Permanente"}
+          message={
+            modalAction.type === 'enable' ?
+            `¿Está seguro que desea habilitar a ${modalAction.studentName} (${modalAction.studentId})?` :
+            `¿ESTÁ ABSOLUTAMENTE SEGURO que desea ELIMINAR PERMANENTEMENTE a ${modalAction.studentName} (${modalAction.studentId})? Esta acción no se puede deshacer y borrará todos sus registros asociados.`
+          }
+          confirmText={modalAction.type === 'enable' ? "Habilitar" : "Eliminar Permanentemente"}
+          confirmButtonClassName={modalAction.type === 'enable' ? "btn-success" : "btn-danger"}
+          showSpinner={isProcessingAction}
+        />
       )}
     </div>
   );

@@ -3,7 +3,8 @@ import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from "../config";
 import Spinner from '../components/Spinner';
-import toast from 'react-hot-toast'; // Importar toast
+import toast from 'react-hot-toast';
+import ConfirmationModal from '../components/ConfirmationModal'; // Importar ConfirmationModal
 
 // Iconos SVG (ejemplos)
 const AddIcon = () => <svg className="icon" viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" /></svg>;
@@ -27,7 +28,12 @@ const StudentListPage = () => {
   const [newStudentData, setNewStudentData] = useState({ full_name: '', nickname: '' });
   const [editStudentData, setEditStudentData] = useState({ id: '', full_name: '', nickname: '' });
 
-  const STUDENT_ADMIN_API_URL = `${API_BASE_URL}/admin/students`; // Usar URL base
+  // Estados para el modal de confirmación de inhabilitar
+  const [showDisableModal, setShowDisableModal] = useState(false);
+  const [studentToDisable, setStudentToDisable] = useState(null); // { id, full_name }
+  const [isDisablingStudent, setIsDisablingStudent] = useState(false);
+
+  const STUDENT_ADMIN_API_URL = `${API_BASE_URL}/admin/students`;
   const getToken = useCallback(() => localStorage.getItem('teacherToken'), []);
 
   const fetchActiveStudents = useCallback(async () => {
@@ -87,18 +93,40 @@ const StudentListPage = () => {
     }
   };
 
-  const handleSetStudentStatus = async (studentId, isActive) => {
-    const action = isActive ? "habilitar" : "inhabilitar";
-    // Considerar reemplazar window.confirm con un modal más estilizado si se desea una UX más pulida
-    if (!window.confirm(`¿Está seguro que desea ${action} a este estudiante?`)) return;
+  const handleOpenDisableConfirmModal = (student) => {
+    setStudentToDisable(student); // student debe tener al menos { id, full_name }
+    setShowDisableModal(true);
+  };
+
+  const handleConfirmDisableStudent = async () => {
+    if (!studentToDisable) return;
+    setIsDisablingStudent(true);
     try {
       const token = getToken();
-      await axios.put(`${STUDENT_ADMIN_API_URL}/${studentId}/set-status`, { is_active: isActive }, { headers: { 'x-auth-token': token }});
-      fetchActiveStudents();
-      toast.success(`Estudiante ${action}do con éxito.`);
+      await axios.put(`${STUDENT_ADMIN_API_URL}/${studentToDisable.id}/set-status`, { is_active: false }, { headers: { 'x-auth-token': token }});
+      fetchActiveStudents(); // Recargar la lista de estudiantes activos
+      toast.success(`Estudiante ${studentToDisable.full_name} inhabilitado con éxito.`);
     } catch (err) {
-      console.error(`Error ${action}ing student:`, err);
-      toast.error(`Error: ${err.response?.data?.message || `No se pudo ${action} el estudiante.`}`);
+      console.error(`Error inhabilitando estudiante:`, err);
+      toast.error(`Error: ${err.response?.data?.message || `No se pudo inhabilitar el estudiante.`}`);
+    } finally {
+      setIsDisablingStudent(false);
+      setShowDisableModal(false);
+      setStudentToDisable(null);
+    }
+  };
+
+  // La función original handleSetStudentStatus se podría mantener si se usa para HABILITAR desde otra parte,
+  // o refactorizarla para que solo llame a handleOpenDisableConfirmModal cuando isActive es false.
+  // Por ahora, asumimos que la acción de inhabilitar en esta página usará el modal.
+  // Si handleSetStudentStatus se usa solo para inhabilitar aquí:
+  const handleSetStudentStatus = (student, isActive) => { // student es el objeto completo
+    if (!isActive) { // Solo para inhabilitar
+      handleOpenDisableConfirmModal(student);
+    } else {
+      // Lógica para habilitar (si esta función se reutilizara para eso)
+      // Por ahora, esta página solo inhabilita, la habilitación está en DisabledStudentListPage
+      console.warn("La acción de habilitar no está implementada directamente aquí, usar DisabledStudentListPage.");
     }
   };
 
@@ -162,7 +190,8 @@ const StudentListPage = () => {
                     <button onClick={() => handleOpenEditModal(student)} className="btn-action-row">
                       <EditIcon /> Editar
                     </button>
-                    <button onClick={() => handleSetStudentStatus(student.id, false)} className="btn-action-row btn-danger-row">
+                    {/* Pasar el objeto student completo a handleSetStudentStatus */}
+                    <button onClick={() => handleSetStudentStatus(student, false)} className="btn-action-row btn-danger-row">
                       <DisableIcon /> Inhabilitar
                     </button>
                   </td>
@@ -216,6 +245,17 @@ const StudentListPage = () => {
          </div>
        </div>
       )}
+
+      <ConfirmationModal
+        isOpen={showDisableModal}
+        onClose={() => setShowDisableModal(false)}
+        onConfirm={handleConfirmDisableStudent}
+        title="Confirmar Inhabilitación"
+        message={`¿Está seguro que desea inhabilitar a ${studentToDisable?.full_name} (${studentToDisable?.id})?`}
+        confirmText="Inhabilitar"
+        confirmButtonClassName="btn-danger" // Para que el botón de confirmar sea rojo
+        showSpinner={isDisablingStudent}
+      />
     </div>
   );
 };
