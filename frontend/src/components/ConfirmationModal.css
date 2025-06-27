@@ -1,0 +1,103 @@
+.confirmation-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000; /* Asegurar que esté por encima de otros contenidos */
+}
+
+.confirmation-modal-content {
+  background-color: var(--container-background, #2c2c3e); /* Usar variable CSS o fallback */
+  padding: 2rem;
+  border-radius: var(--border-radius-large, 12px); /* Usar variable CSS o fallback */
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  width: 90%;
+  max-width: 450px; /* Ancho máximo del modal */
+  text-align: center;
+  color: var(--text-color-main, #E0E0E0); /* Usar variable CSS o fallback */
+}
+
+.confirmation-modal-title {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+  color: var(--text-color-light, #FFFFFF); /* Usar variable CSS o fallback */
+}
+
+.confirmation-modal-message {
+  margin-bottom: 1.5rem;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text-color-soft, #b0b0b0); /* Usar variable CSS o fallback */
+}
+
+.confirmation-modal-actions {
+  display: flex;
+  justify-content: space-around; /* O 'flex-end' con gap si prefieres */
+  gap: 1rem; /* Espacio entre botones */
+}
+
+.confirmation-modal-actions button {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: var(--border-radius-small, 6px);
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+  min-width: 100px; /* Ancho mínimo para los botones */
+}
+
+/* Clases de botones (btn-primary y btn-secondary ya deberían existir globalmente) */
+/* Si no, definirlas aquí o asegurarse de que se importen. */
+/* Ejemplo:
+.confirmation-modal-actions .btn-primary {
+  background-color: var(--primary-color-teacher);
+  color: white;
+}
+.confirmation-modal-actions .btn-primary:hover {
+  background-color: var(--primary-color-teacher-hover);
+}
+
+.confirmation-modal-actions .btn-secondary {
+  background-color: var(--button-secondary-background);
+  color: var(--text-color-main);
+  border: 1px solid var(--border-color-subtle);
+}
+.confirmation-modal-actions .btn-secondary:hover {
+  background-color: var(--button-secondary-background-hover);
+}
+*/
+
+/* Placeholder para el spinner dentro del botón */
+.modal-spinner {
+  display: inline-block;
+  width: 1em; /* Ajustar al tamaño del texto del botón */
+  height: 1em;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: modal-button-spin 0.6s linear infinite;
+  margin-right: 0.5em;
+  vertical-align: middle; /* Alinear con el texto si hay */
+}
+
+@keyframes modal-button-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.confirmation-modal-actions button:disabled .modal-spinner {
+  /* Asegurar que el spinner se muestre incluso si el botón está deshabilitado */
+  opacity: 1;
+}
+.confirmation-modal-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}

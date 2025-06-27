@@ -2,7 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import ToggleSwitch from '../components/ToggleSwitch';
-import Spinner from '../components/Spinner'; // Import Spinner
+import Spinner from '../components/Spinner';
+import toast from 'react-hot-toast'; // Importar toast
+import { API_BASE_URL } from '../config'; // Importar API_BASE_URL
 
 const LogoutIcon = () => (
   <svg className="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
@@ -26,8 +28,8 @@ const TeacherDashboardPage = () => {
   const [settingsLoading, setSettingsLoading] = useState(true);
   const [settingsError, setSettingsError] = useState('');
 
-  const ADMIN_API_URL = 'http://localhost:3001/api/admin/settings';
-  const TEACHER_API_URL = 'http://localhost:3001/api/teachers';
+  const LOCAL_ADMIN_API_URL = `${API_BASE_URL}/admin/settings`; // Usar API_BASE_URL
+  const LOCAL_TEACHER_API_URL = `${API_BASE_URL}/teachers`; // Usar API_BASE_URL
   const getToken = useCallback(() => localStorage.getItem('teacherToken'), []);
 
   useEffect(() => {
@@ -41,7 +43,7 @@ const TeacherDashboardPage = () => {
       // Fetch Teacher Profile
       setProfileLoading(true);
       try {
-        const profileResponse = await axios.get(`${TEACHER_API_URL}/profile`, {
+        const profileResponse = await axios.get(`${LOCAL_TEACHER_API_URL}/profile`, { // Usar LOCAL_TEACHER_API_URL
           headers: { 'x-auth-token': token },
         });
         setTeacherProfile(profileResponse.data);
@@ -59,7 +61,7 @@ const TeacherDashboardPage = () => {
       // setSettingsLoading(true); // This is already true by default, can be set here if preferred
       setSettingsError('');
       try {
-        const response = await axios.get(`${ADMIN_API_URL}/registration-status`, {
+        const response = await axios.get(`${LOCAL_ADMIN_API_URL}/registration-status`, { // Usar LOCAL_ADMIN_API_URL
           headers: { 'x-auth-token': token },
         });
         setIsRegistrationEnabled(response.data.enabled);
@@ -72,25 +74,26 @@ const TeacherDashboardPage = () => {
     };
 
     fetchDashboardData();
-  }, [getToken, navigate, ADMIN_API_URL, TEACHER_API_URL]);
+  }, [getToken, navigate, LOCAL_ADMIN_API_URL, LOCAL_TEACHER_API_URL]); // Usar constantes locales
 
   const handleToggleRegistrationStatus = async () => {
     const newStatus = !isRegistrationEnabled;
-    setSettingsLoading(true);
+    setSettingsLoading(true); // Indicar carga para el toggle
     setSettingsError('');
 
     try {
       const token = getToken();
-      await axios.put(`${ADMIN_API_URL}/registration-status`,
+      await axios.put(`${LOCAL_ADMIN_API_URL}/registration-status`, // Usar LOCAL_ADMIN_API_URL
         { enabled: newStatus },
         { headers: { 'x-auth-token': token } }
       );
       setIsRegistrationEnabled(newStatus);
-      alert(`Inscripciones públicas ${newStatus ? 'habilitadas' : 'deshabilitadas'}.`);
+      toast.success(`Inscripciones públicas ${newStatus ? 'habilitadas' : 'deshabilitadas'}.`);
     } catch (err) {
       console.error("Error updating registration status:", err);
-      alert(`Error: ${err.response?.data?.message || 'No se pudo actualizar el estado.'}`);
-      setSettingsError('Error al actualizar el estado.');
+      const errorMsg = err.response?.data?.message || 'No se pudo actualizar el estado.';
+      toast.error(`Error: ${errorMsg}`);
+      setSettingsError('Error al actualizar el estado.'); // Mantener error local si es necesario
     } finally {
       setSettingsLoading(false);
     }
@@ -131,9 +134,15 @@ const TeacherDashboardPage = () => {
 
       <div className="controls-section" style={{marginTop: '1rem', marginBottom: '2rem'}}>
         <h3 className="section-title">Ajustes de Inscripción</h3>
-        {settingsLoading && <p className="text-center">Cargando configuración...</p>}
+        {settingsLoading && !profileLoading && ( // Mostrar spinner solo si el perfil ya cargó, para no tener dos spinners grandes
+          <div className="loading-container" style={{minHeight: '50px'}}>
+            <Spinner size="30px" />
+            <span style={{marginLeft: '10px'}}>Actualizando estado...</span>
+          </div>
+        )}
         {settingsError && <p className="error-message-page" style={{textAlign:'left', padding:'0.5rem 1rem', fontSize:'0.9rem'}}>{settingsError}</p>}
-        {!settingsLoading && !settingsError && (
+        {/* Mostrar el ToggleSwitch incluso si hay error, para que el usuario vea el estado actual antes del error */}
+        {(!settingsLoading || settingsError) && ( // Mostrar toggle si no está cargando O si hubo un error (para ver el estado previo)
           <ToggleSwitch
             id="publicRegistrationToggle"
             label="Habilitar Inscripciones Públicas:"
