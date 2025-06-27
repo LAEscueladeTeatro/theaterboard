@@ -10,6 +10,7 @@
   --primary-color-student: #3498DB; /* Azul eléctrico/brillante */
   --primary-color-register: #16A085; /* Teal Oscuro para el botón de registro */
   --color-danger: #D9534F;           /* Rojo para acciones de "peligro" o salida */
+  --color-success: #28A745;          /* Verde para acciones de "éxito" o habilitar */
 
   --text-color-main: #E0E0E0;       /* Gris muy claro */
   --text-color-light: #FFFFFF;
