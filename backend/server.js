@@ -20,7 +20,12 @@ const app = express();
 const port = process.env.PORT || 3001; // Puerto para el backend
 
 // Middleware Global
-app.use(cors()); // Habilitar CORS para todas las rutas
+// backend/server.js
+const corsOptions = {
+  origin: 'https://theaterboard.onrender.com', // <-- Pega aquí la URL de tu frontend
+  optionsSuccessStatus: 200
+};
+app.use(cors(corsOptions));
 app.use(express.json()); // Para parsear JSON en las requests
 
 // Definición de Rutas
