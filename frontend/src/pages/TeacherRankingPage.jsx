@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
+import { API_BASE_URL } from '../config'; // Importar API_BASE_URL
 
 const TrophyIcon = () => <svg className="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fillRule="evenodd" d="M15.28 4.72a.75.75 0 010 1.06l-2.5 2.5a.75.75 0 01-1.06 0l-1-1a.75.75 0 111.06-1.06l.47.47L14.22 4.72a.75.75 0 011.06 0zm-4.78 4.03a.75.75 0 01-1.06 0l-1-1a.75.75 0 111.06-1.06l.47.47 2.5-2.5a.75.75 0 011.06 1.06l-3 3.001zM5.78 8.72a.75.75 0 010-1.06l2.5-2.5a.75.75 0 011.06 0L11.28 7.1a.75.75 0 11-1.06 1.06l-.47-.47-2.5 2.5a.75.75 0 01-1.06 0zM2.5 13.25a.75.75 0 01.75-.75h13.5a.75.75 0 010 1.5H3.25a.75.75 0 01-.75-.75zM3 15.25a.75.75 0 01.75-.75h12.5a.75.75 0 010 1.5H3.75a.75.75 0 01-.75-.75zM2 18a.75.75 0 000 1.5h16a.75.75 0 000-1.5H2z" clipRule="evenodd" /></svg>;
 
@@ -10,7 +11,7 @@ const TeacherRankingPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const API_URL = 'http://localhost:3001/api';
+  // const API_URL = 'http://localhost:3001/api'; // Eliminar esta línea
   const getToken = useCallback(() => localStorage.getItem('teacherToken'), []);
 
   const fetchRanking = useCallback(async (monthToFetch) => {
@@ -18,13 +19,14 @@ const TeacherRankingPage = () => {
     setLoading(true); setError('');
     try {
       const token = getToken();
-      const response = await axios.get(`${API_URL}/reports/monthly-ranking`, {
+      // Usar API_BASE_URL para construir la URL de la solicitud
+      const response = await axios.get(`${API_BASE_URL}/reports/monthly-ranking`, {
         params: { month: monthToFetch }, headers: { 'x-auth-token': token },
       });
       setRankingData(response.data.ranking || []);
     } catch (err) { console.error("Error fetching ranking:", err); setError(err.response?.data?.message || 'Error al cargar el ranking.'); setRankingData([]); }
     finally { setLoading(false); }
-  }, [getToken, API_URL]);
+  }, [getToken]); // Eliminar API_URL de las dependencias, API_BASE_URL es constante y no necesita estar aquí
 
   useEffect(() => { fetchRanking(selectedMonth); }, [fetchRanking, selectedMonth]);
 

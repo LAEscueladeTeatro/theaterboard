@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
+import { API_BASE_URL } from '../config'; // Importar API_BASE_URL
 
 // Icono para el botón
 const ReportIcon = () => <svg className="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fillRule="evenodd" d="M15.992 2.012a.75.75 0 01.75.75v14.476a.75.75 0 01-1.28.53l-4.154-4.155a.75.75 0 00-1.06 0L5.53 17.773a.75.75 0 01-1.28-.531V2.762a.75.75 0 01.75-.75h10.992zM8.75 9.25a.75.75 0 000 1.5h2.5a.75.75 0 000-1.5h-2.5z" clipRule="evenodd" /></svg>;
@@ -20,7 +21,7 @@ const StudentScoresDetailPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const API_URL = 'http://localhost:3001/api';
+  // const API_URL = 'http://localhost:3001/api'; // Eliminar esta línea
   const getToken = useCallback(() => localStorage.getItem('studentToken'), []);
 
   // Efecto para obtener el nombre del estudiante una sola vez
@@ -31,7 +32,7 @@ const StudentScoresDetailPage = () => {
         try {
           // Asumimos que la ruta /student/dashboard-data devuelve studentInfo.full_name
           // Esto es solo para obtener el nombre para el título, no es crítico si falla.
-          const response = await axios.get(`${API_URL}/student/dashboard-data`, { headers: { 'x-auth-token': token } });
+          const response = await axios.get(`${API_BASE_URL}/student/dashboard-data`, { headers: { 'x-auth-token': token } });
           if (response.data && response.data.studentInfo) {
             setStudentName(response.data.studentInfo.full_name);
           }
@@ -41,7 +42,7 @@ const StudentScoresDetailPage = () => {
       }
     };
     fetchStudentName();
-  }, [getToken, API_URL]);
+  }, [getToken]); // API_BASE_URL es constante global, no necesita ser dependencia
 
 
   const handleFetchScoreDetails = useCallback(async () => {
@@ -56,13 +57,13 @@ const StudentScoresDetailPage = () => {
       dateParam = selectedMonth;
     }
     try {
-      const response = await axios.get(`${API_URL}/student/my-scores-summary`, {
+      const response = await axios.get(`${API_BASE_URL}/student/my-scores-summary`, {
         params: { type: queryType, date: dateParam }, headers: { 'x-auth-token': token },
       });
       setScoreDetails(response.data.records || []);
     } catch (err) { console.error("Error fetching score details:", err); setError(err.response?.data?.message || 'Error al cargar el detalle de puntajes.');}
     finally { setLoading(false); }
-  }, [getToken, API_URL, queryType, selectedDate, selectedMonth]);
+  }, [getToken, queryType, selectedDate, selectedMonth]); // API_BASE_URL es constante global
 
   // Cargar detalles iniciales al montar la página (para la fecha/mes por defecto)
   useEffect(() => {
