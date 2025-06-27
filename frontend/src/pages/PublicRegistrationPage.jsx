@@ -24,8 +24,37 @@ const PublicRegistrationPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const navigate = useNavigate();
-  const API_URL = 'http://localhost:3001/api/public/register';
+  // const navigate = useNavigate(); // No se usa directamente si no hay redirección post-éxito
+
+  // Estados para el estado global de registro
+  const [isRegistrationGloballyEnabled, setIsRegistrationGloballyEnabled] = useState(true); // Asumir true hasta verificar
+  const [loadingStatus, setLoadingStatus] = useState(true); // Cargando estado global al inicio
+  const [globalStatusError, setGlobalStatusError] = useState('');
+
+
+  const API_PUBLIC_URL = 'http://localhost:3001/api/public'; // URL base para endpoints públicos
+
+  useEffect(() => {
+    const checkRegistrationStatus = async () => {
+      setLoadingStatus(true);
+      setGlobalStatusError('');
+      try {
+        const response = await axios.get(`${API_PUBLIC_URL}/settings/registration-status-check`);
+        setIsRegistrationGloballyEnabled(response.data.enabled);
+      } catch (err) {
+        console.error("Error checking registration status:", err);
+        // Si hay error al verificar, por precaución, podríamos deshabilitar el form o mostrar un error específico
+        // Por ahora, si falla, se mantendrá el valor de isRegistrationGloballyEnabled (que podría ser true por defecto)
+        // y el backend hará la validación final. O podríamos setearlo a false.
+        setGlobalStatusError('No se pudo verificar el estado de las inscripciones. Intente más tarde.');
+        setIsRegistrationGloballyEnabled(false); // Más seguro deshabilitar si no se puede verificar
+      } finally {
+        setLoadingStatus(false);
+      }
+    };
+    checkRegistrationStatus();
+  }, [API_PUBLIC_URL]);
+
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -63,18 +92,22 @@ const PublicRegistrationPage = () => {
 
     const payload = {
         ...formData,
-        age: parseInt(formData.age, 10) || null, // Asegurar que la edad sea número
+        age: parseInt(formData.age, 10) || null,
     };
 
     try {
-      const response = await axios.post(API_URL, payload);
+      // Usar API_PUBLIC_URL para el endpoint de registro
+      const response = await axios.post(`${API_PUBLIC_URL}/register`, payload);
       setSuccessMessage(response.data.message || '¡Registro exitoso! Revisa tu correo o contacta a la escuela para más detalles.');
-      setFormData(initialFormData); // Limpiar formulario
-      // Opcionalmente redirigir o mostrar un mensaje más permanente
-      // setTimeout(() => navigate('/'), 5000);
+      setFormData(initialFormData);
     } catch (err) {
       console.error("Error en el registro público:", err);
-      setError(err.response?.data?.message || 'Error al procesar el registro. Por favor, intente de nuevo.');
+      if (err.response && err.response.status === 403) { // Manejar el caso de registro cerrado
+        setError(err.response.data.message || "Las inscripciones están cerradas actualmente.");
+        setIsRegistrationGloballyEnabled(false); // Actualizar estado local si el backend lo indica
+      } else {
+        setError(err.response?.data?.message || 'Error al procesar el registro. Por favor, intente de nuevo.');
+      }
     } finally {
       setLoading(false);
     }
@@ -96,10 +129,20 @@ const PublicRegistrationPage = () => {
           Antes de empezar, por favor, dale una leída a nuestro <a href="https://drive.google.com/file/d/1jB6jiBouFFCbMo45FGiidC499eLyBjlt/view" target="_blank" rel="noopener noreferrer" style={{color: 'var(--primary-color-student)', fontWeight:'500'}}>Reglamento Interno</a>. Es importante que lo conozcas.
         </p>
 
-        {successMessage && <p style={{color: 'var(--primary-color-register)', fontWeight: 'bold', fontSize: '1.1rem', margin: '1rem 0'}}>{successMessage}</p>}
-        {error && <p style={{color: '#FF6B6B', fontWeight: '500', margin: '1rem 0'}}>{error}</p>}
+        {loadingStatus && <p className="text-center" style={{margin: '2rem 0'}}>Verificando estado de inscripciones...</p>}
+        {globalStatusError && <div className="error-message-page" style={{textAlign:'center'}}>{globalStatusError}</div>}
 
-        {!successMessage && (
+        {!loadingStatus && !isRegistrationGloballyEnabled && !successMessage && (
+          <div className="empty-table-message" style={{marginTop: '2rem', backgroundColor: 'var(--input-background)'}}>
+            <h3>Inscripciones Cerradas</h3>
+            <p>Las inscripciones públicas están cerradas temporalmente. Por favor, vuelve a intentarlo más tarde o contáctanos para más información.</p>
+          </div>
+        )}
+
+        {successMessage && <p style={{color: 'var(--primary-color-register)', fontWeight: 'bold', fontSize: '1.1rem', margin: '1rem 0', textAlign: 'center'}}>{successMessage}</p>}
+        {error && !globalStatusError && <p style={{color: '#FF6B6B', fontWeight: '500', margin: '1rem 0', textAlign: 'center'}}>{error}</p>}
+
+        {!loadingStatus && isRegistrationGloballyEnabled && !successMessage && (
           <form onSubmit={handleSubmit}>
             <h4 className="form-section-title">Datos del Alumno</h4>
             <div className="form-grid">

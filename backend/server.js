@@ -10,6 +10,7 @@ const reportRoutes = require('./routes/reportRoutes');
 const studentRoutes = require('./routes/studentRoutes');
 const studentAdminRoutes = require('./routes/studentAdminRoutes');
 const publicRoutes = require('./routes/publicRoutes'); // Nuevas rutas públicas
+const adminSettingsRoutes = require('./routes/adminSettingsRoutes'); // <-- Importar nuevas rutas
 
 // Importar Middleware (si es necesario globalmente o para rutas específicas aquí)
 const authMiddleware = require('./middleware/authMiddleware');
@@ -28,6 +29,7 @@ app.use('/api/scores', authMiddleware, scoreRoutes);
 app.use('/api/reports', authMiddleware, reportRoutes);
 app.use('/api/student', authMiddleware, studentRoutes);
 app.use('/api/admin/students', authMiddleware, studentAdminRoutes);
+app.use('/api/admin/settings', authMiddleware, adminSettingsRoutes); // <-- Montar nuevas rutas
 app.use('/api/public', publicRoutes); // Rutas públicas (ej: /api/public/register)
 
 // La ruta GET /api/students original se elimina, ya que su funcionalidad ahora está en GET /api/admin/students

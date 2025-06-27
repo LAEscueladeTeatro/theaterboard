@@ -1026,6 +1026,78 @@ footer {
   font-weight: 700;
 }
 
+/* Estilos para el Toggle Switch */
+.toggle-switch-container {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem; /* Espacio entre el label y el switch */
+  margin: 1rem 0; /* Margen para separar de otros elementos */
+}
+
+.toggle-switch-label {
+  font-size: 1rem; /* Ajustar según necesidad */
+  color: var(--text-color-main);
+  cursor: pointer;
+  user-select: none; /* Evitar selección de texto al hacer clic */
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 28px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--border-color-subtle); /* Color cuando está apagado */
+  transition: .4s;
+  border-radius: 28px; /* Alto del switch */
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 20px; /* Diámetro del círculo */
+  width: 20px;
+  left: 4px; /* Posición inicial */
+  bottom: 4px; /* Posición inicial */
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+  background-color: var(--color-success); /* Color cuando está encendido (verde) */
+}
+
+input:focus + .toggle-slider {
+  box-shadow: 0 0 2px var(--color-success); /* Sombra de foco sutil */
+}
+
+input:disabled + .toggle-slider {
+  background-color: #333; /* Un gris más oscuro para deshabilitado */
+  cursor: not-allowed;
+}
+input:disabled + .toggle-slider:before {
+  background-color: #555;
+}
+
+input:checked + .toggle-slider:before {
+  transform: translateX(22px); /* Distancia de movimiento del círculo */
+}
+
 /* Estilos para el Dashboard del Estudiante */
 .student-dashboard .profile-card {
   background-color: var(--container-background);

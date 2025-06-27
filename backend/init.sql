@@ -83,3 +83,16 @@ CREATE TABLE score_records (
 CREATE INDEX IF NOT EXISTS idx_score_records_student_date ON score_records(student_id, score_date);
 CREATE INDEX IF NOT EXISTS idx_score_records_type ON score_records(score_type);
 CREATE INDEX IF NOT EXISTS idx_score_records_date ON score_records(score_date);
+
+-- Tabla para configuraciones del sistema
+DROP TABLE IF EXISTS system_settings CASCADE;
+CREATE TABLE IF NOT EXISTS system_settings (
+    setting_key VARCHAR(255) PRIMARY KEY,
+    setting_value VARCHAR(255)
+);
+
+-- Insertar configuración inicial para inscripciones públicas
+-- Asumimos que por defecto están habilitadas. Cambiar a 'false' si se desea que inicien deshabilitadas.
+INSERT INTO system_settings (setting_key, setting_value)
+VALUES ('public_registration_enabled', 'true')
+ON CONFLICT (setting_key) DO NOTHING;
