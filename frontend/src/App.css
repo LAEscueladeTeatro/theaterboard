@@ -27,7 +27,7 @@
   padding: 0.8em 1.8em; /* Ajustar padding */
   font-size: 1.1rem; /* Ligeramente más grande */
   font-weight: 500; /* Semi-bold */
-  color: var(--text-color-light) !important; /* Forzar color de texto para Links */
+  color: var(--text-color-light); /* !important removido */
   border-radius: var(--border-radius-pill); /* Totalmente redondeado */
   border: none;
   cursor: pointer;
@@ -37,10 +37,13 @@
   min-width: 220px; /* Reducido ligeramente para más flexibilidad */
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
-/* Forzar que el texto de Link dentro de btn-action sea blanco */
-.btn-action a, .btn-action a:visited {
-  color: var(--text-color-light) !important;
-  text-decoration: none !important;
+/* Estilos para el texto de Link dentro de .btn-action */
+.btn-action a,
+.btn-action a:visited,
+.btn-action a:hover,
+.btn-action a:active {
+  color: var(--text-color-light); /* !important removido */
+  text-decoration: none !important; /* Mantener !important para text-decoration */
 }
 
 
@@ -225,7 +228,7 @@ footer {
   background-color: var(--container-background);
   padding: 1.8rem 1.5rem;
   border-radius: var(--border-radius-medium);
-  color: var(--text-color-light) !important;
+  color: var(--text-color-light); /* !important removido */
   text-decoration: none;
   display: flex;
   flex-direction: column;
@@ -244,11 +247,13 @@ footer {
   margin-bottom: 0.75rem;
 }
 
-.dashboard-action-card a, .dashboard-action-card a:visited {
-   color: var(--text-color-light) !important;
-   text-decoration: none !important;
+.dashboard-action-card a,
+.dashboard-action-card a:visited,
+.dashboard-action-card a:hover,
+.dashboard-action-card a:active {
+   color: var(--text-color-light); /* !important removido */
+   text-decoration: none !important; /* Mantener !important para text-decoration */
 }
-
 .dashboard-action-card:hover { /* Hover para docente (morado por defecto) */
   background-color: color-mix(in srgb, var(--primary-color-teacher) 15%, var(--container-background) 85%);
   transform: translateY(-4px);
@@ -272,8 +277,8 @@ footer {
   border: 1px solid var(--border-color-subtle);
 }
 .dashboard-action-card.button-as-card:hover {
-   background-color: color-mix(in srgb, var(--primary-color-teacher) 15%, var(--container-background) 85%) !important;
-   border-color: var(--primary-color-teacher) !important;
+   background-color: color-mix(in srgb, var(--primary-color-teacher) 15%, var(--container-background) 85%); /* !important removido */
+   border-color: var(--primary-color-teacher); /* !important removido */
 }
 
 .app-container {
