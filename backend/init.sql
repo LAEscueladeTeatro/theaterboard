@@ -123,3 +123,32 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_teachers_email ON teachers(email);
 INSERT INTO teachers (full_name, nickname, email, cellphone_number, password_hash, photo_url) VALUES
 ('Luis Acuña', 'Lucho', 'luisacunach@gmail.com', '949179423', '$2a$10$exampleHashValueForTheTeacher123', NULL)
 ON CONFLICT (email) DO NOTHING;
+
+-- Tabla para Frases Inspiradoras
+DROP TABLE IF EXISTS quotes CASCADE;
+CREATE TABLE quotes (
+    id SERIAL PRIMARY KEY,
+    template TEXT NOT NULL -- Ejemplo: '¡Sigue adelante, {name}! El éxito es la suma de pequeños esfuerzos.'
+);
+
+-- Poblar con algunas frases de ejemplo
+INSERT INTO quotes (template) VALUES
+('¡Eres increíble, {name}! No dejes que nadie apague tu brillo.'),
+('Cada día es una nueva oportunidad para brillar, {name}. ¡Aprovéchala!'),
+('La perseverancia es la clave del éxito, {name}. ¡No te rindas!'),
+('Confía en ti, {name}, tienes el poder de alcanzar tus sueños.'),
+('El aprendizaje es un tesoro que seguirá contigo siempre, {name}.');
+
+-- Tabla para registrar la frase diaria asignada a cada estudiante
+DROP TABLE IF EXISTS daily_student_quotes CASCADE;
+CREATE TABLE daily_student_quotes (
+    id SERIAL PRIMARY KEY,
+    student_id VARCHAR(10) NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+    quote_id INTEGER NOT NULL REFERENCES quotes(id) ON DELETE CASCADE,
+    assigned_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    CONSTRAINT unique_student_quote_per_day UNIQUE (student_id, assigned_date)
+);
+
+-- Índices para daily_student_quotes
+CREATE INDEX IF NOT EXISTS idx_daily_student_quotes_student_date ON daily_student_quotes(student_id, assigned_date);
+CREATE INDEX IF NOT EXISTS idx_daily_student_quotes_quote_id ON daily_student_quotes(quote_id);
