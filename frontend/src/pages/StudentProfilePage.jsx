@@ -57,7 +57,9 @@ const styles = {
     fontSize: '1rem',
   },
   buttonDisabled: {
-    backgroundColor: '#ccc',
+    backgroundColor: 'var(--border-color-subtle, #555e6d)', // Darker background for disabled state
+    color: 'var(--text-color-placeholder, #a0a0a0)', // Lighter text for disabled state
+    cursor: 'not-allowed',
   },
   errorMessage: {
     color: 'red',
@@ -283,9 +285,12 @@ const StudentProfilePage = () => {
       <h2 style={{ textAlign: 'center', marginBottom: '1rem' }}>
         Mi Perfil de Estudiante
       </h2>
-      <p style={{textAlign: 'center', marginBottom: '2rem', fontSize: '1.2rem'}}>
+      <p style={{textAlign: 'center', marginBottom: '1rem', fontSize: '1.2rem'}}> {/* Reduced margin bottom for greeting */}
         ¡Hola, {profile.nickname || profile.full_name || 'Estudiante'}!
       </p>
+      <div style={{ textAlign: 'center', marginBottom: '2rem' }}> {/* New container for the link */}
+        <Link to="/estudiante/dashboard" className="secondary-link" style={{fontSize: '0.95rem'}}>Volver al Panel</Link>
+      </div>
 
       <div style={styles.photoSection}>
         <img
@@ -402,9 +407,10 @@ const StudentProfilePage = () => {
           </button>
         </form>
       </div>
-      <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+      {/* Link moved to the top */}
+      {/* <div style={{ textAlign: 'center', marginTop: '2rem' }}>
         <Link to="/estudiante/dashboard" className="secondary-link">Volver al Panel</Link>
-      </div>
+      </div> */}
     </div>
   );
 };
