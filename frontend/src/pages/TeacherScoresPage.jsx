@@ -3,7 +3,8 @@ import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { getTodayPeruDateString as getTodayPeruDateStringForScores } from "../utils/dateUtils";
 import { API_BASE_URL } from "../config";
-import Spinner from '../components/Spinner'; // Importar Spinner
+import Spinner from '../components/Spinner';
+import toast from 'react-hot-toast'; // Importar toast
 
 // Iconos
 const SaveIcon = () => <svg className="icon" viewBox="0 0 20 20" fill="currentColor" width="16" height="16" style={{verticalAlign: 'middle', marginRight: '0.5em'}}><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.25a.75.75 0 00-1.5 0v2.5h-2.5a.75.75 0 000 1.5h2.5v2.5a.75.75 0 001.5 0v-2.5h2.5a.75.75 0 000-1.5h-2.5v-2.5z" clipRule="evenodd" /></svg>;
@@ -137,8 +138,8 @@ const TeacherScoresPage = () => {
       const student_ids = Object.entries(groupStudentStatus)
         .filter(([studentId, status]) => status === 'selected_for_bonus' && presentStudents.find(p => p.id === studentId))
         .map(([studentId, _]) => studentId);
-      if (student_ids.length === 0) { alert("Por favor, seleccione al menos un estudiante presente."); setIsSubmittingGroupScore(false); return; }
-      if (groupScoreType === 'CINCO_VALIENTES' && student_ids.length > 5) { alert("'Cinco Valientes' no puede tener más de 5 estudiantes."); setIsSubmittingGroupScore(false); return; }
+      if (student_ids.length === 0) { toast.error("Por favor, seleccione al menos un estudiante presente."); setIsSubmittingGroupScore(false); return; }
+      if (groupScoreType === 'CINCO_VALIENTES' && student_ids.length > 5) { toast.error("'Cinco Valientes' no puede tener más de 5 estudiantes."); setIsSubmittingGroupScore(false); return; }
       payload.student_ids = student_ids;
     } else {
       const students_compliant = []; const students_non_compliant = [];
@@ -148,28 +149,28 @@ const TeacherScoresPage = () => {
         else if (status === 'non_compliant') { students_non_compliant.push(student.id); }
       });
       if (students_compliant.length === 0 && students_non_compliant.length === 0 && presentStudents.length > 0) {
-        alert("Por favor, marque el estado de al menos un estudiante presente."); setIsSubmittingGroupScore(false); return;
+        toast.error("Por favor, marque el estado de al menos un estudiante presente."); setIsSubmittingGroupScore(false); return;
       } else if (presentStudents.length === 0 && (students_compliant.length > 0 || students_non_compliant.length > 0)) {
-        alert("No hay estudiantes presentes para asignar puntajes."); setIsSubmittingGroupScore(false); return;
+        toast.error("No hay estudiantes presentes para asignar puntajes."); setIsSubmittingGroupScore(false); return;
       }
       payload.students_compliant = students_compliant; payload.students_non_compliant = students_non_compliant;
     }
-    try { const token = getToken(); const response = await axios.post(`${API_BASE_URL}/scores/group`, payload, { headers: { 'x-auth-token': token } }); alert(response.data.message || "Puntuaciones grupales registradas."); if (['ROPA_TRABAJO', 'LIMPIEZA', 'CINCO_VALIENTES', 'PRIMER_GRUPO'].includes(groupScoreType)) { /* El useEffect [presentStudents, groupScoreType] se encargará de resetear */ } }
-    catch (err) { console.error("Error submitting group score:", err); setError(err.response?.data?.message || err.message || 'Error al registrar puntuaciones grupales.'); alert(`Error: ${err.response?.data?.message || err.message}`); }
+    try { const token = getToken(); const response = await axios.post(`${API_BASE_URL}/scores/group`, payload, { headers: { 'x-auth-token': token } }); toast.success(response.data.message || "Puntuaciones grupales registradas."); if (['ROPA_TRABAJO', 'LIMPIEZA', 'CINCO_VALIENTES', 'PRIMER_GRUPO'].includes(groupScoreType)) { /* El useEffect [presentStudents, groupScoreType] se encargará de resetear */ } }
+    catch (err) { console.error("Error submitting group score:", err); const errorMsg = err.response?.data?.message || err.message || 'Error al registrar puntuaciones grupales.'; setError(errorMsg); toast.error(`Error: ${errorMsg}`); }
     finally { setIsSubmittingGroupScore(false); }
   };
 
   const handlePersonalScoreTypeChange = (e) => { setPersonalScoreType(e.target.value); setPersonalPoints(''); setPersonalSubCategory(''); setPersonalNotes(''); };
   const handleSubmitPersonalScore = async (e) => {
     e.preventDefault(); setError(''); setIsSubmittingPersonalScore(true);
-    if (!personalSelectedStudent) { alert("Por favor, seleccione un estudiante."); setIsSubmittingPersonalScore(false); return; }
+    if (!personalSelectedStudent) { toast.error("Por favor, seleccione un estudiante."); setIsSubmittingPersonalScore(false); return; }
     let pointsToAssign = parseInt(personalPoints, 10);
-    if (personalScoreType === 'PARTICIPACION') { if (personalSubCategory === 'Participativo') pointsToAssign = 2; else if (personalSubCategory === 'Apático') pointsToAssign = -1; else { alert("Seleccione el nivel de participación."); setIsSubmittingPersonalScore(false); return; } }
-    else if (personalScoreType === 'EXTRA') { if (isNaN(pointsToAssign) || pointsToAssign === 0) { alert("Ingrese un valor numérico de puntos (diferente de cero) para Puntos Extra."); setIsSubmittingPersonalScore(false); return; } }
-    else if (personalScoreType === 'CONDUCTA' || personalScoreType === 'USO_CELULAR') { if (isNaN(pointsToAssign)) {alert("Seleccione una opción de puntos válida."); setIsSubmittingPersonalScore(false); return;} }
-    else if (isNaN(pointsToAssign)) { alert("Ingrese un valor numérico para los puntos."); setIsSubmittingPersonalScore(false); return; }
-    try { const token = getToken(); const payload = { student_id: personalSelectedStudent, score_type: personalScoreType, score_date: groupScoreDate, points_assigned: pointsToAssign, sub_category: personalSubCategory, notes: personalNotes }; const response = await axios.post(`${API_BASE_URL}/scores/personal`, payload, { headers: { 'x-auth-token': token } }); let alertMessage = response.data.message || "Puntuación personal registrada."; if (personalScoreType === 'CONDUCTA') { let timeOutMessage = ''; if (pointsToAssign === -3) timeOutMessage = "Recuerda: Enviar al alumno un tiempo fuera de 15 minutos."; else if (pointsToAssign === -2) timeOutMessage = "Recuerda: Enviar al alumno un tiempo fuera de 10 minutos."; else if (pointsToAssign === -1) timeOutMessage = "Recuerda: Enviar al alumno un tiempo fuera de 5 minutos."; if (timeOutMessage) { alertMessage += `\n${timeOutMessage}`; } } alert(alertMessage); setPersonalSelectedStudent(''); setPersonalPoints(''); setPersonalSubCategory(''); setPersonalNotes(''); }
-    catch (err) { console.error("Error submitting personal score:", err); setError(err.response?.data?.message || err.message || 'Error al registrar puntuación personal.'); alert(`Error: ${err.response?.data?.message || err.message}`); }
+    if (personalScoreType === 'PARTICIPACION') { if (personalSubCategory === 'Participativo') pointsToAssign = 2; else if (personalSubCategory === 'Apático') pointsToAssign = -1; else { toast.error("Seleccione el nivel de participación."); setIsSubmittingPersonalScore(false); return; } }
+    else if (personalScoreType === 'EXTRA') { if (isNaN(pointsToAssign) || pointsToAssign === 0) { toast.error("Ingrese un valor numérico de puntos (diferente de cero) para Puntos Extra."); setIsSubmittingPersonalScore(false); return; } }
+    else if (personalScoreType === 'CONDUCTA' || personalScoreType === 'USO_CELULAR') { if (isNaN(pointsToAssign)) {toast.error("Seleccione una opción de puntos válida."); setIsSubmittingPersonalScore(false); return;} }
+    else if (isNaN(pointsToAssign)) { toast.error("Ingrese un valor numérico para los puntos."); setIsSubmittingPersonalScore(false); return; }
+    try { const token = getToken(); const payload = { student_id: personalSelectedStudent, score_type: personalScoreType, score_date: groupScoreDate, points_assigned: pointsToAssign, sub_category: personalSubCategory, notes: personalNotes }; const response = await axios.post(`${API_BASE_URL}/scores/personal`, payload, { headers: { 'x-auth-token': token } }); let successMessage = response.data.message || "Puntuación personal registrada."; if (personalScoreType === 'CONDUCTA') { let timeOutMessage = ''; if (pointsToAssign === -3) timeOutMessage = "Recuerda: Enviar al alumno un tiempo fuera de 15 minutos."; else if (pointsToAssign === -2) timeOutMessage = "Recuerda: Enviar al alumno un tiempo fuera de 10 minutos."; else if (pointsToAssign === -1) timeOutMessage = "Recuerda: Enviar al alumno un tiempo fuera de 5 minutos."; if (timeOutMessage) { successMessage += `\n${timeOutMessage}`; } } toast.success(successMessage, { duration: personalScoreType === 'CONDUCTA' && pointsToAssign < 0 ? 6000 : 3000 }); setPersonalSelectedStudent(''); setPersonalPoints(''); setPersonalSubCategory(''); setPersonalNotes(''); }
+    catch (err) { console.error("Error submitting personal score:", err); const errorMsg = err.response?.data?.message || err.message || 'Error al registrar puntuación personal.'; setError(errorMsg); toast.error(`Error: ${errorMsg}`); }
     finally { setIsSubmittingPersonalScore(false); }
   };
 

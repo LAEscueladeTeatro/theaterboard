@@ -20,6 +20,7 @@ import StudentProfilePage from './pages/StudentProfilePage';
 import PublicRegistrationPage from './pages/PublicRegistrationPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import WhatsAppButton from './components/WhatsAppButton';
+import { Toaster } from 'react-hot-toast'; // Importar Toaster
 
 // SVG Icons components
 const AcademicCapIcon = () => (
@@ -45,6 +46,36 @@ function App() {
   return (
     <Router>
       <div>
+        <Toaster
+          position="top-right" // Posición común para toasts
+          toastOptions={{
+            // Opciones globales por defecto para los toasts
+            duration: 5000, // Duración por defecto de 5 segundos
+            success: {
+              duration: 3000, // Éxito un poco más corto
+              iconTheme: {
+                primary: 'var(--color-success)', // Usar variable CSS para el color del icono
+                secondary: 'white',
+              },
+              style: {
+                background: 'var(--container-background-lighter)',
+                color: 'var(--text-color-main)',
+                border: '1px solid var(--color-success)',
+              },
+            },
+            error: {
+              iconTheme: {
+                primary: 'var(--color-danger)', // Usar variable CSS para el color del icono
+                secondary: 'white',
+              },
+              style: {
+                background: 'var(--container-background-lighter)',
+                color: 'var(--text-color-main)',
+                border: '1px solid var(--color-danger)',
+              },
+            },
+          }}
+        />
         <header>
           <nav>
             <Link to="/">Home</Link> | {' '}

@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { API_BASE_URL } from "../config";
-import Spinner from '../components/Spinner'; // Importar Spinner
+import Spinner from '../components/Spinner';
+import toast from 'react-hot-toast'; // Importar toast
 
 // Iconos SVG
 const EnableIcon = () => <svg className="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" /></svg>;
@@ -44,14 +45,15 @@ const DisabledStudentListPage = () => {
       const token = getToken();
       await axios.put(`${STUDENT_ADMIN_API_URL}/${studentId}/set-status`, { is_active: isActive }, { headers: { 'x-auth-token': token }});
       fetchDisabledStudents();
-      alert(`Estudiante ${action}do con éxito.`);
+      toast.success(`Estudiante ${action}do con éxito.`);
     } catch (err) {
       console.error(`Error ${action}ing student:`, err);
-      alert(`Error: ${err.response?.data?.message || `No se pudo ${action} el estudiante.`}`);
+      toast.error(`Error: ${err.response?.data?.message || `No se pudo ${action} el estudiante.`}`);
     }
   };
 
   const handleDeletePermanent = async (studentId, studentName) => {
+    // Considerar reemplazar window.confirm con un modal más estilizado
     if (!window.confirm(`¿ESTÁ ABSOLUTAMENTE SEGURO que desea ELIMINAR PERMANENTEMENTE a ${studentName} (${studentId})? Esta acción no se puede deshacer y borrará todos sus registros asociados.`)) return;
     if (!window.confirm(`Confirmación final: ¿Realmente desea ELIMINAR PERMANENTEMENTE a ${studentName}?`)) return;
 
@@ -59,10 +61,10 @@ const DisabledStudentListPage = () => {
       const token = getToken();
       await axios.delete(`${STUDENT_ADMIN_API_URL}/${studentId}/permanent-delete`, { headers: { 'x-auth-token': token }});
       fetchDisabledStudents();
-      alert(`Estudiante ${studentName} (${studentId}) eliminado permanentemente.`);
+      toast.success(`Estudiante ${studentName} (${studentId}) eliminado permanentemente.`);
     } catch (err) {
       console.error("Error deleting student permanently:", err);
-      alert(`Error: ${err.response?.data?.message || 'No se pudo eliminar el estudiante.'}`);
+      toast.error(`Error: ${err.response?.data?.message || 'No se pudo eliminar el estudiante.'}`);
     }
   };
 
