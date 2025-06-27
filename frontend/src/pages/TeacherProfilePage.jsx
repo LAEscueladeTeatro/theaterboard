@@ -47,7 +47,9 @@ const styles = {
     fontSize: '1rem',
   },
   buttonDisabled: {
-    backgroundColor: '#ccc',
+    backgroundColor: 'var(--border-color-subtle, #555e6d)', // Darker background for disabled state
+    color: 'var(--text-color-placeholder, #a0a0a0)', // Lighter text for disabled state
+    cursor: 'not-allowed',
   },
   errorMessage: {
     color: 'red',
@@ -212,9 +214,12 @@ const TeacherProfilePage = () => {
 
   return (
     <div style={styles.pageContainer}>
-      <h2 style={{ textAlign: 'center', marginBottom: '2rem' }}>
+      <h2 style={{ textAlign: 'center', marginBottom: '1rem' }}> {/* Reduced margin bottom */}
         Mi Perfil - Hola, {profile.nickname || profile.full_name || 'Docente'}
       </h2>
+      <div style={{ textAlign: 'center', marginBottom: '2rem' }}> {/* New container for the link */}
+        <Link to="/docente/dashboard" className="secondary-link" style={{fontSize: '0.95rem'}}>Volver al Panel</Link>
+      </div>
       <div style={styles.photoSection}>
         <img
           src={profile.photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.full_name || 'N A')}&background=2A2A3E&color=E0E0E0&size=128&font-size=0.5&bold=true`}
@@ -273,9 +278,10 @@ const TeacherProfilePage = () => {
           </button>
         </form>
       </div>
-       <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+       {/* Link moved to the top */}
+       {/* <div style={{ textAlign: 'center', marginTop: '2rem' }}>
         <Link to="/docente/dashboard" className="secondary-link">Volver al Panel</Link>
-      </div>
+      </div> */}
     </div>
   );
 };
