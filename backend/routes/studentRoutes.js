@@ -433,31 +433,64 @@ router.get('/me/daily-quote', async (req, res) => {
       // a. Select a random quote
       // Note: For very large quotes table, ORDER BY RANDOM() can be inefficient.
       // Consider other strategies like fetching all IDs and picking one in JS, or specific DB functions.
-      // For a small number of quotes, this is fine.
-      const randomQuoteResult = await client.query(
-        'SELECT id, template FROM quotes ORDER BY RANDOM() LIMIT 1'
-      );
-
-      if (randomQuoteResult.rows.length === 0) {
+      // No quote assigned for today, implement new logic:
+      // a. Get all quote IDs
+      const allQuotesResult = await client.query('SELECT id, template FROM quotes');
+      if (allQuotesResult.rows.length === 0) {
         client.release();
-        return res.status(404).json({ message: 'No hay frases inspiradoras disponibles en este momento.' });
+        return res.status(200).json({ quote: null, message: 'No hay frases inspiradoras disponibles.' }); // Changed to 200 with null quote
+      }
+      const allQuoteIds = allQuotesResult.rows.map(q => q.id);
+
+      // b. Get quote IDs already seen by the student
+      const seenQuotesResult = await client.query(
+        'SELECT quote_id FROM daily_student_quotes WHERE student_id = $1',
+        [studentId]
+      );
+      const seenQuoteIds = seenQuotesResult.rows.map(r => r.quote_id);
+
+      // c. Determine available quotes
+      let availableQuoteIds = allQuoteIds.filter(id => !seenQuoteIds.includes(id));
+      let chosenQuote;
+
+      // d. If no available quotes (student has seen all)
+      if (availableQuoteIds.length === 0 && allQuoteIds.length > 0) { // Check allQuoteIds.length > 0 to avoid issues if quotes table is empty
+        // e. Reset cycle: delete old quotes for this student
+        await client.query('DELETE FROM daily_student_quotes WHERE student_id = $1', [studentId]);
+        availableQuoteIds = allQuoteIds; // All quotes are now available again
       }
 
-      const chosenQuote = randomQuoteResult.rows[0];
+      // If still no available quotes (e.g., quotes table was empty initially)
+      if (availableQuoteIds.length === 0) {
+          client.release();
+          return res.status(200).json({ quote: null, message: 'No hay frases inspiradoras disponibles para asignar.' });
+      }
 
-      // b. Create a new record in daily_student_quotes
+      // Select a random quote from available ones
+      const randomAvailableIndex = Math.floor(Math.random() * availableQuoteIds.length);
+      const chosenQuoteId = availableQuoteIds[randomAvailableIndex];
+
+      // Find the chosen quote's template from the initially fetched allQuotesResult
+      chosenQuote = allQuotesResult.rows.find(q => q.id === chosenQuoteId);
+
+      if (!chosenQuote) { // Should not happen if availableQuoteIds is derived from allQuoteIds
+          client.release();
+          console.error(`Error: Chosen quote ID ${chosenQuoteId} not found in allQuotesResult.`);
+          return res.status(500).json({ message: 'Error al seleccionar la frase del día.' });
+      }
+
+      // f. Create new record in daily_student_quotes
       await client.query(
         'INSERT INTO daily_student_quotes (student_id, quote_id, assigned_date) VALUES ($1, $2, $3)',
         [studentId, chosenQuote.id, today]
       );
 
-      // c. Personalize and return
       const personalizedQuote = chosenQuote.template.replace('{name}', studentName);
       client.release();
       return res.json({ quote: personalizedQuote });
     }
   } catch (err) {
-    if (client) client.release(); // Ensure client is released on error
+    if (client) client.release();
     console.error('Error en GET /api/student/me/daily-quote:', err);
     res.status(500).json({ message: 'Error interno del servidor al obtener la frase del día.' });
   }
