@@ -17,8 +17,139 @@ const NewSettingsIcon = ({ width = "28", height = "28" }) => (
 +      fill="currentColor"/>
 +  </svg>
 +);
-+
-+const StudentDashboardPage = () => {
+
+const StudentDashboardPage = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const navigate = useNavigate();
+  const API_URL = 'http://localhost:3001/api';
+
+  const getToken = useCallback(() => localStorage.getItem('studentToken'), []);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      setLoading(true);
+      setError('');
+      const token = getToken();
+
+      if (!token) {
+        setError("No autenticado. Redirigiendo a login...");
+        setTimeout(() => navigate('/estudiante/login'), 2000);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const response = await axios.get(`${API_URL}/student/dashboard-data`, {
+          headers: { 'x-auth-token': token },
+        });
+        setDashboardData(response.data);
+      } catch (err) {
+        console.error("Error fetching student dashboard data:", err);
+        if (err.response && (err.response.status === 401 || err.response.status === 403)) {
+          localStorage.removeItem('studentToken');
+          setError("Sesión inválida o expirada. Redirigiendo a login...");
+          setTimeout(() => navigate('/estudiante/login'), 2000);
+        } else {
+          setError(err.response?.data?.message || 'Error al cargar datos del panel.');
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDashboardData();
+  }, [getToken, navigate, API_URL]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('studentToken');
+    navigate('/estudiante/login');
+  };
+
+  const getRankingDisplay = (position, month) => {
+    if (position === null || position === undefined) {
+      return { icon: '❓', message: 'Tu posición en el ranking no está disponible actualmente.' };
+    }
+    let icon = '';
+    if (position === 1) icon = '🥇';
+    else if (position === 2) icon = '🥈';
+    else if (position === 3) icon = '🥉';
+    else if (position > 3 && position <=10) icon = '⭐';
+
+    let motivationalMessage = '';
+    if (position >= 1 && position <= 3) motivationalMessage = `¡Felicidades! Estás en el Top 3. ¡Sigue brillando!`;
+    else if (position > 3 && position <= 10) motivationalMessage = `¡Gran esfuerzo! Estás entre los mejores 10.`;
+    else if (position > 10 && position <= 20) motivationalMessage = `Vas por buen camino. ¡Un poco más de esfuerzo y subirás!`;
+    else motivationalMessage = `Presta atención a tus puntos para mejorar.`;
+
+    return { icon, message: motivationalMessage, positionText: `${icon} N° ${position}`.trim() };
+  };
+
+
+  if (loading) return <div className="dashboard-page-container student-dashboard"><p className="text-center" style={{padding: '2rem'}}>Cargando tu panel...</p></div>;
+  if (error) return <div className="dashboard-page-container student-dashboard"><div className="error-message-page">{error}</div> <div style={{textAlign:'center', marginTop:'1rem'}}><Link to="/" className="btn-action btn-student">Volver al Inicio</Link></div></div>;
+  if (!dashboardData) return <div className="dashboard-page-container student-dashboard"><p className="empty-table-message">No se pudieron cargar los datos de tu panel.</p></div>;
+
+  const { studentInfo, currentMonth, monthlyTotalPoints, castingStatus, rankingPosition } = dashboardData;
+  const rankingInfo = getRankingDisplay(rankingPosition, currentMonth);
+
+
+  const getCastingStatusClassName = () => {
+    if (castingStatus === 'APTO') return 'casting-status-apto';
+    if (castingStatus === 'EN EVALUACIÓN') return 'casting-status-evaluacion';
+    return 'casting-status-no-apto';
+  };
+
+  return (
+    <div className="dashboard-page-container student-dashboard">
+      <div className="page-header-controls" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '1rem', gap: '1rem' }}>
+        <Link to="/estudiante/mi-perfil" title="Mi Perfil" className="icon-link" style={{ textDecoration: 'none', color: 'var(--text-color-main)' }}>
+          <NewSettingsIcon />
+        </Link>
+        <button onClick={handleLogout} className="btn-logout">
+          <LogoutIcon /> Salir
+        </button>
+      </div>
+      <div className="profile-card" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '2rem' }}>
+        <img
+          src={studentInfo.photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(studentInfo.full_name || 'N A')}&background=4A4A7F&color=E0E0E0&size=100&font-size=0.4&bold=true`}
+          alt={`${studentInfo.nickname || studentInfo.id}`}
+          className="profile-photo"
+          style={{ width: '100px', height: '100px', borderRadius: '50%' }}
+        />
+        <div className="profile-info">
+          <h2 style={{marginTop: 0, marginBottom: '0.25rem'}}>¡Bienvenido/a, {studentInfo.nickname || studentInfo.full_name}!</h2>
+          <p style={{margin: '0 0 0.25rem 0'}}><strong>ID:</strong> {studentInfo.id}</p>
+          {rankingPosition !== null && rankingPosition !== undefined && (
+            <p style={{margin: 0}}><strong>Ranking ({currentMonth}):</strong> {rankingInfo.positionText}</p>
+          )}
+        </div>
+      </div>
+
+      <div className="summary-info-card">
+        <h4 className="section-title">Resumen del Mes ({currentMonth})</h4>
+        <p><strong>Puntaje Total del Mes:</strong> <span style={{fontSize: '1.3em', color: 'var(--primary-color-student)', fontWeight: 'bold'}}>{monthlyTotalPoints !== null ? monthlyTotalPoints : 'N/A'}</span> puntos</p>
+        <p>
+          <strong>Estado de Acceso a Casting: </strong>
+          <span className={getCastingStatusClassName()}>
+            {castingStatus || 'No disponible'}
+          </span>
+        </p>
+        <p style={{marginTop: '1rem'}}>
+          <strong>Feedback del Ranking:</strong> {rankingInfo.message}
+        </p>
+      </div>
+
+      <div className="dashboard-actions-grid" style={{marginTop: '1.5rem'}}>
+        <Link to="/estudiante/mis-puntajes" className="dashboard-action-card">
+          <ScoresIcon /> Ver Mis Puntajes Detallados
+        </Link>
+      </div>
+       <div style={{textAlign: 'center', marginTop: '2.5rem'}}>
+            <Link to="/" className="secondary-link">Ir a la Página de Inicio</Link>
+       </div>
+    </div>
+  );
+};
+
+export default StudentDashboardPage;

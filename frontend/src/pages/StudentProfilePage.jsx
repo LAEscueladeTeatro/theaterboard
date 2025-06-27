@@ -57,9 +57,10 @@ const styles = {
     fontSize: '1rem',
   },
   buttonDisabled: {
-    backgroundColor: 'var(--border-color-subtle, #555e6d)', // Darker background for disabled state
-    color: 'var(--text-color-placeholder, #a0a0a0)', // Lighter text for disabled state
+    backgroundColor: 'var(--input-background-disabled, #3a3a5c)', // Consistent dark disabled background
+    color: 'var(--text-color-placeholder, #888890)',    // Consistent light disabled text
     cursor: 'not-allowed',
+    border: '1px solid var(--border-color-subtle, #4A4A60)', // Optional: add border like active inputs
   },
   errorMessage: {
     color: 'red',
