@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const pool = require('./db');
+const pool = require('./config/db');
 
 // Importar Rutas
 const authRoutes = require('./routes/authRoutes');
