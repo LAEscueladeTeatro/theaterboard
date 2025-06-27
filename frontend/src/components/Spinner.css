@@ -1,0 +1,22 @@
+.spinner {
+  border-radius: 50%;
+  border-width: 4px; /* Default border width, can be overridden by style prop if needed */
+  border-style: solid;
+  /* Animation will be applied via inline style for color, but keep base animation here */
+  animation: spin 0.8s linear infinite;
+  display: inline-block;
+}
+
+/* Centering the spinner if it's the only thing in a loading container */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100px; /* Example minimum height */
+  padding: 2rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

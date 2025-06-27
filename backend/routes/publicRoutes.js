@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../config/db');
-const bcrypt = require('bcryptjs'); // Importar bcryptjs
+const bcrypt = require('bcryptjs');
 
 const REGISTRATION_SETTING_KEY = 'public_registration_enabled';
 
@@ -60,7 +60,7 @@ router.post('/register', async (req, res) => {
     return res.status(400).json({ message: 'Campos obligatorios faltantes: Apellidos y Nombres, Sobrenombre, Edad, Fecha de Nacimiento, Celular, Correo.' });
   }
 
-  const client = await pool.connect(); // Mover la conexión aquí para usarla antes
+  const client = await pool.connect();
   try {
     // Verificar si el registro público está habilitado
     const registrationSetting = await client.query(
