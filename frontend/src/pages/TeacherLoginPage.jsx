@@ -26,7 +26,7 @@ const TeacherLoginPage = () => {
     }
     setIsLoading(true); // Activar spinner
     try {
-      const response = await axios.post(`${API_BASE_URL}/auth/login/teacher`, { email, password });
+      const response = await axios.post(`${API_BASE_URL}/auth/teacher`, { email, password });
       if (response.data.token) {
         localStorage.setItem('teacherToken', response.data.token);
         navigate('/docente/dashboard');
