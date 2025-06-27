@@ -10,22 +10,52 @@ const LogoutIcon = () => ( // Renombrado para claridad, era ArrowLeftOnRectangle
   </svg>
 );
 
+const GearIcon = () => (
+  <svg className="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="20" height="20">
+    <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.532 1.532 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.532 1.532 0 01-.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106A1.532 1.532 0 0111.49 3.17zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+  </svg>
+);
+
 const TeacherDashboardPage = () => {
   const navigate = useNavigate();
+  const [teacherProfile, setTeacherProfile] = useState({ full_name: '', nickname: '', photo_url: '' });
+  const [profileLoadingError, setProfileLoadingError] = useState('');
   const [isRegistrationEnabled, setIsRegistrationEnabled] = useState(false);
   const [settingsLoading, setSettingsLoading] = useState(true);
   const [settingsError, setSettingsError] = useState('');
 
-  const API_URL = 'http://localhost:3001/api/admin/settings';
+  const ADMIN_API_URL = 'http://localhost:3001/api/admin/settings';
+  const TEACHER_API_URL = 'http://localhost:3001/api/teachers';
   const getToken = useCallback(() => localStorage.getItem('teacherToken'), []);
 
   useEffect(() => {
-    const fetchRegistrationStatus = async () => {
+    const fetchDashboardData = async () => {
+      const token = getToken();
+      if (!token) {
+        navigate('/docente/login');
+        return;
+      }
+
+      // Fetch Teacher Profile
+      try {
+        const profileResponse = await axios.get(`${TEACHER_API_URL}/profile`, {
+          headers: { 'x-auth-token': token },
+        });
+        setTeacherProfile(profileResponse.data);
+      } catch (err) {
+        console.error("Error fetching teacher profile:", err);
+        setProfileLoadingError('No se pudo cargar la información del perfil del docente.');
+        // Potentially navigate away if critical, or just show error
+        if (err.response && (err.response.status === 401 || err.response.status === 403)) {
+          navigate('/docente/login');
+        }
+      }
+
+      // Fetch Registration Status
       setSettingsLoading(true);
       setSettingsError('');
       try {
-        const token = getToken();
-        const response = await axios.get(`${API_URL}/registration-status`, {
+        const response = await axios.get(`${ADMIN_API_URL}/registration-status`, {
           headers: { 'x-auth-token': token },
         });
         setIsRegistrationEnabled(response.data.enabled);
@@ -36,8 +66,9 @@ const TeacherDashboardPage = () => {
         setSettingsLoading(false);
       }
     };
-    fetchRegistrationStatus();
-  }, [getToken, API_URL]);
+
+    fetchDashboardData();
+  }, [getToken, navigate, ADMIN_API_URL, TEACHER_API_URL]);
 
   const handleToggleRegistrationStatus = async () => {
     const newStatus = !isRegistrationEnabled;
@@ -72,10 +103,34 @@ const TeacherDashboardPage = () => {
 
   return (
     <div className="dashboard-page-container">
-      <div className="page-header-controls" style={{ justifyContent: 'flex-end', marginBottom: '1rem' }}>
-         {/* Se quita el título h2 de aquí, se usa el de .dashboard-page-container h2 */}
+      <div className="page-header-controls" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '1rem', gap: '1rem' }}>
+        <Link to="/docente/mi-perfil" title="Mi Perfil" className="icon-link" style={{ textDecoration: 'none', color: 'var(--text-color-main)' }}>
+          <GearIcon />
+        </Link>
+        <button onClick={handleLogout} className="btn-logout">
+          <LogoutIcon />
+          Salir
+        </button>
       </div>
-      <h2>Panel del Docente</h2>
+
+      {/* Teacher Profile Card */}
+      {profileLoadingError && <p className="error-message-page">{profileLoadingError}</p>}
+      {!profileLoadingError && (
+        <div className="profile-card" style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+          <img
+            src={teacherProfile.photo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(teacherProfile.full_name || 'Docente')}&background=2A2A3E&color=E0E0E0&size=100&font-size=0.4&bold=true`}
+            alt={`${teacherProfile.nickname || teacherProfile.full_name}`}
+            className="profile-photo"
+            style={{ width: '100px', height: '100px', borderRadius: '50%' }}
+          />
+          <div className="profile-info">
+            <h2 style={{marginTop: 0, marginBottom: '0.25rem'}}>¡Hola, {teacherProfile.nickname || teacherProfile.full_name || 'Docente'}!</h2>
+            <p style={{fontSize: '1em', color: '#555', margin: 0}}>Rol: Docente</p>
+          </div>
+        </div>
+      )}
+
+      {/* <h2>Panel de Control del Docente</h2> Eliminar o ajustar, ya que el saludo está arriba */}
 
       {/* Sección de Configuración de Inscripciones */}
       <div className="controls-section" style={{marginTop: '1rem', marginBottom: '2rem'}}>
@@ -104,15 +159,16 @@ const TeacherDashboardPage = () => {
         <Link to="/docente/ranking" className="dashboard-action-card">Ranking Mensual</Link>
         <Link to="/docente/lista-estudiantes" className="dashboard-action-card">Lista de Estudiantes</Link>
         <Link to="/docente/database" className="dashboard-action-card">Base de Datos Estudiantes</Link>
-        <Link to="/docente/mi-perfil" className="dashboard-action-card">Mi Perfil</Link>
+        {/* <Link to="/docente/mi-perfil" className="dashboard-action-card">Mi Perfil</Link> ELIMINADO */}
       </div>
 
-      <div style={{ textAlign: 'center', marginTop: '2.5rem', marginBottom: '1rem' }}>
+      {/* Botón Salir movido al page-header-controls */}
+      {/* <div style={{ textAlign: 'center', marginTop: '2.5rem', marginBottom: '1rem' }}>
         <button onClick={handleLogout} className="btn-logout">
           <LogoutIcon />
           Salir
         </button>
-      </div>
+      </div> */}
       <p style={{textAlign: 'center', marginTop: '1rem', fontSize: '0.9rem', color: 'var(--text-color-main)'}}>
         Bienvenido al panel de control. Desde aquí podrás gestionar las actividades de la escuela.
       </p>

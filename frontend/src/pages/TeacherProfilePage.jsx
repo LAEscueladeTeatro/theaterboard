@@ -26,6 +26,7 @@ const styles = {
     display: 'block',
     marginBottom: '0.5rem',
     fontWeight: 'bold',
+    color: 'var(--text-color-main, #333333)', // Explicit label color
   },
   input: {
     width: '100%',
@@ -33,6 +34,8 @@ const styles = {
     border: '1px solid #ccc',
     borderRadius: '4px',
     boxSizing: 'border-box',
+    backgroundColor: 'var(--input-bg-color, #ffffff)', // Explicit input background
+    color: 'var(--text-color-input, #333333)', // Explicit input text color
   },
   button: {
     padding: '0.75rem 1.5rem',
