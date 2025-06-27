@@ -1165,6 +1165,36 @@ input:checked + .toggle-slider:before {
   font-weight: 500;
 }
 
+/* Responsive adjustments for Student Profile Card */
+@media (max-width: 600px) {
+  .student-dashboard .profile-card {
+    flex-direction: column; /* Apilar foto e info verticalmente */
+    align-items: center; /* Centrar elementos cuando están en columna */
+    gap: 1rem; /* Reducir el espacio cuando están en columna */
+    padding: 1.5rem; /* Reducir padding en móviles */
+  }
+
+  .profile-photo {
+    width: 80px; /* Reducir tamaño de la foto */
+    height: 80px;
+    margin-bottom: 0.5rem; /* Espacio debajo de la foto antes del texto */
+  }
+
+  .profile-info {
+    text-align: center; /* Centrar el texto de info cuando está en columna */
+  }
+
+  .profile-info h3 { /* Nombre del estudiante */
+    font-size: 1.3rem; /* Reducir tamaño de fuente del nombre */
+    word-wrap: break-word; /* Asegurar que el nombre largo se divida */
+    overflow-wrap: break-word;
+  }
+
+  .profile-info p {
+    font-size: 0.9rem; /* Reducir tamaño de fuente de los párrafos */
+  }
+}
+
 .summary-info-card { /* Tarjeta para el resumen de puntaje y casting */
   background-color: var(--container-background);
   padding: 1.5rem 2rem;
