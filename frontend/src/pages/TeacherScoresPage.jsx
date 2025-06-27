@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
-import { getTodayPeruDateString as getTodayPeruDateStringForScores } from '../../utils/dateUtils'; // Renombrar para evitar colisión si se importa otra
-import { API_BASE_URL } from '../../config';
+import { getTodayPeruDateString as getTodayPeruDateStringForScores } from "../utils/dateUtils"; // Corregir ruta
+import { API_BASE_URL } from "../config"; // Corregir ruta
 
 // Iconos
 const SaveIcon = () => <svg className="icon" viewBox="0 0 20 20" fill="currentColor" width="16" height="16" style={{verticalAlign: 'middle', marginRight: '0.5em'}}><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.25a.75.75 0 00-1.5 0v2.5h-2.5a.75.75 0 000 1.5h2.5v2.5a.75.75 0 001.5 0v-2.5h2.5a.75.75 0 000-1.5h-2.5v-2.5z" clipRule="evenodd" /></svg>;
