@@ -4,12 +4,13 @@ CREATE TABLE students (
     id VARCHAR(10) PRIMARY KEY,
     full_name VARCHAR(255) NOT NULL,
     nickname VARCHAR(100),
-    password TEXT,
+    password_hash TEXT, -- Renombrado de password a password_hash
     is_active BOOLEAN DEFAULT true NOT NULL,
-    -- Nuevos campos Fase 7
+    photo_url VARCHAR(255), -- Nuevo campo para la foto de perfil
+    -- Nuevos campos Fase 7 (y ahora perfil)
     age INTEGER,
     birth_date DATE,
-    phone VARCHAR(20),
+    phone VARCHAR(20), -- Este será el "celular" del estudiante
     email VARCHAR(255) UNIQUE, -- Email debe ser único
     guardian_full_name TEXT,
     guardian_relationship VARCHAR(50),
@@ -21,14 +22,18 @@ CREATE TABLE students (
     emergency_contact_phone VARCHAR(20)
 );
 
--- Insertar estudiantes con contraseñas de ejemplo y algunos campos nuevos como NULL o vacíos
--- Para una prueba completa, se deberían llenar algunos de estos campos para algunos estudiantes.
-INSERT INTO students (id, full_name, nickname, password, is_active, age, birth_date, phone, email) VALUES
-('ET001', 'Adriano Rivera , Ana Liz', 'Ana', 'ET001pass', true, NULL, NULL, NULL, 'et001@example.com'),
-('ET002', 'Alarcón Lizarbe, Samantha Valentina', 'Samy', 'ET002pass', true, NULL, NULL, NULL, 'et002@example.com'),
-('ET003', 'Baltazar Bazan , María Fernanda', 'Fer', 'ET003pass', true, NULL, NULL, NULL, 'et003@example.com'),
--- ... (se omiten los demás para brevedad, pero se añadirían con NULLs o datos de ejemplo para los nuevos campos)
-('ET057', 'Moreno Arévalo, Génesis', 'Génesis', 'ET057pass', true, 17, '2007-05-10', '987654321', 'et057@example.com');
+-- Insertar estudiantes con contraseñas HASHEADAS de ejemplo.
+-- Las contraseñas originales (ej: 'ET001pass') deben ser reemplazadas por sus hashes.
+-- Ejemplo de hashes (reemplazar con hashes reales):
+-- 'ET001pass' -> '$2a$10$studentPassHashPlaceholder1'
+-- 'ET002pass' -> '$2a$10$studentPassHashPlaceholder2'
+-- etc.
+INSERT INTO students (id, full_name, nickname, password_hash, is_active, age, birth_date, phone, email, photo_url) VALUES
+('ET001', 'Adriano Rivera , Ana Liz', 'Ana', '$2a$10$studentPassHashPlaceholder1', true, NULL, NULL, NULL, 'et001@example.com', NULL),
+('ET002', 'Alarcón Lizarbe, Samantha Valentina', 'Samy', '$2a$10$studentPassHashPlaceholder2', true, NULL, NULL, NULL, 'et002@example.com', NULL),
+('ET003', 'Baltazar Bazan , María Fernanda', 'Fer', '$2a$10$studentPassHashPlaceholder3', true, NULL, NULL, NULL, 'et003@example.com', NULL),
+-- ... (se omiten los demás para brevedad, pero se añadirían con hashes y photo_url=NULL)
+('ET057', 'Moreno Arévalo, Génesis', 'Génesis', '$2a$10$studentPassHashPlaceholder57', true, 17, '2007-05-10', '987654321', 'et057@example.com', NULL);
 
 
 -- Tabla para registrar la asistencia diaria de los estudiantes
@@ -96,3 +101,25 @@ CREATE TABLE IF NOT EXISTS system_settings (
 INSERT INTO system_settings (setting_key, setting_value)
 VALUES ('public_registration_enabled', 'true')
 ON CONFLICT (setting_key) DO NOTHING;
+
+-- Tabla para Docentes
+DROP TABLE IF EXISTS teachers CASCADE;
+CREATE TABLE teachers (
+    id SERIAL PRIMARY KEY,
+    full_name VARCHAR(255) NOT NULL,
+    nickname VARCHAR(100),
+    email VARCHAR(255) UNIQUE NOT NULL,
+    cellphone_number VARCHAR(20),
+    password_hash VARCHAR(255) NOT NULL,
+    photo_url VARCHAR(255) -- Para la URL de la foto de perfil
+);
+
+-- Crear un índice en el email del docente para búsquedas rápidas
+CREATE UNIQUE INDEX IF NOT EXISTS idx_teachers_email ON teachers(email);
+
+-- Insertar datos iniciales del docente
+-- La contraseña '3ddv6e5N' debe ser hasheada antes de insertarla.
+-- Ejemplo de hash (reemplazar con el hash real): '$2a$10$exampleHashValueForTheTeacher123'
+INSERT INTO teachers (full_name, nickname, email, cellphone_number, password_hash, photo_url) VALUES
+('Luis Acuña', 'Lucho', 'luisacunach@gmail.com', '949179423', '$2a$10$exampleHashValueForTheTeacher123', NULL)
+ON CONFLICT (email) DO NOTHING;

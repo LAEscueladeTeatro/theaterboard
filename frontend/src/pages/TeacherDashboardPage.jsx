@@ -104,8 +104,7 @@ const TeacherDashboardPage = () => {
         <Link to="/docente/ranking" className="dashboard-action-card">Ranking Mensual</Link>
         <Link to="/docente/lista-estudiantes" className="dashboard-action-card">Lista de Estudiantes</Link>
         <Link to="/docente/database" className="dashboard-action-card">Base de Datos Estudiantes</Link>
-        {/* Futuro: Link a Mi Perfil Docente */}
-        {/* <Link to="/docente/mi-perfil" className="dashboard-action-card">Mi Perfil</Link> */}
+        <Link to="/docente/mi-perfil" className="dashboard-action-card">Mi Perfil</Link>
       </div>
 
       <div style={{ textAlign: 'center', marginTop: '2.5rem', marginBottom: '1rem' }}>
