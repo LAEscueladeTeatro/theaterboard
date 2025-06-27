@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
-import { getCurrentPeruDateTimeObject, getTodayPeruDateString } from "../utils/dateUtils"; // Corregir ruta
-import { API_BASE_URL } from "../config"; // Corregir ruta
+import { getCurrentPeruDateTimeObject, getTodayPeruDateString } from "../utils/dateUtils";
+import { API_BASE_URL } from "../config";
+import Spinner from '../components/Spinner'; // Importar Spinner
 
 // Iconos
 const GiftIcon = () => <svg className="icon" viewBox="0 0 20 20" fill="currentColor" width="16" height="16" style={{verticalAlign: 'middle', marginRight: '0.5em'}}><path d="M10 1.5a1.5 1.5 0 00-1.5 1.5v1.233A5.003 5.003 0 005.78 7.52L3.666 9.634a.75.75 0 000 1.06L9.25 16.28a.75.75 0 001.06 0L16.333 10.7a.75.75 0 000-1.061L14.221 7.52c-.902-.903-2.148-1.498-3.471-1.724V3a1.5 1.5 0 00-1.5-1.5c-.396 0-.772.156-1.06.439A1.5 1.5 0 0010 1.5zm0 3.417a3.5 3.5 0 013.231 2.066l.06.112L15.03 8.833l-5.03 5.03-1.739-1.739.011-.01.68-.68a3.502 3.502 0 012.048-5.006V4.917zM10 18a.75.75 0 000-1.5.75.75 0 000 1.5z" /></svg>;
@@ -30,9 +31,14 @@ const TeacherAttendancePage = ({ selectedDate: historicDateProp }) => {
   const [absentStudentsForModal, setAbsentStudentsForModal] = useState([]);
   const [absentJustifications, setAbsentJustifications] = useState({});
 
+  // Estados para spinners de acciones
+  const [isApplyingBonus, setIsApplyingBonus] = useState(false);
+  const [isClosingAttendance, setIsClosingAttendance] = useState(false);
+  const [isSavingSpecificAttendance, setIsSavingSpecificAttendance] = useState(false);
+
   const [dateForOperations, setDateForOperations] = useState(historicDateProp || getTodayPeruDateString());
 
-  useEffect(() => { const newDate = historicDateProp || getTodayPeruDateString(); setDateForOperations(newDate); setDailyStatus({ attendance_records: [], bonus_awarded_today: null }); setAttendanceData({}); setSelectedStudentForBonus(''); }, [historicDateProp, getTodayPeruDateString]); // getTodayPeruDateString es estable
+  useEffect(() => { const newDate = historicDateProp || getTodayPeruDateString(); setDateForOperations(newDate); setDailyStatus({ attendance_records: [], bonus_awarded_today: null }); setAttendanceData({}); setSelectedStudentForBonus(''); }, [historicDateProp]);
   const getToken = useCallback(() => localStorage.getItem('teacherToken'), []);
 
   useEffect(() => { const fetchData = async () => { setLoading(true); setError(null); try { const token = getToken(); const headers = { 'x-auth-token': token }; const studentsResponse = await axios.get(`${API_BASE_URL}/admin/students?active=true`, { headers }); setAllStudents(studentsResponse.data); setStudents(studentsResponse.data); const dailyStatusResponse = await axios.get(`${API_BASE_URL}/attendance/status/${dateForOperations}`, { headers }); setDailyStatus(dailyStatusResponse.data); const initialAttendance = {}; dailyStatusResponse.data.attendance_records.forEach(record => { initialAttendance[record.student_id] = { status: record.status, notes: record.notes || '', is_synced: true }; }); setAttendanceData(initialAttendance); } catch (err) { console.error(`Error fetching initial data for date ${dateForOperations}:`, err); setError(err.response?.data?.message || err.message || 'Error al cargar datos iniciales.'); } finally { setLoading(false); } }; fetchData(); }, [getToken, dateForOperations, API_BASE_URL]);
@@ -43,16 +49,16 @@ const TeacherAttendancePage = ({ selectedDate: historicDateProp }) => {
   const determineStatusTypeForModal = () => { if (historicDateProp) return 'HISTORIC_MODAL'; const nowPeru = currentPeruDateTime; const hours = nowPeru.getHours(); const minutes = nowPeru.getMinutes(); if (hours < 17) return 'PUNTUAL_DIRECT'; if (hours === 17 && minutes <= 15) return 'A_TIEMPO_DIRECT'; return 'TARDANZA_MODAL'; };
   const handleOpenStatusModal = (student, existingStatus = '') => { setStatusModalStudent(student); setStatusModalNotes(attendanceData[student.id]?.notes || ''); let defaultStatus = ''; if (historicDateProp) { defaultStatus = existingStatus || 'PUNTUAL'; } else { defaultStatus = existingStatus || 'TARDANZA_INJUSTIFICADA'; } setStatusModalSelectedStatus(existingStatus || defaultStatus); setStatusModalOpen(true); };
   const handleCloseStatusModal = () => { setStatusModalOpen(false); setStatusModalStudent(null); setStatusModalSelectedStatus(''); setStatusModalNotes(''); };
-  const handleSubmitStatusModal = () => { if (!statusModalStudent || !statusModalSelectedStatus) { alert("Por favor, seleccione un estado de asistencia."); return; } saveAttendanceRecord(statusModalStudent.id, statusModalSelectedStatus, statusModalNotes); handleCloseStatusModal(); };
-  const saveAttendanceRecord = async (studentId, status, notes) => { try { const token = getToken(); const response = await axios.post(`${API_BASE_URL}/attendance/record`, { student_id: studentId, attendance_date: dateForOperations, status: status, notes: notes, }, { headers: { 'x-auth-token': token } }); setAttendanceData(prev => ({ ...prev, [studentId]: { status: status, notes: notes, is_synced: true } })); setDailyStatus(prev => { const studentInfo = allStudents.find(s => s.id === studentId); const updatedRecords = prev.attendance_records.filter(r => r.student_id !== studentId); updatedRecords.push({ student_id: studentId, status: status, notes: notes, full_name: studentInfo?.full_name || 'Desconocido', nickname: studentInfo?.nickname || '', points_earned: response.data.record.points_earned, base_attendance_points: response.data.record.base_attendance_points, recorded_at: response.data.record.recorded_at, }); return { ...prev, attendance_records: updatedRecords.sort((a,b) => (a.full_name || "").localeCompare(b.full_name || "")) }; }); const studentInfoForAlert = allStudents.find(s => s.id === studentId); alert(`Asistencia para ${studentInfoForAlert?.full_name || studentId} (${dateForOperations}) registrada como ${status}.`); } catch (err) { console.error("Error saving attendance:", err); const errorMsg = err.response?.data?.message || err.message || 'Error al guardar asistencia.'; setError(errorMsg); alert(`Error al guardar: ${errorMsg}`); }};
+  const handleSubmitStatusModal = async () => { if (!statusModalStudent || !statusModalSelectedStatus) { alert("Por favor, seleccione un estado de asistencia."); return; } setIsSavingSpecificAttendance(true); try { await saveAttendanceRecord(statusModalStudent.id, statusModalSelectedStatus, statusModalNotes); } catch (saveErr) { /* El error ya se maneja y alerta en saveAttendanceRecord */ } finally { setIsSavingSpecificAttendance(false); handleCloseStatusModal(); } };
+  const saveAttendanceRecord = async (studentId, status, notes) => { try { const token = getToken(); const response = await axios.post(`${API_BASE_URL}/attendance/record`, { student_id: studentId, attendance_date: dateForOperations, status: status, notes: notes, }, { headers: { 'x-auth-token': token } }); setAttendanceData(prev => ({ ...prev, [studentId]: { status: status, notes: notes, is_synced: true } })); setDailyStatus(prev => { const studentInfo = allStudents.find(s => s.id === studentId); const updatedRecords = prev.attendance_records.filter(r => r.student_id !== studentId); updatedRecords.push({ student_id: studentId, status: status, notes: notes, full_name: studentInfo?.full_name || 'Desconocido', nickname: studentInfo?.nickname || '', points_earned: response.data.record.points_earned, base_attendance_points: response.data.record.base_attendance_points, recorded_at: response.data.record.recorded_at, }); return { ...prev, attendance_records: updatedRecords.sort((a,b) => (a.full_name || "").localeCompare(b.full_name || "")) }; }); const studentInfoForAlert = allStudents.find(s => s.id === studentId); alert(`Asistencia para ${studentInfoForAlert?.full_name || studentId} (${dateForOperations}) registrada como ${status}.`); } catch (err) { console.error("Error saving attendance:", err); const errorMsg = err.response?.data?.message || err.message || 'Error al guardar asistencia.'; setError(errorMsg); alert(`Error al guardar: ${errorMsg}`); throw err; /* Re-throw para que el finally del caller se ejecute */ }};
   const handleProcessAttendanceClick = (student) => { const isRecorded = dailyStatus.attendance_records.some(r => r.student_id === student.id); const currentRecord = dailyStatus.attendance_records.find(r => r.student_id === student.id); if (historicDateProp || isRecorded) { handleOpenStatusModal(student, currentRecord?.status); } else { const statusType = determineStatusTypeForModal(); if (statusType === 'PUNTUAL_DIRECT') { saveAttendanceRecord(student.id, 'PUNTUAL', attendanceData[student.id]?.notes || ''); } else if (statusType === 'A_TIEMPO_DIRECT') { saveAttendanceRecord(student.id, 'A_TIEMPO', attendanceData[student.id]?.notes || ''); } else { handleOpenStatusModal(student, 'TARDANZA_INJUSTIFICADA'); } } };
-  const handleApplyEarlyBonus = async () => { if (historicDateProp) { alert("El bono madrugador solo se puede aplicar en la fecha actual."); return; } if (!selectedStudentForBonus) { alert("Por favor, seleccione un estudiante para otorgar el bono."); return; } if (dailyStatus.bonus_awarded_today) { alert(`El bono madrugador ya fue otorgado a ${dailyStatus.bonus_awarded_today.bonus_student_name}.`); return; } try { const token = getToken(); const response = await axios.post(`${API_BASE_URL}/attendance/early-bonus`, { student_id: selectedStudentForBonus, bonus_date: dateForOperations, }, { headers: { 'x-auth-token': token } }); setDailyStatus(prev => ({ ...prev, bonus_awarded_today: { ...response.data.bonus_record, bonus_student_name: allStudents.find(s => s.id === response.data.bonus_record.student_id)?.full_name || response.data.bonus_record.student_id }})); setSelectedStudentForBonus(''); alert(`Bono madrugador otorgado a ${allStudents.find(s => s.id === response.data.bonus_record.student_id)?.full_name || selectedStudentForBonus}.`); } catch (err) { console.error("Error applying early bonus:", err); setError(err.response?.data?.message || err.message || 'Error al aplicar el bono.'); alert(`Error al aplicar bono: ${err.response?.data?.message || err.message}`); }};
+  const handleApplyEarlyBonus = async () => { if (historicDateProp) { alert("El bono madrugador solo se puede aplicar en la fecha actual."); return; } if (!selectedStudentForBonus) { alert("Por favor, seleccione un estudiante para otorgar el bono."); return; } if (dailyStatus.bonus_awarded_today) { alert(`El bono madrugador ya fue otorgado a ${dailyStatus.bonus_awarded_today.bonus_student_name}.`); return; } setIsApplyingBonus(true); try { const token = getToken(); const response = await axios.post(`${API_BASE_URL}/attendance/early-bonus`, { student_id: selectedStudentForBonus, bonus_date: dateForOperations, }, { headers: { 'x-auth-token': token } }); setDailyStatus(prev => ({ ...prev, bonus_awarded_today: { ...response.data.bonus_record, bonus_student_name: allStudents.find(s => s.id === response.data.bonus_record.student_id)?.full_name || response.data.bonus_record.student_id }})); setSelectedStudentForBonus(''); alert(`Bono madrugador otorgado a ${allStudents.find(s => s.id === response.data.bonus_record.student_id)?.full_name || selectedStudentForBonus}.`); } catch (err) { console.error("Error applying early bonus:", err); setError(err.response?.data?.message || err.message || 'Error al aplicar el bono.'); alert(`Error al aplicar bono: ${err.response?.data?.message || err.message}`); } finally { setIsApplyingBonus(false); }};
   const handleOpenCloseAttendanceModal = () => { const recordedStudentIds = new Set(dailyStatus.attendance_records.map(r => r.student_id)); const absent = allStudents.filter(student => !recordedStudentIds.has(student.id)); setAbsentStudentsForModal(absent); const initialJustifications = {}; absent.forEach(student => { initialJustifications[student.id] = { is_justified: false, notes: '' }; }); setAbsentJustifications(initialJustifications); setCloseAttendanceModalOpen(true); };
   const handleCloseModalOfAttendance = () => setCloseAttendanceModalOpen(false);
   const handleAbsentJustificationChange = (studentId, field, value) => setAbsentJustifications(prev => ({ ...prev, [studentId]: { ...prev[studentId], [field]: value } }));
-  const handleSubmitCloseAttendance = async () => { const justificationsPayload = Object.entries(absentJustifications).map(([student_id, data]) => ({ student_id, is_justified: data.is_justified, notes: data.notes })); try { const token = getToken(); await axios.post(`${API_BASE_URL}/attendance/close`, { attendance_date: dateForOperations, absent_students_justifications: justificationsPayload, }, { headers: { 'x-auth-token': token } }); const updatedDailyStatusResponse = await axios.get(`${API_BASE_URL}/attendance/status/${dateForOperations}`, { headers: { 'x-auth-token': token } }); setDailyStatus(updatedDailyStatusResponse.data); const newAttendanceData = { ...attendanceData }; updatedDailyStatusResponse.data.attendance_records.forEach(record => { if (!newAttendanceData[record.student_id] || record.status.startsWith("AUSENCIA")) { newAttendanceData[record.student_id] = { status: record.status, notes: record.notes || '', is_synced: true }; } }); setAttendanceData(newAttendanceData); alert("Cierre de asistencia procesado."); setCloseAttendanceModalOpen(false); } catch (err) { console.error("Error closing attendance:", err); setError(err.response?.data?.message || err.message || 'Error al cerrar asistencia.'); alert(`Error: ${err.response?.data?.message || err.message}`); }};
+  const handleSubmitCloseAttendance = async () => { setIsClosingAttendance(true); const justificationsPayload = Object.entries(absentJustifications).map(([student_id, data]) => ({ student_id, is_justified: data.is_justified, notes: data.notes })); try { const token = getToken(); await axios.post(`${API_BASE_URL}/attendance/close`, { attendance_date: dateForOperations, absent_students_justifications: justificationsPayload, }, { headers: { 'x-auth-token': token } }); const updatedDailyStatusResponse = await axios.get(`${API_BASE_URL}/attendance/status/${dateForOperations}`, { headers: { 'x-auth-token': token } }); setDailyStatus(updatedDailyStatusResponse.data); const newAttendanceData = { ...attendanceData }; updatedDailyStatusResponse.data.attendance_records.forEach(record => { if (!newAttendanceData[record.student_id] || record.status.startsWith("AUSENCIA")) { newAttendanceData[record.student_id] = { status: record.status, notes: record.notes || '', is_synced: true }; } }); setAttendanceData(newAttendanceData); alert("Cierre de asistencia procesado."); setCloseAttendanceModalOpen(false); } catch (err) { console.error("Error closing attendance:", err); setError(err.response?.data?.message || err.message || 'Error al cerrar asistencia.'); alert(`Error: ${err.response?.data?.message || err.message}`); } finally { setIsClosingAttendance(false); }};
 
-  if (loading) return <div className="content-page-container"><p className="text-center" style={{padding: '2rem'}}>Cargando datos de asistencia para {dateForOperations}...</p></div>;
+  if (loading) return <div className="content-page-container loading-container"><Spinner /></div>;
   if (error) return <div className="content-page-container"><div className="error-message-page">{error}</div><div style={{textAlign: 'center', marginTop: '1rem'}}><Link to="/docente/dashboard" className="btn-action btn-student">Volver al Panel</Link></div></div>;
 
   const isAllStudentsRecorded = () => { if (!allStudents || allStudents.length === 0) return false; const recordedStudentIds = new Set(dailyStatus.attendance_records.map(r => r.student_id)); return allStudents.every(student => recordedStudentIds.has(student.id)); };
@@ -80,9 +86,10 @@ const TeacherAttendancePage = ({ selectedDate: historicDateProp }) => {
             <textarea id="statusModalNotes" value={statusModalNotes} onChange={(e) => setStatusModalNotes(e.target.value)} rows="3" placeholder="Notas (opcional)..." />
           </div>
           <div className="modal-actions">
-            <button onClick={handleCloseStatusModal} className="btn-secondary">Cancelar</button>
-            <button onClick={handleSubmitStatusModal} className="btn-primary" ><CheckCircleIcon /> Guardar Estado</button>
-            {/* Se eliminó style={{backgroundColor: COLOR_TEACHER_PURPLE}} */}
+            <button onClick={handleCloseStatusModal} className="btn-secondary" disabled={isSavingSpecificAttendance}>Cancelar</button>
+            <button onClick={handleSubmitStatusModal} className="btn-primary" disabled={isSavingSpecificAttendance}>
+              {isSavingSpecificAttendance ? <><Spinner size="16px" color="white"/> Guardando...</> : <><CheckCircleIcon /> Guardar Estado</>}
+            </button>
           </div>
         </div>
       </div>
@@ -107,10 +114,10 @@ const TeacherAttendancePage = ({ selectedDate: historicDateProp }) => {
                         <td>{student.full_name} ({student.id})</td>
                         <td>
                           <label className="inline-label">
-                            <input type="checkbox" checked={absentJustifications[student.id]?.is_justified || false} onChange={(e) => handleAbsentJustificationChange(student.id, 'is_justified', e.target.checked)} /> Sí
+                            <input type="checkbox" checked={absentJustifications[student.id]?.is_justified || false} onChange={(e) => handleAbsentJustificationChange(student.id, 'is_justified', e.target.checked)} disabled={isClosingAttendance} /> Sí
                           </label>
                         </td>
-                        <td><input type="text" value={absentJustifications[student.id]?.notes || ''} onChange={(e) => handleAbsentJustificationChange(student.id, 'notes', e.target.value)} placeholder="Motivo (opcional)" /></td>
+                        <td><input type="text" value={absentJustifications[student.id]?.notes || ''} onChange={(e) => handleAbsentJustificationChange(student.id, 'notes', e.target.value)} placeholder="Motivo (opcional)" disabled={isClosingAttendance} /></td>
                       </tr>
                     ))}
                   </tbody>
@@ -119,10 +126,9 @@ const TeacherAttendancePage = ({ selectedDate: historicDateProp }) => {
             </>
           )}
           <div className="modal-actions">
-            <button onClick={handleCloseModalOfAttendance} className="btn-secondary">Cancelar</button>
-            <button onClick={handleSubmitCloseAttendance} className="btn-primary" disabled={absentStudentsForModal.length === 0}>
-            {/* Se eliminó style={{backgroundColor: COLOR_TEACHER_PURPLE}} */}
-             <CheckCircleIcon /> Confirmar Cierre
+            <button onClick={handleCloseModalOfAttendance} className="btn-secondary" disabled={isClosingAttendance}>Cancelar</button>
+            <button onClick={handleSubmitCloseAttendance} className="btn-primary" disabled={absentStudentsForModal.length === 0 || isClosingAttendance}>
+              {isClosingAttendance ? <><Spinner size="20px" color="white"/> Confirmando...</> : <><CheckCircleIcon /> Confirmar Cierre</>}
             </button>
           </div>
         </div>
@@ -178,10 +184,10 @@ const TeacherAttendancePage = ({ selectedDate: historicDateProp }) => {
               </select>
               <button
                 onClick={handleApplyEarlyBonus}
-                disabled={!selectedStudentForBonus || !!dailyStatus.bonus_awarded_today || isAttendanceEffectivelyClosed || historicDateProp}
-                className="btn-action btn-teacher" // Aplicar clase para estilo
+                disabled={!selectedStudentForBonus || !!dailyStatus.bonus_awarded_today || isAttendanceEffectivelyClosed || historicDateProp || isApplyingBonus}
+                className="btn-action btn-teacher"
               >
-                <GiftIcon /> Otorgar Bono
+                {isApplyingBonus ? <><Spinner size="16px" color="white" /> Aplicando...</> : <><GiftIcon /> Otorgar Bono</>}
               </button>
             </div>
           )}
@@ -226,8 +232,7 @@ const TeacherAttendancePage = ({ selectedDate: historicDateProp }) => {
                         <button
                             onClick={() => handleProcessAttendanceClick(student)}
                             className="btn-action-row"
-                            // style={{backgroundColor: COLOR_STUDENT_BLUE}} // Eliminado estilo en línea
-                            disabled={statusModalOpen || isAttendanceEffectivelyClosed}
+                            disabled={statusModalOpen || isAttendanceEffectivelyClosed || isSavingSpecificAttendance}
                         >
                           {isRecorded ? 'Corregir' : (historicDateProp ? 'Registrar' : 'Marcar')}
                         </button>
@@ -239,7 +244,7 @@ const TeacherAttendancePage = ({ selectedDate: historicDateProp }) => {
                         value={currentStudentAttendance.notes}
                         onChange={(e) => handleAttendanceChange(student.id, 'notes', e.target.value)}
                         placeholder="Notas..."
-                        disabled={(record?.status.startsWith('AUSENCIA')) || isAttendanceEffectivelyClosed}
+                        disabled={(record?.status.startsWith('AUSENCIA')) || isAttendanceEffectivelyClosed || isSavingSpecificAttendance}
                       />
                     </td>
                   </tr>
@@ -255,11 +260,10 @@ const TeacherAttendancePage = ({ selectedDate: historicDateProp }) => {
       <div style={{ textAlign: 'center', marginTop: '2rem' }}>
         <button
           onClick={handleOpenCloseAttendanceModal}
-          disabled={isAttendanceEffectivelyClosed}
-          className="btn-action btn-teacher" // Esta clase debería aplicar el color morado
-          // style={{backgroundColor: COLOR_TEACHER_PURPLE}} // Eliminado estilo en línea
+          disabled={isAttendanceEffectivelyClosed || isClosingAttendance}
+          className="btn-action btn-teacher"
         >
-          {isAttendanceEffectivelyClosed ? `Asistencia del ${dateForOperations} Cerrada` : `Realizar Cierre de Asistencia (${dateForOperations})`}
+          {isClosingAttendance ? <><Spinner size="20px" color="white"/> Cerrando...</> : (isAttendanceEffectivelyClosed ? `Asistencia del ${dateForOperations} Cerrada` : `Realizar Cierre de Asistencia (${dateForOperations})`)}
         </button>
       </div>
 

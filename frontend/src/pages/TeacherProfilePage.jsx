@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import { API_BASE_URL as TEACHER_API_URL_BASE } from "../config"; // Corregir ruta de importación
+import { API_BASE_URL as TEACHER_API_URL_BASE } from "../config";
+import Spinner from '../components/Spinner'; // Importar Spinner
 
 // Basic styling (can be moved to App.css or a dedicated CSS file)
 const styles = {
@@ -210,8 +211,12 @@ const TeacherProfilePage = () => {
 
   const profileHasChanged = JSON.stringify(profile) !== JSON.stringify(initialProfile);
 
-  if (loadingProfile && !profile.id) {
-    return <div style={styles.pageContainer}><p>Cargando perfil...</p></div>;
+  if (loadingProfile && !profile.email) { // Usar !profile.email o !profile.id como indicador de no cargado
+    return (
+      <div style={{ ...styles.pageContainer, ...styles.loadingContainer }} className="loading-container">
+        <Spinner />
+      </div>
+    );
   }
 
   return (
@@ -254,7 +259,11 @@ const TeacherProfilePage = () => {
             <input type="tel" id="cellphone_number" name="cellphone_number" value={profile.cellphone_number || ''} onChange={handleProfileChange} style={styles.input} pattern="\d{9,15}" title="Debe ser un número de 9 a 15 dígitos." />
           </div>
           <button type="submit" style={{...styles.button, backgroundColor: 'var(--primary-color-teacher)', ...( (loadingProfile || !profileHasChanged) && styles.buttonDisabled)}} disabled={loadingProfile || !profileHasChanged}>
-            {loadingProfile ? 'Guardando...' : 'Guardar Cambios de Perfil'}
+            {loadingProfile && initialProfile.email ? ( // Mostrar spinner solo si ya había datos (es un update)
+              <><Spinner size="20px" color="white" /> Guardando...</>
+            ) : (
+              'Guardar Cambios de Perfil'
+            )}
           </button>
         </form>
       </div>
@@ -276,7 +285,11 @@ const TeacherProfilePage = () => {
             <input type="password" id="confirm_new_password" name="confirm_new_password" value={passwordData.confirm_new_password} onChange={handlePasswordChange} style={styles.input} required minLength="6" />
           </div>
           <button type="submit" style={{...styles.button, backgroundColor: 'var(--primary-color-teacher)', ...(loadingPassword && styles.buttonDisabled)}} disabled={loadingPassword}>
-            {loadingPassword ? 'Cambiando...' : 'Cambiar Contraseña'}
+            {loadingPassword ? (
+              <><Spinner size="20px" color="white" /> Cambiando...</>
+            ) : (
+              'Cambiar Contraseña'
+            )}
           </button>
         </form>
       </div>

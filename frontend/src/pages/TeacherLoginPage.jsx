@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { API_BASE_URL } from "../config"; // Corregir ruta de importación
+import { API_BASE_URL } from "../config";
+import Spinner from '../components/Spinner'; // Importar Spinner
 
 const ArrowRightOnRectangleIcon = () => (
   <svg className="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
@@ -13,6 +14,7 @@ const TeacherLoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false); // Estado para el spinner
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -22,6 +24,7 @@ const TeacherLoginPage = () => {
       setError('Por favor, ingrese email y contraseña.');
       return;
     }
+    setIsLoading(true); // Activar spinner
     try {
       const response = await axios.post(`${API_BASE_URL}/auth/login/teacher`, { email, password });
       if (response.data.token) {
@@ -39,6 +42,8 @@ const TeacherLoginPage = () => {
         setError('Ocurrió un error durante el login.');
       }
       console.error('Login error:', err);
+    } finally {
+      setIsLoading(false); // Desactivar spinner
     }
   };
 
@@ -49,15 +54,19 @@ const TeacherLoginPage = () => {
         <form onSubmit={handleSubmit}>
           <div>
             <label htmlFor="email">Correo Electrónico:</label>
-            <input type="email" id="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="ejemplo@correo.com" required />
+            <input type="email" id="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="ejemplo@correo.com" required disabled={isLoading} />
           </div>
           <div>
             <label htmlFor="password">Contraseña:</label>
-            <input type="password" id="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required />
+            <input type="password" id="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required disabled={isLoading} />
           </div>
           {error && <p style={{ color: 'var(--primary-color-teacher)', fontWeight: '500', marginTop: '1rem', textAlign:'center' }}>{error}</p>}
-          <button type="submit" className="btn-action btn-teacher">
-            <ArrowRightOnRectangleIcon />Ingresar
+          <button type="submit" className="btn-action btn-teacher" disabled={isLoading}>
+            {isLoading ? (
+              <><Spinner size="20px" color="white" /> Ingresando...</>
+            ) : (
+              <><ArrowRightOnRectangleIcon />Ingresar</>
+            )}
           </button>
         </form>
         {/* <Link to="/recuperar-password" className="secondary-link">¿Olvidaste tu contraseña?</Link> */}

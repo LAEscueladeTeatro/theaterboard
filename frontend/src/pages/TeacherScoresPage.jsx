@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
-import { getTodayPeruDateString as getTodayPeruDateStringForScores } from "../utils/dateUtils"; // Corregir ruta
-import { API_BASE_URL } from "../config"; // Corregir ruta
+import { getTodayPeruDateString as getTodayPeruDateStringForScores } from "../utils/dateUtils";
+import { API_BASE_URL } from "../config";
+import Spinner from '../components/Spinner'; // Importar Spinner
 
 // Iconos
 const SaveIcon = () => <svg className="icon" viewBox="0 0 20 20" fill="currentColor" width="16" height="16" style={{verticalAlign: 'middle', marginRight: '0.5em'}}><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.25a.75.75 0 00-1.5 0v2.5h-2.5a.75.75 0 000 1.5h2.5v2.5a.75.75 0 001.5 0v-2.5h2.5a.75.75 0 000-1.5h-2.5v-2.5z" clipRule="evenodd" /></svg>;
@@ -14,7 +15,11 @@ const TeacherScoresPage = () => {
   const [loadingAttendance, setLoadingAttendance] = useState(false);
   const [error, setError] = useState('');
 
-  const todayDateString = getTodayPeruDateStringForScores(); // Usar la función importada
+  // Estados para spinners de acciones
+  const [isSubmittingGroupScore, setIsSubmittingGroupScore] = useState(false);
+  const [isSubmittingPersonalScore, setIsSubmittingPersonalScore] = useState(false);
+
+  const todayDateString = getTodayPeruDateStringForScores();
 
   const [groupScoreType, setGroupScoreType] = useState('ROPA_TRABAJO');
   const [groupScoreDate, setGroupScoreDate] = useState(todayDateString);
@@ -126,13 +131,14 @@ const TeacherScoresPage = () => {
   const countSelectedForBonus = () => Object.values(groupStudentStatus).filter(s => s === 'selected_for_bonus').length;
 
   const handleSubmitGroupScore = async (e) => {
-    e.preventDefault(); setError(''); let payload = { score_type: groupScoreType, score_date: groupScoreDate };
+    e.preventDefault(); setError(''); setIsSubmittingGroupScore(true);
+    let payload = { score_type: groupScoreType, score_date: groupScoreDate };
     if (groupScoreType === 'CINCO_VALIENTES' || groupScoreType === 'PRIMER_GRUPO') {
       const student_ids = Object.entries(groupStudentStatus)
         .filter(([studentId, status]) => status === 'selected_for_bonus' && presentStudents.find(p => p.id === studentId))
         .map(([studentId, _]) => studentId);
-      if (student_ids.length === 0) { alert("Por favor, seleccione al menos un estudiante presente."); return; }
-      if (groupScoreType === 'CINCO_VALIENTES' && student_ids.length > 5) { alert("'Cinco Valientes' no puede tener más de 5 estudiantes."); return; }
+      if (student_ids.length === 0) { alert("Por favor, seleccione al menos un estudiante presente."); setIsSubmittingGroupScore(false); return; }
+      if (groupScoreType === 'CINCO_VALIENTES' && student_ids.length > 5) { alert("'Cinco Valientes' no puede tener más de 5 estudiantes."); setIsSubmittingGroupScore(false); return; }
       payload.student_ids = student_ids;
     } else {
       const students_compliant = []; const students_non_compliant = [];
@@ -142,29 +148,32 @@ const TeacherScoresPage = () => {
         else if (status === 'non_compliant') { students_non_compliant.push(student.id); }
       });
       if (students_compliant.length === 0 && students_non_compliant.length === 0 && presentStudents.length > 0) {
-        alert("Por favor, marque el estado de al menos un estudiante presente."); return;
+        alert("Por favor, marque el estado de al menos un estudiante presente."); setIsSubmittingGroupScore(false); return;
       } else if (presentStudents.length === 0 && (students_compliant.length > 0 || students_non_compliant.length > 0)) {
-        alert("No hay estudiantes presentes para asignar puntajes."); return;
+        alert("No hay estudiantes presentes para asignar puntajes."); setIsSubmittingGroupScore(false); return;
       }
       payload.students_compliant = students_compliant; payload.students_non_compliant = students_non_compliant;
     }
     try { const token = getToken(); const response = await axios.post(`${API_BASE_URL}/scores/group`, payload, { headers: { 'x-auth-token': token } }); alert(response.data.message || "Puntuaciones grupales registradas."); if (['ROPA_TRABAJO', 'LIMPIEZA', 'CINCO_VALIENTES', 'PRIMER_GRUPO'].includes(groupScoreType)) { /* El useEffect [presentStudents, groupScoreType] se encargará de resetear */ } }
     catch (err) { console.error("Error submitting group score:", err); setError(err.response?.data?.message || err.message || 'Error al registrar puntuaciones grupales.'); alert(`Error: ${err.response?.data?.message || err.message}`); }
+    finally { setIsSubmittingGroupScore(false); }
   };
 
   const handlePersonalScoreTypeChange = (e) => { setPersonalScoreType(e.target.value); setPersonalPoints(''); setPersonalSubCategory(''); setPersonalNotes(''); };
   const handleSubmitPersonalScore = async (e) => {
-    e.preventDefault(); setError(''); if (!personalSelectedStudent) { alert("Por favor, seleccione un estudiante."); return; }
+    e.preventDefault(); setError(''); setIsSubmittingPersonalScore(true);
+    if (!personalSelectedStudent) { alert("Por favor, seleccione un estudiante."); setIsSubmittingPersonalScore(false); return; }
     let pointsToAssign = parseInt(personalPoints, 10);
-    if (personalScoreType === 'PARTICIPACION') { if (personalSubCategory === 'Participativo') pointsToAssign = 2; else if (personalSubCategory === 'Apático') pointsToAssign = -1; else { alert("Seleccione el nivel de participación."); return; } }
-    else if (personalScoreType === 'EXTRA') { if (isNaN(pointsToAssign) || pointsToAssign === 0) { alert("Ingrese un valor numérico de puntos (diferente de cero) para Puntos Extra."); return; } }
-    else if (personalScoreType === 'CONDUCTA' || personalScoreType === 'USO_CELULAR') { if (isNaN(pointsToAssign)) {alert("Seleccione una opción de puntos válida."); return;} }
-    else if (isNaN(pointsToAssign)) { alert("Ingrese un valor numérico para los puntos."); return; }
+    if (personalScoreType === 'PARTICIPACION') { if (personalSubCategory === 'Participativo') pointsToAssign = 2; else if (personalSubCategory === 'Apático') pointsToAssign = -1; else { alert("Seleccione el nivel de participación."); setIsSubmittingPersonalScore(false); return; } }
+    else if (personalScoreType === 'EXTRA') { if (isNaN(pointsToAssign) || pointsToAssign === 0) { alert("Ingrese un valor numérico de puntos (diferente de cero) para Puntos Extra."); setIsSubmittingPersonalScore(false); return; } }
+    else if (personalScoreType === 'CONDUCTA' || personalScoreType === 'USO_CELULAR') { if (isNaN(pointsToAssign)) {alert("Seleccione una opción de puntos válida."); setIsSubmittingPersonalScore(false); return;} }
+    else if (isNaN(pointsToAssign)) { alert("Ingrese un valor numérico para los puntos."); setIsSubmittingPersonalScore(false); return; }
     try { const token = getToken(); const payload = { student_id: personalSelectedStudent, score_type: personalScoreType, score_date: groupScoreDate, points_assigned: pointsToAssign, sub_category: personalSubCategory, notes: personalNotes }; const response = await axios.post(`${API_BASE_URL}/scores/personal`, payload, { headers: { 'x-auth-token': token } }); let alertMessage = response.data.message || "Puntuación personal registrada."; if (personalScoreType === 'CONDUCTA') { let timeOutMessage = ''; if (pointsToAssign === -3) timeOutMessage = "Recuerda: Enviar al alumno un tiempo fuera de 15 minutos."; else if (pointsToAssign === -2) timeOutMessage = "Recuerda: Enviar al alumno un tiempo fuera de 10 minutos."; else if (pointsToAssign === -1) timeOutMessage = "Recuerda: Enviar al alumno un tiempo fuera de 5 minutos."; if (timeOutMessage) { alertMessage += `\n${timeOutMessage}`; } } alert(alertMessage); setPersonalSelectedStudent(''); setPersonalPoints(''); setPersonalSubCategory(''); setPersonalNotes(''); }
     catch (err) { console.error("Error submitting personal score:", err); setError(err.response?.data?.message || err.message || 'Error al registrar puntuación personal.'); alert(`Error: ${err.response?.data?.message || err.message}`); }
+    finally { setIsSubmittingPersonalScore(false); }
   };
 
-  if (loadingStudents && allStudents.length === 0) return <div className="content-page-container"><p className="text-center" style={{padding: '2rem'}}>Cargando estudiantes...</p></div>;
+  if (loadingStudents && allStudents.length === 0) return <div className="content-page-container loading-container"><Spinner /></div>;
 
   return (
     <div className="content-page-container">
@@ -196,9 +205,9 @@ const TeacherScoresPage = () => {
           {(groupScoreType === 'ROPA_TRABAJO' || groupScoreType === 'MATERIALES' || groupScoreType === 'LIMPIEZA') && (
             <div className="score-form-group">
               <label className="student-list-label">Marcar Estudiantes (Presentes en fecha: {groupScoreDate}):</label>
-              {loadingAttendance && <p className="text-center">Cargando asistencia...</p>}
+              {loadingAttendance && <div className="loading-container" style={{minHeight: '50px'}}><Spinner size="25px" /></div>}
               {!loadingAttendance && presentStudents.length === 0 && <p className="text-center" style={{color: 'var(--text-color-placeholder)', marginTop: '0.5rem'}}>No hay estudiantes presentes o no se cargó asistencia para esta fecha.</p>}
-              {presentStudents.length > 0 &&
+              {presentStudents.length > 0 && !loadingAttendance &&
                 <div className="student-selection-list">
                   {presentStudents.map(student => (
                     <div key={student.id}>
@@ -219,9 +228,9 @@ const TeacherScoresPage = () => {
           {(groupScoreType === 'CINCO_VALIENTES' || groupScoreType === 'PRIMER_GRUPO') && (
             <div className="score-form-group">
               <label className="student-list-label">Seleccionar Estudiantes (Presentes en fecha: {groupScoreDate}):</label>
-              {loadingAttendance && <p className="text-center">Cargando asistencia...</p>}
+              {loadingAttendance && <div className="loading-container" style={{minHeight: '50px'}}><Spinner size="25px" /></div>}
               {!loadingAttendance && presentStudents.length === 0 && <p className="text-center" style={{color: 'var(--text-color-placeholder)', marginTop: '0.5rem'}}>No hay estudiantes presentes o no se cargó asistencia para esta fecha.</p>}
-              {presentStudents.length > 0 &&
+              {presentStudents.length > 0 && !loadingAttendance &&
                 <div className="student-selection-list">
                   {presentStudents.map(student => (
                     <div key={student.id}>
@@ -240,7 +249,9 @@ const TeacherScoresPage = () => {
               }
             </div>
           )}
-          <button type="submit" className="btn-action btn-teacher" style={{width: '100%', marginTop: '1.5rem'}}><SaveIcon /> Registrar Puntuación Grupal</button>
+          <button type="submit" className="btn-action btn-teacher" style={{width: '100%', marginTop: '1.5rem'}} disabled={isSubmittingGroupScore || loadingAttendance}>
+            {isSubmittingGroupScore ? <><Spinner size="20px" color="white"/> Registrando...</> : <><SaveIcon /> Registrar Puntuación Grupal</>}
+          </button>
         </form>
       </div>
 
@@ -249,7 +260,7 @@ const TeacherScoresPage = () => {
         <form onSubmit={handleSubmitPersonalScore}>
           <div className="score-form-group">
             <label htmlFor="personalSelectedStudent">Estudiante:</label>
-            <select id="personalSelectedStudent" value={personalSelectedStudent} onChange={(e) => setPersonalSelectedStudent(e.target.value)} required>
+            <select id="personalSelectedStudent" value={personalSelectedStudent} onChange={(e) => setPersonalSelectedStudent(e.target.value)} required disabled={isSubmittingPersonalScore || loadingAttendance}>
               <option value="">Seleccione un estudiante presente</option>
               {presentStudents.map(student => (
                 <option key={student.id} value={student.id}>{student.full_name} ({student.id})</option>
@@ -316,9 +327,11 @@ const TeacherScoresPage = () => {
 
           <div className="score-form-group">
             <label htmlFor="personalNotes">Notas Adicionales (opcional):</label>
-            <textarea id="personalNotes" value={personalNotes} onChange={(e) => setPersonalNotes(e.target.value)} rows="3" placeholder="Detalles..."></textarea>
+            <textarea id="personalNotes" value={personalNotes} onChange={(e) => setPersonalNotes(e.target.value)} rows="3" placeholder="Detalles..." disabled={isSubmittingPersonalScore}></textarea>
           </div>
-          <button type="submit" className="btn-action btn-teacher" style={{width: '100%', marginTop: '1.5rem'}}><SaveIcon/> Registrar Puntuación Personal</button>
+          <button type="submit" className="btn-action btn-teacher" style={{width: '100%', marginTop: '1.5rem'}} disabled={isSubmittingPersonalScore || loadingAttendance || !personalSelectedStudent}>
+            {isSubmittingPersonalScore ? <><Spinner size="20px" color="white"/> Registrando...</> : <><SaveIcon/> Registrar Puntuación Personal</>}
+          </button>
         </form>
       </div>
     </div>

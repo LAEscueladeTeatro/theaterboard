@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
-import { API_BASE_URL } from "../config"; // Corregir ruta de importación
+import { API_BASE_URL } from "../config";
+import Spinner from '../components/Spinner'; // Importar Spinner
 
 // Iconos SVG
 const LogoutIcon = () => <svg className="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fillRule="evenodd" d="M3 3.25A2.25 2.25 0 015.25 1h5.5A2.25 2.25 0 0113 3.25V4.5a.75.75 0 01-1.5 0V3.25a.75.75 0 00-.75-.75h-5.5a.75.75 0 00-.75.75v13.5a.75.75 0 00.75.75h5.5a.75.75 0 00.75-.75v-1.25a.75.75 0 011.5 0V16.75a2.25 2.25 0 01-2.25 2.25h-5.5A2.25 2.25 0 013 16.75V3.25zm10.97 9.22a.75.75 0 001.06-1.06l-1.72-1.72h3.44a.75.75 0 000-1.5H12.81l1.72-1.72a.75.75 0 00-1.06-1.06l-3 3a.75.75 0 000 1.06l3 3z" clipRule="evenodd" /></svg>;
@@ -103,7 +104,13 @@ const StudentDashboardPage = () => {
   };
 
 
-  if (loading) return <div className="dashboard-page-container student-dashboard"><p className="text-center" style={{padding: '2rem'}}>Cargando tu panel...</p></div>;
+  if (loading) {
+    return (
+      <div className="dashboard-page-container student-dashboard loading-container">
+        <Spinner />
+      </div>
+    );
+  }
   if (error) return <div className="dashboard-page-container student-dashboard"><div className="error-message-page">{error}</div> <div style={{textAlign:'center', marginTop:'1rem'}}><Link to="/" className="btn-action btn-student">Volver al Inicio</Link></div></div>;
   if (!dashboardData) return <div className="dashboard-page-container student-dashboard"><p className="empty-table-message">No se pudieron cargar los datos de tu panel.</p></div>;
 

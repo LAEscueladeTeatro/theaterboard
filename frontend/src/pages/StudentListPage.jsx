@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
-import { API_BASE_URL } from "../config"; // Corregir ruta de importación
+import { API_BASE_URL } from "../config";
+import Spinner from '../components/Spinner'; // Corregir ruta de importación
 
 // Iconos SVG (ejemplos)
 const AddIcon = () => <svg className="icon" viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" /></svg>;
@@ -90,7 +91,14 @@ const StudentListPage = () => {
     } catch (err) { console.error(`Error ${action}ing student:`, err); alert(`Error: ${err.response?.data?.message || `No se pudo ${action} el estudiante.`}`); }
   };
 
-  if (loading && students.length === 0) return <div className="content-page-container"><p className="text-center" style={{padding: '2rem'}}>Cargando lista de estudiantes...</p></div>;
+  // Modificado para usar el Spinner
+  if (loading && students.length === 0) {
+    return (
+      <div className="content-page-container loading-container">
+        <Spinner />
+      </div>
+    );
+  }
   if (error && !loading) return <div className="content-page-container"><div className="error-message-page">{error}</div><div style={{textAlign:'center', marginTop:'1rem'}}><Link to="/docente/dashboard" className="btn-action btn-student">Volver al Panel</Link></div></div>;
 
   return (
