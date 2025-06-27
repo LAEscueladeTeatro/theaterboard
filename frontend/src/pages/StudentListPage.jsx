@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from "../config";
-import Spinner from '../components/Spinner'; // Corregir ruta de importación
+import Spinner from '../components/Spinner';
+import toast from 'react-hot-toast'; // Importar toast
 
 // Iconos SVG (ejemplos)
 const AddIcon = () => <svg className="icon" viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" /></svg>;
@@ -59,8 +60,11 @@ const StudentListPage = () => {
       await axios.post(`${STUDENT_ADMIN_API_URL}/add-quick`, payload, { headers: { 'x-auth-token': token }});
       fetchActiveStudents();
       handleCloseAddQuickModal();
-      alert("Estudiante añadido con éxito.");
-    } catch (err) { console.error("Error adding student (quick):", err); alert(`Error: ${err.response?.data?.message || 'No se pudo añadir el estudiante.'}`); }
+      toast.success("Estudiante añadido con éxito.");
+    } catch (err) {
+      console.error("Error adding student (quick):", err);
+      toast.error(`Error: ${err.response?.data?.message || 'No se pudo añadir el estudiante.'}`);
+    }
   };
 
   const handleOpenEditModal = (student) => { setCurrentStudent(student); setEditStudentData({ id: student.id, full_name: student.full_name, nickname: student.nickname || '' }); setShowEditModal(true); };
@@ -76,19 +80,26 @@ const StudentListPage = () => {
       await axios.put(`${STUDENT_ADMIN_API_URL}/${currentStudent.id}/edit-basic`, payload, { headers: { 'x-auth-token': token }});
       fetchActiveStudents();
       handleCloseEditModal();
-      alert("Estudiante actualizado con éxito.");
-    } catch (err) { console.error("Error updating student:", err); alert(`Error: ${err.response?.data?.message || 'No se pudo actualizar el estudiante.'}`); }
+      toast.success("Estudiante actualizado con éxito.");
+    } catch (err) {
+      console.error("Error updating student:", err);
+      toast.error(`Error: ${err.response?.data?.message || 'No se pudo actualizar el estudiante.'}`);
+    }
   };
 
   const handleSetStudentStatus = async (studentId, isActive) => {
     const action = isActive ? "habilitar" : "inhabilitar";
+    // Considerar reemplazar window.confirm con un modal más estilizado si se desea una UX más pulida
     if (!window.confirm(`¿Está seguro que desea ${action} a este estudiante?`)) return;
     try {
       const token = getToken();
       await axios.put(`${STUDENT_ADMIN_API_URL}/${studentId}/set-status`, { is_active: isActive }, { headers: { 'x-auth-token': token }});
       fetchActiveStudents();
-      alert(`Estudiante ${action}do con éxito.`);
-    } catch (err) { console.error(`Error ${action}ing student:`, err); alert(`Error: ${err.response?.data?.message || `No se pudo ${action} el estudiante.`}`); }
+      toast.success(`Estudiante ${action}do con éxito.`);
+    } catch (err) {
+      console.error(`Error ${action}ing student:`, err);
+      toast.error(`Error: ${err.response?.data?.message || `No se pudo ${action} el estudiante.`}`);
+    }
   };
 
   // Modificado para usar el Spinner
