@@ -924,6 +924,17 @@ footer {
   grid-column: 1 / -1;
 }
 
+/* Estilos para input[type=month] y input[type=date] en controles */
+.controls-bar input[type="month"],
+.controls-section input[type="month"],
+.controls-bar input[type="date"],
+.controls-section input[type="date"] {
+  padding-top: 0.7em;
+  padding-bottom: 0.7em;
+  line-height: 1.6;
+}
+
+
 /* Estilos para Resumen de Puntos */
 .summary-results-container {
   margin-top: 2rem;
@@ -976,6 +987,22 @@ footer {
   background-color: rgba(0,0,0,0.1); /* Fondo sutil para el total */
   border-radius: var(--border-radius-small);
   text-align: center;
+}
+
+/* Ranking Table - Top 3 Highlighting */
+.styled-table tbody td.ranking-position {
+    font-weight: bold;
+    text-align: center;
+    font-size: 1.1em;
+    padding-right: 0.8em;
+}
+
+.styled-table tbody tr.rank-1 strong,
+.styled-table tbody tr.rank-2 strong,
+.styled-table tbody tr.rank-3 strong { /* Para el puntaje del Top 3 */
+  color: var(--primary-color-register); /* Color Teal */
+  font-size: 1.1em;
+  font-weight: 700;
 }
 
 [end of frontend/src/App.css]
