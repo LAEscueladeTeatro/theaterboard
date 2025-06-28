@@ -91,7 +91,9 @@ router.post('/add-quick', async (req, res) => {
     );
 
     await client.query('COMMIT');
-    res.status(201).json(newStudentResult.rows[0]);
+    // Incluir defaultPassword en la respuesta
+    const studentData = newStudentResult.rows[0];
+    res.status(201).json({ ...studentData, defaultPassword });
 
   } catch (err) {
     await client.query('ROLLBACK');
