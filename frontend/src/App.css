@@ -1203,6 +1203,33 @@ input:checked + .toggle-slider:before {
   box-shadow: 0 6px 20px rgba(0,0,0,0.15);
   border: 1px solid var(--border-color-subtle);
 }
+
+/* Estilos para el cuadro de resumen mensual en StudentScoresDetailPage */
+.monthly-summary-info {
+  text-align: center;
+  margin: 1rem 0;
+  padding: 1rem;
+  background-color: #f8f9fa; /* Gris claro */
+  border-radius: 8px;
+  border: 1px solid #e0e0e0; /* Un borde sutil */
+  color: #333; /* Color de texto oscuro para contraste */
+}
+
+.monthly-summary-info h3 {
+  margin-top: 0;
+  color: #0056b3; /* Un azul para el título, similar al de los botones de acción */
+  font-size: 1.25rem; /* Tamaño de fuente para el título del resumen */
+  margin-bottom: 0.75rem;
+}
+
+.monthly-summary-info p {
+  margin-bottom: 0.5rem;
+  font-size: 1rem; /* Tamaño de fuente para el texto del resumen */
+}
+
+.monthly-summary-info p strong {
+  color: #004085; /* Un azul un poco más oscuro para los labels "Puntaje Total" y "Puesto" */
+}
 .summary-info-card .section-title { /* Para "Resumen del Mes" */
   margin-top: 0;
   margin-bottom: 1.5rem;
