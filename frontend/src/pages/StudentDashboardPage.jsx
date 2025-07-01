@@ -187,57 +187,17 @@ const StudentDashboardPage = () => {
       )}
 
       {dashboardData && ( // Ensure dashboardData is available for summary card
-        <div
-          // className="summary-info-card" // Clase eliminada temporalmente
-          style={{
-            backgroundColor: 'rgba(30, 30, 50, 0.75)', // Fondo oscuro explícito
-            padding: '1.5rem 2rem',
-            borderRadius: '16px', // var(--border-radius-medium)
-            marginBottom: '2rem',
-            boxShadow: '0 6px 25px rgba(0, 0, 0, 0.25)',
-            border: '2px solid #3498DB', // Borde azul explícito
-            color: '#E0E0E0' // Color de texto principal explícito
-          }}
-        >
-          <h4
-            // className="section-title" // Clase eliminada temporalmente
-            style={{
-              marginTop: 0,
-              marginBottom: '1.5rem',
-              fontSize: '1.4rem',
-              color: '#3498DB', // Color de título azul explícito
-              paddingBottom: '0.75rem',
-              borderBottom: '1px solid #4A4A60', // Borde inferior explícito
-              fontWeight: 600
-            }}
-          >
-            Resumen del Mes ({currentMonth})
-          </h4>
-          <p style={{ marginBottom: '0.8rem', fontSize: '1rem', color: '#E0E0E0' }}>
-            <strong style={{ color: '#FFFFFF' }}>Puntaje Total del Mes:</strong>{' '}
-            <span
-              // className="total-points-value" // Clase eliminada temporalmente
-              style={{
-                fontSize: '1.3em',
-                color: '#3498DB', // Color de puntos azul explícito
-                fontWeight: 'bold'
-              }}
-            >
-              {monthlyTotalPoints !== null ? monthlyTotalPoints : 'N/A'}
-            </span> puntos
-          </p>
-          <p style={{ marginBottom: '0.8rem', fontSize: '1rem', color: '#E0E0E0' }}>
-            <strong style={{ color: '#FFFFFF' }}>Estado de Acceso a Casting: </strong>
-            <span className={getCastingStatusClassName()} style={
-              castingStatus === 'APTO' ? { color: '#28A745', fontWeight: 'bold' } : // Verde explícito
-              castingStatus === 'EN EVALUACIÓN' ? { color: '#F39C12', fontWeight: 'bold' } : // Naranja explícito
-              { color: '#D9534F', fontWeight: 'bold' } // Rojo explícito (para NO APTO o default)
-            }>
+        <div className="summary-info-card">
+          <h4 className="section-title">Resumen del Mes ({currentMonth})</h4>
+          <p><strong>Puntaje Total del Mes:</strong> <span style={{fontSize: '1.3em', color: 'var(--primary-color-student)', fontWeight: 'bold'}}>{monthlyTotalPoints !== null ? monthlyTotalPoints : 'N/A'}</span> puntos</p>
+          <p>
+            <strong>Estado de Acceso a Casting: </strong>
+            <span className={getCastingStatusClassName()}>
               {castingStatus || 'No disponible'}
             </span>
           </p>
-          <p style={{ marginTop: '1rem', fontSize: '1rem', color: '#E0E0E0' }}>
-            <strong style={{ color: '#FFFFFF' }}>Feedback del Ranking:</strong> {rankingInfo.message}
+          <p style={{marginTop: '1rem'}}>
+            <strong>Feedback del Ranking:</strong> {rankingInfo.message}
           </p>
         </div>
       )}
