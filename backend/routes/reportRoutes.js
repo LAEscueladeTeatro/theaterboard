@@ -27,6 +27,7 @@ router.get('/student-summary', async (req, res) => {
     const studentResult = await client.query(studentQuery, [studentId]);
 
     if (studentResult.rows.length === 0) {
+      client.release();
       return res.status(404).json({ message: 'Estudiante no encontrado.' });
     }
     const studentInfo = studentResult.rows[0];
@@ -87,7 +88,7 @@ router.get('/student-summary', async (req, res) => {
     console.error('Error en GET /api/reports/student-summary:', err);
     res.status(500).json({ message: 'Error interno del servidor al generar el resumen del estudiante.' });
   } finally {
-    client.release();
+    if (client) client.release();
   }
 });
 
@@ -172,13 +173,13 @@ router.get('/daily-summary', async (req, res) => {
     console.error('Error en GET /api/reports/daily-summary:', err);
     res.status(500).json({ message: 'Error interno del servidor al generar el resumen diario.' });
   } finally {
-    client.release();
+    if (client) client.release();
   }
 });
 
 /**
  * @route   GET /api/reports/monthly-ranking
- * @desc    Obtener el ranking de estudiantes para un mes específico.
+ * @desc    Obtener el ranking de estudiantes para un mes específico, aplicando bono a los top 10 del mes anterior.
  * @access  Private (Teacher)
  * @query   month=YYYY-MM
  */
@@ -192,30 +193,91 @@ router.get('/monthly-ranking', async (req, res) => {
     return res.status(400).json({ message: 'El formato de month debe ser YYYY-MM.' });
   }
 
-  const client = await pool.connect();
+  let client;
   try {
-    const rankingQuery = `
+    client = await pool.connect();
+
+    // 1. Determinar el mes anterior
+    const [currentYear, currentMonthNum] = month.split('-').map(Number);
+    let prevYear = currentYear;
+    let prevMonthNum = currentMonthNum - 1;
+    if (prevMonthNum === 0) {
+      prevMonthNum = 12;
+      prevYear = currentYear - 1;
+    }
+    const prevMonthString = `${prevYear}-${String(prevMonthNum).padStart(2, '0')}`;
+
+    // 2. Obtener el Top 10 del mes anterior
+    let top10PreviousMonthIDs = [];
+    // Solo intentar obtener el top 10 si el mes anterior no es antes de un punto de inicio razonable (ej. inicio del sistema)
+    // Por simplicidad, si es el primer mes de datos, no habrá bono.
+    // Una lógica más robusta podría verificar si hay datos para prevMonthString.
+    if (!(currentYear === prevYear && currentMonthNum === prevMonthNum)) { // Evita calcular para el mismo mes si algo va mal
+        const prevRankingQuery = `
+            WITH student_attendance_points_prev AS (
+              SELECT
+                student_id,
+                COALESCE(SUM(points_earned), 0) AS status_points,
+                COALESCE(SUM(base_attendance_points), 0) AS presence_points
+              FROM attendance_records
+              WHERE TO_CHAR(attendance_date, 'YYYY-MM') = $1
+              GROUP BY student_id
+            ), student_bonus_points_prev AS (
+              SELECT
+                student_id,
+                COALESCE(SUM(points_awarded), 0) AS bonus_points
+              FROM daily_bonus_log
+              WHERE TO_CHAR(bonus_date, 'YYYY-MM') = $1
+              GROUP BY student_id
+            ), student_score_records_points_prev AS (
+              SELECT
+                student_id,
+                COALESCE(SUM(points_assigned), 0) AS total_score_points
+              FROM score_records
+              WHERE TO_CHAR(score_date, 'YYYY-MM') = $1
+              GROUP BY student_id
+            )
+            SELECT
+              s.id AS student_id,
+              (COALESCE(sap.status_points, 0) + COALESCE(sap.presence_points, 0) +
+               COALESCE(sbp.bonus_points, 0) +
+               COALESCE(ssrp.total_score_points, 0)) AS grand_total_points
+            FROM students s
+            LEFT JOIN student_attendance_points_prev sap ON s.id = sap.student_id
+            LEFT JOIN student_bonus_points_prev sbp ON s.id = sbp.student_id
+            LEFT JOIN student_score_records_points_prev ssrp ON s.id = ssrp.student_id
+            WHERE s.is_active = true
+            ORDER BY grand_total_points DESC, s.full_name ASC
+            LIMIT 10;
+        `;
+        const prevRankingResult = await client.query(prevRankingQuery, [prevMonthString]);
+        top10PreviousMonthIDs = prevRankingResult.rows.map(r => r.student_id);
+    }
+
+
+    // 3. Calcular el ranking del mes actual, aplicando el bono
+    const currentRankingQuery = `
       WITH student_attendance_points AS (
         SELECT
           student_id,
           COALESCE(SUM(points_earned), 0) AS status_points,
           COALESCE(SUM(base_attendance_points), 0) AS presence_points
         FROM attendance_records
-        WHERE TO_CHAR(attendance_date, 'YYYY-MM') = $1
+        WHERE TO_CHAR(attendance_date, 'YYYY-MM') = $1 -- Mes actual
         GROUP BY student_id
       ), student_bonus_points AS (
         SELECT
           student_id,
           COALESCE(SUM(points_awarded), 0) AS bonus_points
         FROM daily_bonus_log
-        WHERE TO_CHAR(bonus_date, 'YYYY-MM') = $1
+        WHERE TO_CHAR(bonus_date, 'YYYY-MM') = $1 -- Mes actual
         GROUP BY student_id
       ), student_score_records_points AS (
         SELECT
           student_id,
           COALESCE(SUM(points_assigned), 0) AS total_score_points
         FROM score_records
-        WHERE TO_CHAR(score_date, 'YYYY-MM') = $1
+        WHERE TO_CHAR(score_date, 'YYYY-MM') = $1 -- Mes actual
         GROUP BY student_id
       )
       SELECT
@@ -224,29 +286,40 @@ router.get('/monthly-ranking', async (req, res) => {
         s.nickname,
         (COALESCE(sap.status_points, 0) + COALESCE(sap.presence_points, 0) +
          COALESCE(sbp.bonus_points, 0) +
-         COALESCE(ssrp.total_score_points, 0)) AS grand_total_points,
-        COALESCE(sap.status_points, 0) + COALESCE(sap.presence_points, 0) AS total_attendance_points, -- Opcional: para desglose
-        COALESCE(sbp.bonus_points, 0) AS total_bonus_points, -- Opcional: para desglose
-        COALESCE(ssrp.total_score_points, 0) AS total_additional_scores -- Opcional: para desglose
+         COALESCE(ssrp.total_score_points, 0) +
+         CASE
+           WHEN s.id = ANY($2::VARCHAR[]) THEN 15 -- $2 es el array de IDs del top 10 anterior
+           ELSE 0
+         END
+        ) AS grand_total_points,
+        COALESCE(sap.status_points, 0) + COALESCE(sap.presence_points, 0) AS total_attendance_points,
+        COALESCE(sbp.bonus_points, 0) AS total_bonus_points,
+        COALESCE(ssrp.total_score_points, 0) AS total_additional_scores,
+        CASE
+          WHEN s.id = ANY($2::VARCHAR[]) THEN 15
+          ELSE 0
+        END AS bonus_from_previous_month_rank
       FROM students s
       LEFT JOIN student_attendance_points sap ON s.id = sap.student_id
       LEFT JOIN student_bonus_points sbp ON s.id = sbp.student_id
       LEFT JOIN student_score_records_points ssrp ON s.id = ssrp.student_id
+      WHERE s.is_active = true
       ORDER BY grand_total_points DESC, s.full_name ASC;
     `;
 
-    const rankingResult = await client.query(rankingQuery, [month]);
+    const currentRankingResult = await client.query(currentRankingQuery, [month, top10PreviousMonthIDs]);
 
     res.json({
       month,
-      ranking: rankingResult.rows,
+      ranking: currentRankingResult.rows,
+      appliedBonusTo: top10PreviousMonthIDs, // Para depuración o información en el frontend
     });
 
   } catch (err) {
     console.error('Error en GET /api/reports/monthly-ranking:', err);
     res.status(500).json({ message: 'Error interno del servidor al generar el ranking mensual.' });
   } finally {
-    client.release();
+    if (client) client.release();
   }
 });
 
