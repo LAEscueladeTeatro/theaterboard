@@ -1196,39 +1196,38 @@ input:checked + .toggle-slider:before {
 }
 
 .summary-info-card { /* Tarjeta para el resumen de puntaje y casting */
-  background-color: var(--container-background); /* Volvemos al fondo original oscuro */
+  background-color: var(--container-background) !important; /* Intentar forzar el fondo oscuro */
   padding: 1.5rem 2rem;
   border-radius: var(--border-radius-medium);
   margin-bottom: 2rem;
-  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.25); /* Sombra un poco más pronunciada */
-  /* Aplicamos un borde más distintivo con el color del estudiante */
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.25);
   border: 2px solid var(--primary-color-student);
-  color: var(--text-color-main); /* Color de texto principal por defecto */
+  color: var(--text-color-main) !important; /* Forzar color de texto principal claro */
 }
 
 .summary-info-card .section-title { /* Para "Resumen del Mes" */
   margin-top: 0;
   margin-bottom: 1.5rem;
   font-size: 1.4rem;
-  color: var(--primary-color-student); /* Título en el color primario del estudiante */
+  color: var(--primary-color-student) !important; /* Forzar color del título */
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid var(--border-color-subtle); /* Borde inferior sutil */
+  border-bottom: 1px solid var(--border-color-subtle);
   font-weight: 600;
 }
 
 .summary-info-card p {
   margin-bottom: 0.8rem;
   font-size: 1rem;
-  color: var(--text-color-main);
+  color: var(--text-color-main) !important; /* Forzar color de texto de párrafos */
 }
 
 .summary-info-card p strong {
-  color: var(--text-color-light); /* Texto strong más claro para contraste sobre fondo oscuro */
+  color: var(--text-color-light) !important; /* Forzar color de texto strong más claro */
 }
 
 .summary-info-card .total-points-value { /* Clase específica para el valor de los puntos */
   font-size: 1.3em;
-  color: var(--primary-color-student); /* Puntos resaltados con el color primario */
+  color: var(--primary-color-student) !important; /* Forzar color de puntos */
   font-weight: bold;
 }
 
