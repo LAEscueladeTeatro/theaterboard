@@ -1196,38 +1196,38 @@ input:checked + .toggle-slider:before {
 }
 
 .summary-info-card { /* Tarjeta para el resumen de puntaje y casting */
-  background-color: var(--container-background) !important; /* Intentar forzar el fondo oscuro */
+  background-color: rgba(30, 30, 50, 0.75) !important; /* Valor explícito para --container-background */
   padding: 1.5rem 2rem;
   border-radius: var(--border-radius-medium);
   margin-bottom: 2rem;
   box-shadow: 0 6px 25px rgba(0, 0, 0, 0.25);
-  border: 2px solid var(--primary-color-student);
-  color: var(--text-color-main) !important; /* Forzar color de texto principal claro */
+  border: 2px solid #3498DB !important; /* Valor explícito para --primary-color-student */
+  color: #E0E0E0 !important; /* Valor explícito para --text-color-main */
 }
 
 .summary-info-card .section-title { /* Para "Resumen del Mes" */
   margin-top: 0;
   margin-bottom: 1.5rem;
   font-size: 1.4rem;
-  color: var(--primary-color-student) !important; /* Forzar color del título */
+  color: #3498DB !important; /* Valor explícito para --primary-color-student */
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid var(--border-color-subtle);
+  border-bottom: 1px solid #4A4A60 !important; /* Valor explícito para --border-color-subtle */
   font-weight: 600;
 }
 
 .summary-info-card p {
   margin-bottom: 0.8rem;
   font-size: 1rem;
-  color: var(--text-color-main) !important; /* Forzar color de texto de párrafos */
+  color: #E0E0E0 !important; /* Valor explícito para --text-color-main */
 }
 
 .summary-info-card p strong {
-  color: var(--text-color-light) !important; /* Forzar color de texto strong más claro */
+  color: #FFFFFF !important; /* Valor explícito para --text-color-light */
 }
 
 .summary-info-card .total-points-value { /* Clase específica para el valor de los puntos */
   font-size: 1.3em;
-  color: var(--primary-color-student) !important; /* Forzar color de puntos */
+  color: #3498DB !important; /* Valor explícito para --primary-color-student */
   font-weight: bold;
 }
 
