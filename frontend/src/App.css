@@ -1196,38 +1196,39 @@ input:checked + .toggle-slider:before {
 }
 
 .summary-info-card { /* Tarjeta para el resumen de puntaje y casting */
-  background-color: color-mix(in srgb, var(--primary-color-student) 20%, var(--container-background) 80%);
+  background-color: var(--container-background); /* Volvemos al fondo original oscuro */
   padding: 1.5rem 2rem;
   border-radius: var(--border-radius-medium);
   margin-bottom: 2rem;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
-  border: 1px solid var(--primary-color-student);
-  color: var(--text-color-light); /* Asegurar texto claro por defecto */
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.25); /* Sombra un poco más pronunciada */
+  /* Aplicamos un borde más distintivo con el color del estudiante */
+  border: 2px solid var(--primary-color-student);
+  color: var(--text-color-main); /* Color de texto principal por defecto */
 }
 
 .summary-info-card .section-title { /* Para "Resumen del Mes" */
   margin-top: 0;
   margin-bottom: 1.5rem;
   font-size: 1.4rem;
-  color: var(--text-color-light); /* Título en color claro para buen contraste */
+  color: var(--primary-color-student); /* Título en el color primario del estudiante */
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--primary-color-student) 40%, var(--border-color-subtle) 60%);
+  border-bottom: 1px solid var(--border-color-subtle); /* Borde inferior sutil */
   font-weight: 600;
 }
 
 .summary-info-card p {
   margin-bottom: 0.8rem;
   font-size: 1rem;
-  color: var(--text-color-main); /* Color de texto principal para párrafos */
+  color: var(--text-color-main);
 }
 
 .summary-info-card p strong {
-  color: var(--text-color-light); /* Resaltar los strong con texto más claro */
+  color: var(--text-color-light); /* Texto strong más claro para contraste sobre fondo oscuro */
 }
 
 .summary-info-card .total-points-value { /* Clase específica para el valor de los puntos */
   font-size: 1.3em;
-  color: var(--text-color-light); /* Puntos en color claro para contraste */
+  color: var(--primary-color-student); /* Puntos resaltados con el color primario */
   font-weight: bold;
 }
 
