@@ -20,6 +20,8 @@ const StudentScoresDetailPage = () => {
   const [studentName, setStudentName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [monthlyTotalPoints, setMonthlyTotalPoints] = useState(null);
+  const [rankingPosition, setRankingPosition] = useState(null);
 
   // const API_URL = 'http://localhost:3001/api'; // Eliminar esta línea
   const getToken = useCallback(() => localStorage.getItem('studentToken'), []);
@@ -47,12 +49,13 @@ const StudentScoresDetailPage = () => {
 
   const handleFetchScoreDetails = useCallback(async () => {
     setLoading(true); setError(''); setScoreDetails([]);
+    setMonthlyTotalPoints(null); setRankingPosition(null); // Resetear al iniciar la carga
     const token = getToken();
     let dateParam = '';
     if (queryType === 'daily') {
       if (!selectedDate) { setError('Por favor, seleccione una fecha.'); setLoading(false); return; }
       dateParam = selectedDate;
-    } else {
+    } else { // monthly
       if (!selectedMonth) { setError('Por favor, seleccione un mes.'); setLoading(false); return; }
       dateParam = selectedMonth;
     }
@@ -61,6 +64,10 @@ const StudentScoresDetailPage = () => {
         params: { type: queryType, date: dateParam }, headers: { 'x-auth-token': token },
       });
       setScoreDetails(response.data.records || []);
+      if (queryType === 'monthly') {
+        setMonthlyTotalPoints(response.data.monthlyTotalPoints);
+        setRankingPosition(response.data.rankingPosition);
+      }
     } catch (err) { console.error("Error fetching score details:", err); setError(err.response?.data?.message || 'Error al cargar el detalle de puntajes.');}
     finally { setLoading(false); }
   }, [getToken, queryType, selectedDate, selectedMonth]); // API_BASE_URL es constante global
@@ -119,36 +126,46 @@ const StudentScoresDetailPage = () => {
       {error && <div className="error-message-page">{error}</div>}
 
       {loading ? <div className="text-center" style={{padding: "2rem"}}>Cargando detalles...</div> : (
-        scoreDetails.length === 0 && !error ? (
-          <div className="empty-table-message">No hay registros de puntajes para la selección actual.</div>
-        ) : (
-          <div style={{overflowX: 'auto'}}>
-            <table className="styled-table">
-              <thead>
-                <tr>
-                  {queryType === 'monthly' && <th style={{textAlign: 'center'}}>Fecha Evento</th>}
-                  <th>Tipo/Descripción</th>
-                  <th style={{textAlign: 'center'}}>Puntos</th>
-                  <th>Notas</th>
-                  <th style={{textAlign: 'center'}}>Registrado En</th>
-                </tr>
-              </thead>
-              <tbody>
-                {scoreDetails.map((record, index) => (
-                  <tr key={record.id || index}> {/* Usar record.id si está disponible y es único */}
-                    {queryType === 'monthly' && <td style={{textAlign: 'center'}}>{new Date(record.attendance_date || record.recorded_at).toLocaleDateString('es-PE', {timeZone: 'UTC'})}</td>}
-                    <td>{formatDescription(record)}</td>
-                    <td className={record.points > 0 ? 'points-positive' : (record.points < 0 ? 'points-negative' : 'points-neutral')}>
-                      {record.points > 0 ? `+${record.points}` : record.points}
-                    </td>
-                    <td>{record.notes || '-'}</td>
-                    <td style={{textAlign: 'center'}}>{new Date(record.recorded_at).toLocaleString('es-PE', {timeZone: 'UTC', day: '2-digit', month: '2-digit', year: 'numeric', hour:'2-digit', minute:'2-digit'})}</td>
+        <>
+          {queryType === 'monthly' && monthlyTotalPoints !== null && (
+            <div className="monthly-summary-info" style={{ textAlign: 'center', margin: '1rem 0', padding: '1rem', backgroundColor: '#f0f0f0', borderRadius: '8px' }}>
+              <h3>Resumen del Mes: {selectedMonth}</h3>
+              <p><strong>Puntaje Total del Mes:</strong> {monthlyTotalPoints}</p>
+              {rankingPosition !== null && <p><strong>Puesto en el Ranking Mensual:</strong> {rankingPosition}</p>}
+            </div>
+          )}
+
+          {scoreDetails.length === 0 && !error ? (
+            <div className="empty-table-message">No hay registros de puntajes para la selección actual.</div>
+          ) : (
+            <div style={{overflowX: 'auto'}}>
+              <table className="styled-table">
+                <thead>
+                  <tr>
+                    {queryType === 'monthly' && <th style={{textAlign: 'center'}}>Fecha Evento</th>}
+                    <th>Tipo/Descripción</th>
+                    <th style={{textAlign: 'center'}}>Puntos</th>
+                    <th>Notas</th>
+                    <th style={{textAlign: 'center'}}>Registrado En</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )
+                </thead>
+                <tbody>
+                  {scoreDetails.map((record, index) => (
+                    <tr key={record.id || index}> {/* Usar record.id si está disponible y es único */}
+                      {queryType === 'monthly' && <td style={{textAlign: 'center'}}>{new Date(record.attendance_date || record.recorded_at).toLocaleDateString('es-PE', {timeZone: 'UTC'})}</td>}
+                      <td>{formatDescription(record)}</td>
+                      <td className={record.points > 0 ? 'points-positive' : (record.points < 0 ? 'points-negative' : 'points-neutral')}>
+                        {record.points > 0 ? `+${record.points}` : record.points}
+                      </td>
+                      <td>{record.notes || '-'}</td>
+                      <td style={{textAlign: 'center'}}>{new Date(record.recorded_at).toLocaleString('es-PE', {timeZone: 'UTC', day: '2-digit', month: '2-digit', year: 'numeric', hour:'2-digit', minute:'2-digit'})}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
