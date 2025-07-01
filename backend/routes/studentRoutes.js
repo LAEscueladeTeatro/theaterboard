@@ -217,16 +217,67 @@ router.get('/my-scores-summary', async (req, res) => {
       // Ordenar todos los registros por fecha y luego por hora de registro para una vista cronológica
       detailedRecords.sort((a,b) => new Date(a.attendance_date || a.recorded_at) - new Date(b.attendance_date || b.recorded_at) || new Date(a.recorded_at) - new Date(b.recorded_at));
 
+      // Calcular puntaje total y ranking para el mes consultado
+      let monthlyTotalPoints = 0;
+      let rankingPosition = null;
+
+      // Sumar puntos de detailedRecords para el total del mes
+      monthlyTotalPoints = detailedRecords.reduce((sum, record) => sum + record.points, 0);
+
+      // Calcular ranking para el mes (date es YYYY-MM)
+      const rankingQuery = `
+        WITH student_monthly_scores AS (
+          SELECT
+            s.id AS student_id,
+            (COALESCE(SUM(ar.points_earned + ar.base_attendance_points), 0) +
+             COALESCE(SUM(dbl.points_awarded), 0) +
+             COALESCE(SUM(sr.points_assigned), 0)) AS total_points
+          FROM students s
+          LEFT JOIN attendance_records ar ON s.id = ar.student_id AND TO_CHAR(ar.attendance_date, 'YYYY-MM') = $2
+          LEFT JOIN daily_bonus_log dbl ON s.id = dbl.student_id AND TO_CHAR(dbl.bonus_date, 'YYYY-MM') = $2
+          LEFT JOIN score_records sr ON s.id = sr.student_id AND TO_CHAR(sr.score_date, 'YYYY-MM') = $2
+          WHERE s.is_active = TRUE
+          GROUP BY s.id
+        ), ranked_students AS (
+          SELECT
+            student_id,
+            total_points,
+            RANK() OVER (ORDER BY total_points DESC) as rank_position
+          FROM student_monthly_scores
+        )
+        SELECT rank_position FROM ranked_students WHERE student_id = $1;
+      `;
+      try {
+        const rankingResult = await client.query(rankingQuery, [studentId, date]);
+        if (rankingResult.rows.length > 0) {
+          rankingPosition = parseInt(rankingResult.rows[0].rank_position, 10);
+        }
+      } catch (rankErr) {
+        console.error(`Error calculating ranking for student ${studentId} in month ${date}:`, rankErr);
+        // No hacer que falle toda la solicitud si el ranking falla
+      }
+
+      res.json({
+        studentId,
+        queryType: type,
+        queryDate: date,
+        records: detailedRecords,
+        monthlyTotalPoints, // Añadido
+        rankingPosition,    // Añadido
+      });
+
     } else {
       return res.status(400).json({ message: 'El parámetro type debe ser "daily" o "monthly".' });
     }
-
-    res.json({
-      studentId,
-      queryType: type,
-      queryDate: date,
-      records: detailedRecords,
-    });
+    // Para type=daily, la respuesta no cambia
+    if (type === 'daily') {
+        res.json({
+            studentId,
+            queryType: type,
+            queryDate: date,
+            records: detailedRecords,
+        });
+    }
 
   } catch (err) {
     console.error(`Error en GET /api/student/my-scores-summary (type: ${type}, date: ${date}):`, err);
