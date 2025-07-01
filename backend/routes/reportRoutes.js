@@ -251,7 +251,11 @@ router.get('/monthly-ranking', async (req, res) => {
             LIMIT 10;
         `;
         const prevRankingResult = await client.query(prevRankingQuery, [prevMonthString]);
-        top10PreviousMonthIDs = prevRankingResult.rows.map(r => r.student_id);
+        // Solo asignar IDs para el bono si hay resultados y el puntaje máximo del mes anterior es > 0
+        if (prevRankingResult.rows.length > 0 && prevRankingResult.rows[0].grand_total_points > 0) {
+            top10PreviousMonthIDs = prevRankingResult.rows.map(r => r.student_id);
+        }
+        // Si no, top10PreviousMonthIDs permanece vacío, y no se aplicará bono.
     }
 
 
