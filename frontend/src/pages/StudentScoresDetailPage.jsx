@@ -128,7 +128,8 @@ const StudentScoresDetailPage = () => {
       {loading ? <div className="text-center" style={{padding: "2rem"}}>Cargando detalles...</div> : (
         <>
           {queryType === 'monthly' && monthlyTotalPoints !== null && (
-            <div className="monthly-summary-info" style={{ textAlign: 'center', margin: '1rem 0', padding: '1rem', backgroundColor: '#f0f0f0', borderRadius: '8px' }}>
+            // Se eliminan los estilos inline para permitir que App.css controle la apariencia
+            <div className="monthly-summary-info">
               <h3>Resumen del Mes: {selectedMonth}</h3>
               <p><strong>Puntaje Total del Mes:</strong> {monthlyTotalPoints}</p>
               {rankingPosition !== null && <p><strong>Puesto en el Ranking Mensual:</strong> {rankingPosition}</p>}

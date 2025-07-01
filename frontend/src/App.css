@@ -1196,73 +1196,57 @@ input:checked + .toggle-slider:before {
 }
 
 .summary-info-card { /* Tarjeta para el resumen de puntaje y casting */
-  background-color: rgba(30, 30, 50, 0.75) !important; /* Valor explícito para --container-background */
+  background-color: var(--container-background);
   padding: 1.5rem 2rem;
   border-radius: var(--border-radius-medium);
   margin-bottom: 2rem;
-  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.25);
-  border: 2px solid #3498DB !important; /* Valor explícito para --primary-color-student */
-  color: #E0E0E0 !important; /* Valor explícito para --text-color-main */
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+  border: 1px solid var(--border-color-subtle);
 }
 
-.summary-info-card .section-title { /* Para "Resumen del Mes" */
-  margin-top: 0;
-  margin-bottom: 1.5rem;
-  font-size: 1.4rem;
-  color: #3498DB !important; /* Valor explícito para --primary-color-student */
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid #4A4A60 !important; /* Valor explícito para --border-color-subtle */
-  font-weight: 600;
-}
-
-.summary-info-card p {
-  margin-bottom: 0.8rem;
-  font-size: 1rem;
-  color: #E0E0E0 !important; /* Valor explícito para --text-color-main */
-}
-
-.summary-info-card p strong {
-  color: #FFFFFF !important; /* Valor explícito para --text-color-light */
-}
-
-.summary-info-card .total-points-value { /* Clase específica para el valor de los puntos */
-  font-size: 1.3em;
-  color: #3498DB !important; /* Valor explícito para --primary-color-student */
-  font-weight: bold;
-}
-
-.summary-info-card .casting-status-apto { color: var(--color-success); font-weight: bold; }
-.summary-info-card .casting-status-evaluacion { color: var(--color-warning); font-weight: bold; }
-.summary-info-card .casting-status-no-apto { color: var(--color-danger); font-weight: bold; }
-
-
-/* Estilos para el cuadro de resumen mensual en StudentScoresDetailPage - Estos no se modifican */
+/* Estilos para el cuadro de resumen mensual en StudentScoresDetailPage */
 .monthly-summary-info {
   text-align: center;
-  margin: 1rem 0;
-  padding: 1rem;
-  background-color: #f8f9fa; /* Gris claro */
-  border-radius: 8px;
-  border: 1px solid #e0e0e0; /* Un borde sutil */
-  color: #333; /* Color de texto oscuro para contraste */
+  margin: 2rem auto; /* Más margen vertical y centrado horizontalmente */
+  padding: 1.5rem 2rem; /* Más padding */
+  background-color: var(--container-background); /* Fondo oscuro del tema */
+  border-radius: var(--border-radius-medium); /* Bordes redondeados consistentes */
+  border: 1px solid var(--primary-color-student); /* Borde con color primario del estudiante */
+  color: var(--text-color-main); /* Color de texto principal claro */
+  max-width: 600px; /* Limitar ancho para mejor lectura */
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15); /* Sombra sutil */
 }
 
 .monthly-summary-info h3 {
   margin-top: 0;
-  color: #0056b3; /* Un azul para el título, similar al de los botones de acción */
-  font-size: 1.25rem; /* Tamaño de fuente para el título del resumen */
-  margin-bottom: 0.75rem;
+  color: var(--primary-color-student); /* Título con color primario del estudiante */
+  font-size: 1.4rem; /* Un poco más grande */
+  margin-bottom: 1rem; /* Más espacio inferior */
 }
 
 .monthly-summary-info p {
-  margin-bottom: 0.5rem;
-  font-size: 1rem; /* Tamaño de fuente para el texto del resumen */
-  color: #333; /* Asegurar que el texto de los párrafos también sea oscuro aquí */
+  margin-bottom: 0.75rem; /* Un poco más de espacio entre párrafos */
+  font-size: 1.1rem; /* Texto ligeramente más grande para legibilidad */
+  color: var(--text-color-main); /* Asegurar color de texto claro */
 }
 
 .monthly-summary-info p strong {
-  color: #004085; /* Un azul un poco más oscuro para los labels "Puntaje Total" y "Puesto" */
+  color: var(--text-color-light); /* Labels (strong) en blanco para mayor contraste */
+  font-weight: 600; /* Ligeramente más bold */
 }
+.summary-info-card .section-title { /* Para "Resumen del Mes" */
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  font-size: 1.4rem;
+  color: var(--primary-color-student); /* Azul para títulos de sección de estudiante */
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-color-subtle);
+  font-weight: 600;
+}
+.summary-info-card p { margin-bottom: 0.8rem; font-size: 1rem; }
+.summary-info-card .casting-status-apto { color: var(--color-success); font-weight: bold; }
+.summary-info-card .casting-status-evaluacion { color: var(--color-warning); font-weight: bold; }
+.summary-info-card .casting-status-no-apto { color: var(--color-danger); font-weight: bold; }
 
 .student-dashboard .dashboard-actions-grid {
   grid-template-columns: 1fr; /* Para que "Ver Mis Puntajes" ocupe todo el ancho */
