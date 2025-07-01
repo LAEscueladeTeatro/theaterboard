@@ -189,7 +189,7 @@ const StudentDashboardPage = () => {
       {dashboardData && ( // Ensure dashboardData is available for summary card
         <div className="summary-info-card">
           <h4 className="section-title">Resumen del Mes ({currentMonth})</h4>
-          <p><strong>Puntaje Total del Mes:</strong> <span style={{fontSize: '1.3em', color: 'var(--primary-color-student)', fontWeight: 'bold'}}>{monthlyTotalPoints !== null ? monthlyTotalPoints : 'N/A'}</span> puntos</p>
+          <p><strong>Puntaje Total del Mes:</strong> <span className="total-points-value">{monthlyTotalPoints !== null ? monthlyTotalPoints : 'N/A'}</span> puntos</p>
           <p>
             <strong>Estado de Acceso a Casting: </strong>
             <span className={getCastingStatusClassName()}>
