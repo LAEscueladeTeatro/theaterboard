@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { API_BASE_URL } from "../config"; // Importar config
 import Spinner from '../components/Spinner'; // Importar Spinner
+import * as faceapi from 'face-api.js';
 
 // Re-using styles from TeacherProfilePage for consistency, or define separately
 const styles = {
@@ -96,6 +97,14 @@ const StudentProfilePage = () => {
   const navigate = useNavigate();
   const STUDENT_API_URL = `${API_BASE_URL}/student`; // Usar constante importada
   const getToken = useCallback(() => localStorage.getItem('studentToken'), []);
+
+  const [isFaceModalOpen, setIsFaceModalOpen] = useState(false);
+  const [faceApiLoaded, setFaceApiLoaded] = useState(false);
+  const [isCapturing, setIsCapturing] = useState(false);
+  const [faceError, setFaceError] = useState('');
+  const [faceSuccess, setFaceSuccess] = useState('');
+  const videoRef = React.useRef();
+  const canvasRef = React.useRef();
 
   const initialProfileData = {
     full_name: '', // Display only, not editable by student
@@ -276,6 +285,104 @@ const StudentProfilePage = () => {
 
   const profileHasChanged = JSON.stringify(profile) !== JSON.stringify(initialFetchedProfile);
 
+  // ===== LÓGICA PARA REGISTRO FACIAL =====
+  // Cargar los modelos de face-api.js
+  useEffect(() => {
+    const loadModels = async () => {
+      const MODEL_URL = '/models'; // Asume que los modelos están en public/models
+      try {
+        await Promise.all([
+          faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+          faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+          faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
+        ]);
+        setFaceApiLoaded(true);
+      } catch (error) {
+        console.error("Error loading face-api models", error);
+        setFaceError("No se pudieron cargar las herramientas de IA. Inténtalo de nuevo.");
+      }
+    };
+    loadModels();
+  }, []);
+  const startVideo = () => {
+    navigator.mediaDevices.getUserMedia({ video: {} })
+      .then(stream => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      })
+      .catch(err => {
+        console.error("Error accessing camera", err);
+        setFaceError("No se pudo acceder a la cámara. Revisa los permisos en tu navegador.");
+      });
+  };
+  const handleOpenFaceModal = () => {
+    if (!faceApiLoaded) return;
+    setIsFaceModalOpen(true);
+    setFaceError('');
+    setFaceSuccess('');
+    setTimeout(startVideo, 100); // Pequeño delay para que el modal se renderice
+  };
+  const handleCloseFaceModal = () => {
+    setIsFaceModalOpen(false);
+    if (videoRef.current && videoRef.current.srcObject) {
+      videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+    }
+  };
+  const handleCaptureAndSaveFace = async () => {
+    if (!videoRef.current) return;
+    setIsCapturing(true);
+    setFaceError('');
+    setFaceSuccess('');
+    const detections = await faceapi.detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions())
+      .withFaceLandmarks()
+      .withFaceDescriptor();
+    if (!detections) {
+      setFaceError("No se detectó ningún rostro. Asegúrate de que tu cara esté bien iluminada y centrada.");
+      setIsCapturing(false);
+      return;
+    }
+    // Enviar el descriptor al backend
+    try {
+      const token = getToken();
+      // ¡IMPORTANTE! Este es un nuevo endpoint que necesitarás crear en tu backend
+      await axios.post(`${STUDENT_API_URL}/register-face`, {
+        descriptor: Array.from(detections.descriptor) // Convertir a array para que sea compatible con JSON
+      }, {
+        headers: { 'x-auth-token': token }
+      });
+      setFaceSuccess("¡Rostro registrado exitosamente!");
+      setTimeout(handleCloseFaceModal, 2000); // Cerrar modal tras 2 segundos de éxito
+    } catch (err) {
+      console.error("Error saving face descriptor:", err);
+      setFaceError(err.response?.data?.message || "Error al guardar el rostro en el servidor.");
+    } finally {
+      setIsCapturing(false);
+    }
+  };
+  const renderFaceRegistrationModal = () => {
+    if (!isFaceModalOpen) return null;
+    return (
+      <div className="modal-overlay">
+        <div className="modal-content" style={{textAlign: 'center'}}>
+          <h3>Registrar Rostro</h3>
+          <p>Asegúrate de que tu rostro esté bien iluminado y dentro del cuadro.</p>
+          <div style={{ position: 'relative', display: 'inline-block' }}>
+            <video ref={videoRef} autoPlay muted width="480" height="360" style={{ borderRadius: '8px' }}></video>
+            <canvas ref={canvasRef} style={{ position: 'absolute', top: 0, left: 0 }} />
+          </div>
+          <div className="modal-actions">
+            <button onClick={handleCloseFaceModal} className="btn-secondary" disabled={isCapturing}>Cancelar</button>
+            <button onClick={handleCaptureAndSaveFace} className="btn-primary" disabled={isCapturing}>
+              {isCapturing ? <><Spinner size="20px" color="white" /> Capturando...</> : 'Capturar y Guardar Rostro'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+  // ===== FIN DE LA LÓGICA FACIAL =====
+
   if (loadingProfile && (!initialFetchedProfile || !initialFetchedProfile.id)) {
     return <div style={{...styles.pageContainer, ...styles.loadingContainer}} className="loading-container"><Spinner /></div>;
   }
@@ -407,10 +514,20 @@ const StudentProfilePage = () => {
           </button>
         </form>
       </div>
-      {/* Link moved to the top */}
-      {/* <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-        <Link to="/estudiante/dashboard" className="secondary-link">Volver al Panel</Link>
-      </div> */}
+
+      {/* Face Registration Section */}
+      <div style={styles.formSection}>
+        <h3>Registro Facial para Asistencia</h3>
+        <p style={{marginBottom: '1rem', fontSize: '0.9em'}}>
+          Este registro permitirá marcar tu asistencia automáticamente usando la cámara.
+        </p>
+        {faceError && <p style={styles.errorMessage}>{faceError}</p>}
+        {faceSuccess && <p style={styles.successMessage}>{faceSuccess}</p>}
+        <button type="button" onClick={handleOpenFaceModal} style={styles.button}>
+          {faceApiLoaded ? 'Registrar / Actualizar Rostro' : 'Cargando Herramientas de IA...'}
+        </button>
+      </div>
+      {renderFaceRegistrationModal()}
     </div>
   );
 };
