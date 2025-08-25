@@ -42,13 +42,12 @@ const CameraAttendancePage = () => {
         });
 
         if (response.data && response.data.length > 0) {
-          const fetchedDescriptors = response.data.map(d =>
-            new faceapi.LabeledFaceDescriptors(d.label, [Float32Array.from(d.descriptor)])
-          );
-          setLabeledDescriptors(fetchedDescriptors);
+          // Guardar los descriptores crudos
+          setLabeledDescriptors(response.data);
         } else {
           console.warn("No se encontraron descriptores faciales registrados.");
-          setFaceMatcher(new faceapi.FaceMatcher([])); // Create empty matcher
+          // Si no hay descriptores, se puede inicializar un faceMatcher vacío para evitar errores.
+          setFaceMatcher(new faceapi.FaceMatcher([]));
         }
       } catch (error) {
         console.error("Error loading models or descriptors:", error);
@@ -60,7 +59,13 @@ const CameraAttendancePage = () => {
 
   useEffect(() => {
     if (labeledDescriptors.length > 0) {
-      setFaceMatcher(new faceapi.FaceMatcher(labeledDescriptors, 0.6));
+      const readyDescriptors = labeledDescriptors.map(d => {
+        // Convertir el descriptor de array normal a Float32Array
+        const descriptorAsFloat32Array = Float32Array.from(d.descriptor);
+        return new faceapi.LabeledFaceDescriptors(d.label, [descriptorAsFloat32Array]);
+      });
+      const matcher = new faceapi.FaceMatcher(readyDescriptors, 0.6);
+      setFaceMatcher(matcher);
     }
   }, [labeledDescriptors]);
 
