@@ -548,4 +548,37 @@ router.get('/me/daily-quote', async (req, res) => {
 });
 
 
+// @route   POST /api/student/register-face
+// @desc    Register or update a student's face descriptor
+// @access  Private (Student)
+router.post('/register-face', async (req, res) => {
+  if (!req.user || req.user.role !== 'student') {
+    return res.status(403).json({ message: 'Acceso denegado.' });
+  }
+  const studentId = req.user.id;
+  const { descriptor } = req.body;
+
+  // Validate descriptor
+  if (!descriptor || !Array.isArray(descriptor) || descriptor.length === 0) {
+    return res.status(400).json({ message: 'El descriptor facial es inválido o está vacío.' });
+  }
+
+  try {
+    const result = await pool.query(
+      'UPDATE students SET face_descriptor = $1 WHERE id = $2 RETURNING id',
+      [JSON.stringify(descriptor), studentId]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: 'Estudiante no encontrado o no se pudo actualizar.' });
+    }
+
+    res.status(200).json({ message: 'Rostro registrado exitosamente.' });
+
+  } catch (err) {
+    console.error('Error saving face descriptor:', err);
+    res.status(500).json({ message: 'Error interno del servidor al guardar el rostro.' });
+  }
+});
+
 module.exports = router;
