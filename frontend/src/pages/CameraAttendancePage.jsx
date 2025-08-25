@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const CameraAttendancePage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const videoRef = useRef(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const videoElement = videoRef.current; // Capture videoRef.current
@@ -54,8 +55,13 @@ const CameraAttendancePage = () => {
           onCanPlay={() => setLoading(false)}
         />
       </div>
-      <div style={{ marginTop: '20px' }}>
-        <Link to="/docente/dashboard" className="btn-action">Volver al Dashboard</Link>
+      <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'center', gap: '1rem' }}>
+        <button onClick={() => navigate(-1)} className="btn-action btn-secondary">
+          &larr; Volver
+        </button>
+        <Link to="/docente/dashboard" className="btn-action">
+          Ir al Dashboard
+        </Link>
       </div>
     </div>
   );
