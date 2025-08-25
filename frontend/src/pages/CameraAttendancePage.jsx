@@ -9,6 +9,7 @@ const CameraAttendancePage = () => {
   const [loading, setLoading] = useState(true);
   const [iaModelsLoaded, setIaModelsLoaded] = useState(false);
   const [faceMatcher, setFaceMatcher] = useState(null);
+  const [labeledDescriptors, setLabeledDescriptors] = useState([]);
   const [recentlyMarkedIds, setRecentlyMarkedIds] = useState(new Set());
   const [error, setError] = useState(null);
   const videoRef = useRef(null);
@@ -18,10 +19,9 @@ const CameraAttendancePage = () => {
 
 
   useEffect(() => {
-    const loadAll = async () => {
+    const loadModelsAndDescriptors = async () => {
       const MODEL_URL = '/models';
       try {
-        // Cargar modelos de FaceAPI
         await Promise.all([
           faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
           faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
@@ -31,7 +31,6 @@ const CameraAttendancePage = () => {
         ]);
         setIaModelsLoaded(true);
 
-        // Cargar descriptores faciales de estudiantes
         const token = getToken();
         if (!token) {
           setError("No autenticado. Por favor, inicie sesión.");
@@ -43,23 +42,27 @@ const CameraAttendancePage = () => {
         });
 
         if (response.data && response.data.length > 0) {
-          const labeledDescriptors = response.data.map(d =>
+          const fetchedDescriptors = response.data.map(d =>
             new faceapi.LabeledFaceDescriptors(d.label, [Float32Array.from(d.descriptor)])
           );
-          setFaceMatcher(new faceapi.FaceMatcher(labeledDescriptors, 0.6));
+          setLabeledDescriptors(fetchedDescriptors);
         } else {
-          // No hay rostros registrados, podemos continuar pero el reconocimiento no funcionará.
           console.warn("No se encontraron descriptores faciales registrados.");
+          setFaceMatcher(new faceapi.FaceMatcher([])); // Create empty matcher
         }
-
       } catch (error) {
         console.error("Error loading models or descriptors:", error);
         setError("Error al cargar datos de IA. Verifique la consola para más detalles.");
       }
     };
-
-    loadAll();
+    loadModelsAndDescriptors();
   }, [getToken]);
+
+  useEffect(() => {
+    if (labeledDescriptors.length > 0) {
+      setFaceMatcher(new faceapi.FaceMatcher(labeledDescriptors, 0.6));
+    }
+  }, [labeledDescriptors]);
 
   useEffect(() => {
     const videoElement = videoRef.current;
