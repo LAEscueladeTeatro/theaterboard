@@ -1,0 +1,3 @@
+node_modules
+backend_output.log
+.env
