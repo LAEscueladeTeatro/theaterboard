@@ -1,34 +1,65 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import * as faceapi from 'face-api.js';
+import axios from 'axios';
+import toast from 'react-hot-toast';
+import { API_BASE_URL } from '../config';
 
 const CameraAttendancePage = () => {
   const [loading, setLoading] = useState(true);
   const [iaModelsLoaded, setIaModelsLoaded] = useState(false);
+  const [faceMatcher, setFaceMatcher] = useState(null);
+  const [recentlyMarkedIds, setRecentlyMarkedIds] = useState(new Set());
   const [error, setError] = useState(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const navigate = useNavigate();
+  const getToken = useCallback(() => localStorage.getItem('teacherToken'), []);
+
 
   useEffect(() => {
-    const loadModels = async () => {
+    const loadAll = async () => {
       const MODEL_URL = '/models';
       try {
+        // Cargar modelos de FaceAPI
         await Promise.all([
           faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
           faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
           faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
           faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL),
+          faceapi.nets.faceDescriptorExtractor.loadFromUri(MODEL_URL)
         ]);
         setIaModelsLoaded(true);
+
+        // Cargar descriptores faciales de estudiantes
+        const token = getToken();
+        if (!token) {
+          setError("No autenticado. Por favor, inicie sesión.");
+          setLoading(false);
+          return;
+        }
+        const response = await axios.get(`${API_BASE_URL}/admin/students/all-face-descriptors`, {
+          headers: { 'x-auth-token': token }
+        });
+
+        if (response.data && response.data.length > 0) {
+          const labeledDescriptors = response.data.map(d =>
+            new faceapi.LabeledFaceDescriptors(d.label, [Float32Array.from(d.descriptor)])
+          );
+          setFaceMatcher(new faceapi.FaceMatcher(labeledDescriptors, 0.6));
+        } else {
+          // No hay rostros registrados, podemos continuar pero el reconocimiento no funcionará.
+          console.warn("No se encontraron descriptores faciales registrados.");
+        }
+
       } catch (error) {
-        console.error("Error loading AI models:", error);
-        setError("Error al cargar los modelos de IA. Por favor, intente de nuevo más tarde.");
+        console.error("Error loading models or descriptors:", error);
+        setError("Error al cargar datos de IA. Verifique la consola para más detalles.");
       }
     };
 
-    loadModels();
-  }, []);
+    loadAll();
+  }, [getToken]);
 
   useEffect(() => {
     const videoElement = videoRef.current;
@@ -67,23 +98,78 @@ const CameraAttendancePage = () => {
 
   const handleVideoPlay = () => {
     intervalRef.current = setInterval(async () => {
-      if (videoRef.current && canvasRef.current && !videoRef.current.paused && !videoRef.current.ended) {
+      if (videoRef.current && canvasRef.current && !videoRef.current.paused && !videoRef.current.ended && faceMatcher) {
         const video = videoRef.current;
         const canvas = canvasRef.current;
         const displaySize = { width: video.clientWidth, height: video.clientHeight };
 
         faceapi.matchDimensions(canvas, displaySize);
 
-        const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceExpressions();
+        const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
+          .withFaceLandmarks()
+          .withFaceDescriptors();
+
         const resizedDetections = faceapi.resizeResults(detections, displaySize);
+        const results = resizedDetections.map(d => faceMatcher.findBestMatch(d.descriptor));
 
         const context = canvas.getContext('2d');
         if (context) {
           context.clearRect(0, 0, canvas.width, canvas.height);
-          faceapi.draw.drawDetections(canvas, resizedDetections);
+          results.forEach((result, i) => {
+            const box = resizedDetections[i].detection.box;
+            const label = result.label;
+            const drawBox = new faceapi.draw.DrawBox(box, { label: label });
+            drawBox.draw(canvas);
+
+            // Lógica de marcado de asistencia
+            if (label !== 'unknown' && label !== 'Desconocido') {
+              const studentIdMatch = label.match(/\((ET\d{3})\)/);
+              if (studentIdMatch && studentIdMatch[1]) {
+                const studentId = studentIdMatch[1];
+                if (!recentlyMarkedIds.has(studentId)) {
+                  markAttendance(studentId, label.split(' (')[0]);
+                }
+              }
+            }
+          });
         }
       }
-    }, 100);
+    }, 1000); // Intervalo de 1 segundo para no sobrecargar
+  };
+
+  const markAttendance = async (studentId, studentName) => {
+    setRecentlyMarkedIds(prev => new Set(prev).add(studentId));
+    toast.success(`Asistencia marcada para: ${studentName}`, { duration: 2000 });
+
+    try {
+      const token = getToken();
+      await axios.post(`${API_BASE_URL}/attendance/record`, {
+        student_id: studentId,
+        attendance_date: new Date().toISOString().slice(0, 10), // YYYY-MM-DD
+        status: 'PUNTUAL',
+        notes: 'Marcado por reconocimiento facial'
+      }, {
+        headers: { 'x-auth-token': token }
+      });
+    } catch (error) {
+      console.error(`Error marcando asistencia para ${studentId}:`, error);
+      toast.error(`Error al marcar a ${studentName}`);
+      // Si falla, quitarlo de la lista para permitir reintentos
+      setRecentlyMarkedIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(studentId);
+        return newSet;
+      });
+    }
+
+    // Permitir marcar de nuevo al mismo estudiante después de 2 minutos
+    setTimeout(() => {
+      setRecentlyMarkedIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(studentId);
+        return newSet;
+      });
+    }, 120000); // 2 minutos
   };
 
   useEffect(() => {
@@ -107,12 +193,9 @@ const CameraAttendancePage = () => {
 
 
   const getLoadingMessage = () => {
-    if (!iaModelsLoaded) {
-      return "Cargando modelos de IA...";
-    }
-    if (loading) {
-      return "Cargando cámara...";
-    }
+    if (!iaModelsLoaded) return "Cargando modelos de IA...";
+    if (!faceMatcher) return "Preparando reconocedor facial...";
+    if (loading) return "Cargando cámara...";
     return null;
   };
 
@@ -120,14 +203,14 @@ const CameraAttendancePage = () => {
     <div style={{ textAlign: 'center', padding: '20px' }}>
       <h1>Asistencia por Cámara</h1>
       <div style={{ position: 'relative', width: 'clamp(300px, 80vw, 640px)', margin: '20px auto', border: '2px solid #333', borderRadius: '8px', overflow: 'hidden' }}>
-        {(loading || !iaModelsLoaded) && <div style={{ padding: '20px' }}>{getLoadingMessage()}</div>}
+        {(loading || !iaModelsLoaded || !faceMatcher) && <div style={{ padding: '20px' }}>{getLoadingMessage()}</div>}
         {error && <div style={{ color: 'red', padding: '20px' }}>{error}</div>}
         <video
           ref={videoRef}
           autoPlay
           playsInline
           muted
-          style={{ width: '100%', height: 'auto', display: (loading || error || !iaModelsLoaded) ? 'none' : 'block', verticalAlign: 'middle' }}
+          style={{ width: '100%', height: 'auto', display: (loading || error || !iaModelsLoaded || !faceMatcher) ? 'none' : 'block', verticalAlign: 'middle' }}
           onCanPlay={() => setLoading(false)}
         />
         <canvas ref={canvasRef} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }} />
