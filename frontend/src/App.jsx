@@ -18,6 +18,7 @@ import StudentDashboardPage from './pages/StudentDashboardPage';
 import StudentScoresDetailPage from './pages/StudentScoresDetailPage';
 import StudentProfilePage from './pages/StudentProfilePage';
 import PublicRegistrationPage from './pages/PublicRegistrationPage';
+import CameraAttendancePage from './pages/CameraAttendancePage';
 import ProtectedRoute from './components/ProtectedRoute';
 import WhatsAppButton from './components/WhatsAppButton';
 import { Toaster } from 'react-hot-toast'; // Importar Toaster
@@ -112,6 +113,7 @@ function App() {
               <Route path="/docente/lista-estudiantes/inhabilitados" element={<DisabledStudentListPage />} />
               <Route path="/docente/database" element={<TeacherDatabasePage />} />
               <Route path="/docente/asistencia" element={<TeacherAttendancePage />} />
+              <Route path="/docente/asistencia-camara" element={<CameraAttendancePage />} />
               <Route path="/docente/puntuaciones" element={<TeacherScoresPage />} />
               <Route path="/docente/resumen" element={<TeacherSummaryPage />} />
               <Route path="/docente/ranking" element={<TeacherRankingPage />} />
