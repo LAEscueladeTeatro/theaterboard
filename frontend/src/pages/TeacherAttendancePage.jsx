@@ -9,6 +9,7 @@ import toast from 'react-hot-toast'; // Importar toast
 // Iconos
 const GiftIcon = () => <svg className="icon" viewBox="0 0 20 20" fill="currentColor" width="16" height="16" style={{verticalAlign: 'middle', marginRight: '0.5em'}}><path d="M10 1.5a1.5 1.5 0 00-1.5 1.5v1.233A5.003 5.003 0 005.78 7.52L3.666 9.634a.75.75 0 000 1.06L9.25 16.28a.75.75 0 001.06 0L16.333 10.7a.75.75 0 000-1.061L14.221 7.52c-.902-.903-2.148-1.498-3.471-1.724V3a1.5 1.5 0 00-1.5-1.5c-.396 0-.772.156-1.06.439A1.5 1.5 0 0010 1.5zm0 3.417a3.5 3.5 0 013.231 2.066l.06.112L15.03 8.833l-5.03 5.03-1.739-1.739.011-.01.68-.68a3.502 3.502 0 012.048-5.006V4.917zM10 18a.75.75 0 000-1.5.75.75 0 000 1.5z" /></svg>;
 const CheckCircleIcon = () => <svg className="icon" viewBox="0 0 20 20" fill="currentColor" width="16" height="16" style={{verticalAlign: 'middle', marginRight: '0.5em'}}><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" /></svg>;
+const CameraIcon = () => <svg className="icon" viewBox="0 0 20 20" fill="currentColor" width="16" height="16" style={{verticalAlign: 'middle', marginRight: '0.5em'}}><path d="M2 6a2 2 0 012-2h1.5a1.5 1.5 0 001.28-.72l.534-1.069A1.5 1.5 0 018.618 1h2.764a1.5 1.5 0 011.304.72l.534 1.07A1.5 1.5 0 0014.5 4H16a2 2 0 012 2v1H2V6z" /><path fillRule="evenodd" d="M2 8v8a2 2 0 002 2h12a2 2 0 002-2V8H2zm6.5 1.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7zM10 15a2.5 2.5 0 110-5 2.5 2.5 0 010 5z" clipRule="evenodd" /></svg>;
 
 const STATUS_DISPLAY_MAP = { PUNTUAL: { text: 'Puntual', basePoints: 2 }, A_TIEMPO: { text: 'A Tiempo', basePoints: 1 }, TARDANZA_JUSTIFICADA: { text: 'Tardanza Justificada', basePoints: -1 }, TARDANZA_INJUSTIFICADA: { text: 'Tardanza Injustificada', basePoints: -2 }, AUSENCIA_JUSTIFICADA: { text: 'Ausencia Justificada', basePoints: -1 }, AUSENCIA_INJUSTIFICADA: { text: 'Ausencia Injustificada', basePoints: -3 }, NO_REGISTRADO: { text: 'No Registrado', basePoints: 0 }};
 const HISTORIC_STATUS_OPTIONS = [ { value: 'PUNTUAL', label: 'Puntual' }, { value: 'A_TIEMPO', label: 'A Tiempo' }, { value: 'TARDANZA_JUSTIFICADA', label: 'Tardanza Justificada' }, { value: 'TARDANZA_INJUSTIFICADA', label: 'Tardanza Injustificada' }];
@@ -145,6 +146,13 @@ const TeacherAttendancePage = ({ selectedDate: historicDateProp }) => {
         </div>
       )}
        <h2 className="page-title">{historicDateProp ? "Registro de Asistencia Histórico" : "Registrar Asistencia del Día"}</h2>
+      {!historicDateProp && (
+          <div style={{ textAlign: 'center', margin: '1rem 0' }}>
+              <Link to="/docente/asistencia-camara" className="btn-action btn-teacher" style={{fontSize: '1.1rem', padding: '12px 20px'}}>
+                  <CameraIcon /> Marcar Asistencia con Cámara
+              </Link>
+          </div>
+      )}
       <p className="current-date-display">
         Fecha para registros: <strong>{dateForOperations}</strong>
         {!historicDateProp && `  •  Hora Actual (Perú): ${currentPeruDateTime.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`}
