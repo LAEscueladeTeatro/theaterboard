@@ -19,7 +19,8 @@ CREATE TABLE students (
     medical_conditions TEXT,
     comments TEXT,
     emergency_contact_name TEXT,
-    emergency_contact_phone VARCHAR(20)
+    emergency_contact_phone VARCHAR(20),
+    face_descriptor JSONB
 );
 
 -- Insertar estudiantes con contraseñas HASHEADAS de ejemplo.
