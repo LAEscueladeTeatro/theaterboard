@@ -315,7 +315,7 @@ const StudentProfilePage = () => {
     }
     const constraints = {
       video: {
-        deviceId: { exact: videoDevices[activeDeviceIndex].deviceId }
+        deviceId: videoDevices[activeDeviceIndex].deviceId
       }
     };
     try {
