@@ -62,13 +62,19 @@ const CameraAttendancePage = () => {
 
   useEffect(() => {
     if (labeledDescriptors.length > 0) {
-      const readyDescriptors = labeledDescriptors.map(d => {
-        // Convertir el descriptor de array normal a Float32Array
-        const descriptorAsFloat32Array = Float32Array.from(d.descriptor);
-        return new faceapi.LabeledFaceDescriptors(d.label, [descriptorAsFloat32Array]);
-      });
-      const matcher = new faceapi.FaceMatcher(readyDescriptors, 0.6);
-      setFaceMatcher(matcher);
+      try {
+        const readyDescriptors = labeledDescriptors.map(d => {
+          // d.descriptor is now an array of descriptor arrays.
+          // We need to convert each one to a Float32Array.
+          const descriptorsAsFloat32Arrays = d.descriptor.map(desc => Float32Array.from(desc));
+          return new faceapi.LabeledFaceDescriptors(d.label, descriptorsAsFloat32Arrays);
+        });
+        const matcher = new faceapi.FaceMatcher(readyDescriptors, 0.6);
+        setFaceMatcher(matcher);
+      } catch (e) {
+        console.error("Error creating FaceMatcher:", e);
+        setError("Error al procesar los datos faciales. Es posible que algunos registros sean de un formato antiguo.");
+      }
     }
   }, [labeledDescriptors]);
 
