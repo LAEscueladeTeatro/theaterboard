@@ -76,16 +76,21 @@ router.post('/record', authMiddleware, async (req, res) => {
   try {
     const client = await pool.connect();
     try {
+      // 1. Verificar si ya existe un registro para este estudiante en esta fecha
+      const existingRecord = await client.query(
+        'SELECT id FROM attendance_records WHERE student_id = $1 AND attendance_date = $2',
+        [student_id, attendance_date]
+      );
+
+      // 2. Si ya existe, devolver un error de conflicto
+      if (existingRecord.rows.length > 0) {
+        return res.status(409).json({ message: 'La asistencia para este estudiante ya fue registrada hoy.' });
+      }
+
+      // 3. Si no existe, proceder con la inserción
       const query = `
         INSERT INTO attendance_records (student_id, attendance_date, status, points_earned, base_attendance_points, notes)
         VALUES ($1, $2, $3, $4, $5, $6)
-        ON CONFLICT (student_id, attendance_date)
-        DO UPDATE SET
-          status = EXCLUDED.status,
-          points_earned = EXCLUDED.points_earned,
-          base_attendance_points = EXCLUDED.base_attendance_points,
-          notes = EXCLUDED.notes,
-          recorded_at = CURRENT_TIMESTAMP
         RETURNING *;
       `;
       const values = [student_id, attendance_date, status, points_earned, base_attendance_points, notes || null];
