@@ -38,8 +38,8 @@ const CameraAttendancePage = () => {
           return;
         }
         const response = await axios.get(`${API_BASE_URL}/teachers/all-face-descriptors`, {
-          headers: { 'x-auth-token': token }
-        });
+  headers: { 'x-auth-token': token },
+});
 
         // --- ¡AÑADE ESTA LÍNEA PARA DEPURAR! ---
         console.log('Respuesta completa del servidor:', response.data);
