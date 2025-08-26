@@ -461,17 +461,21 @@ const StudentProfilePage = () => {
 
     return (
       <div className="modal-overlay">
-        <div className="modal-content" style={{textAlign: 'center'}}>
+        <div className="modal-content" style={{textAlign: 'center', width: '90%', maxWidth: '500px'}}>
           <h3>{instructions[captureStep]}</h3>
           <p>Asegúrate de que tu rostro esté bien iluminado y centrado.</p>
-          <div style={{ position: 'relative', display: 'inline-block', width: '480px', height: '360px', backgroundColor: '#111' }}>
+          <div style={{ position: 'relative', width: '100%', paddingTop: '75%', backgroundColor: '#111', borderRadius: '8px', overflow: 'hidden' }}>
             <video
               ref={videoRef}
               autoPlay
               muted
-              width="480"
-              height="360"
               style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
                 borderRadius: '8px',
                 transform: isFrontCamera ? 'scaleX(-1)' : 'none',
                 display: captureStep <= 3 ? 'block' : 'none'
@@ -488,8 +492,8 @@ const StudentProfilePage = () => {
                   width: '100%',
                   height: '100%',
                   opacity: 0.6,
-                  objectFit: 'contain', // <-- Añadir esta línea
-                  pointerEvents: 'none' // Para que no interfiera con el video
+                  objectFit: 'contain',
+                  pointerEvents: 'none'
                 }}
               />
             )}
@@ -509,7 +513,7 @@ const StudentProfilePage = () => {
             </div>
           )}
 
-          <div className="modal-actions">
+          <div className="modal-actions" style={{display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap'}}>
             {captureStep <= 3 && (
               <>
                 <button onClick={handleCloseFaceModal} className="btn-secondary" disabled={isCapturing}>Cancelar</button>
