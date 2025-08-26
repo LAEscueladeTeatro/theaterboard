@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { API_BASE_URL as TEACHER_API_URL_BASE } from "../config";
 import Spinner from '../components/Spinner'; // Importar Spinner
+import PasswordInput from '../components/PasswordInput';
 
 // Basic styling (can be moved to App.css or a dedicated CSS file)
 const styles = {
@@ -274,15 +275,38 @@ const TeacherProfilePage = () => {
         <form onSubmit={handlePasswordSubmit}>
           <div style={styles.formGroup}>
             <label htmlFor="current_password" style={styles.label}>Contraseña Actual:</label>
-            <input type="password" id="current_password" name="current_password" value={passwordData.current_password} onChange={handlePasswordChange} style={styles.input} required />
+            <PasswordInput
+              id="current_password"
+              name="current_password"
+              value={passwordData.current_password}
+              onChange={handlePasswordChange}
+              style={styles.input}
+              required
+            />
           </div>
           <div style={styles.formGroup}>
             <label htmlFor="new_password" style={styles.label}>Nueva Contraseña:</label>
-            <input type="password" id="new_password" name="new_password" value={passwordData.new_password} onChange={handlePasswordChange} style={styles.input} required minLength="6" />
+            <PasswordInput
+              id="new_password"
+              name="new_password"
+              value={passwordData.new_password}
+              onChange={handlePasswordChange}
+              style={styles.input}
+              required
+              minLength="6"
+            />
           </div>
           <div style={styles.formGroup}>
             <label htmlFor="confirm_new_password" style={styles.label}>Confirmar Nueva Contraseña:</label>
-            <input type="password" id="confirm_new_password" name="confirm_new_password" value={passwordData.confirm_new_password} onChange={handlePasswordChange} style={styles.input} required minLength="6" />
+            <PasswordInput
+              id="confirm_new_password"
+              name="confirm_new_password"
+              value={passwordData.confirm_new_password}
+              onChange={handlePasswordChange}
+              style={styles.input}
+              required
+              minLength="6"
+            />
           </div>
           <button type="submit" style={{...styles.button, backgroundColor: 'var(--primary-color-teacher)', ...(loadingPassword && styles.buttonDisabled)}} disabled={loadingPassword}>
             {loadingPassword ? (

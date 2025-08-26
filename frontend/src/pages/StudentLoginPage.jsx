@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { API_BASE_URL } from "../config";
 import Spinner from '../components/Spinner'; // Importar Spinner
+import PasswordInput from '../components/PasswordInput'; // Importar PasswordInput
 
 const ArrowRightOnRectangleIcon = () => (
   <svg className="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
@@ -58,7 +59,15 @@ const StudentLoginPage = () => {
           </div>
           <div>
             <label htmlFor="password">Contraseña:</label>
-            <input type="password" id="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required disabled={isLoading} />
+            <PasswordInput
+              id="password"
+              name="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              required
+              disabled={isLoading}
+            />
           </div>
           {error && <p style={{ color: 'var(--primary-color-student)', fontWeight: '500', marginTop: '1rem', textAlign: 'center' }}>{error}</p>}
           <button type="submit" className="btn-action btn-student" disabled={isLoading}>

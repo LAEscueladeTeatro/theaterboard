@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { API_BASE_URL } from "../config"; // Importar config
 import Spinner from '../components/Spinner'; // Importar Spinner
+import PasswordInput from '../components/PasswordInput';
 import * as faceapi from 'face-api.js';
 
 // Re-using styles from TeacherProfilePage for consistency, or define separately
@@ -653,15 +654,41 @@ const StudentProfilePage = () => {
         <form onSubmit={handlePasswordSubmit}>
            <div style={styles.formGroup}>
             <label htmlFor="current_password_student" style={styles.label}>Contraseña Actual:</label>
-            <input type="password" id="current_password_student" name="current_password" value={passwordData.current_password} onChange={handlePasswordChange} style={styles.input} required disabled={loadingPassword} />
+            <PasswordInput
+              id="current_password_student"
+              name="current_password"
+              value={passwordData.current_password}
+              onChange={handlePasswordChange}
+              style={styles.input}
+              required
+              disabled={loadingPassword}
+            />
           </div>
           <div style={styles.formGroup}>
             <label htmlFor="new_password_student" style={styles.label}>Nueva Contraseña:</label>
-            <input type="password" id="new_password_student" name="new_password" value={passwordData.new_password} onChange={handlePasswordChange} style={styles.input} required minLength="6" disabled={loadingPassword}/>
+            <PasswordInput
+              id="new_password_student"
+              name="new_password"
+              value={passwordData.new_password}
+              onChange={handlePasswordChange}
+              style={styles.input}
+              required
+              minLength="6"
+              disabled={loadingPassword}
+            />
           </div>
           <div style={styles.formGroup}>
             <label htmlFor="confirm_new_password_student" style={styles.label}>Confirmar Nueva Contraseña:</label>
-            <input type="password" id="confirm_new_password_student" name="confirm_new_password" value={passwordData.confirm_new_password} onChange={handlePasswordChange} style={styles.input} required minLength="6" disabled={loadingPassword}/>
+            <PasswordInput
+              id="confirm_new_password_student"
+              name="confirm_new_password"
+              value={passwordData.confirm_new_password}
+              onChange={handlePasswordChange}
+              style={styles.input}
+              required
+              minLength="6"
+              disabled={loadingPassword}
+            />
           </div>
           <button type="submit" style={{...styles.button, ...(loadingPassword && styles.buttonDisabled)}} disabled={loadingPassword}>
             {loadingPassword ? <><Spinner size="20px" color="white" /> Cambiando...</> : 'Cambiar Contraseña'}
