@@ -257,6 +257,8 @@ const CameraAttendancePage = () => {
     return null;
   };
 
+  const isFrontCamera = videoDevices[activeDeviceIndex]?.label.toLowerCase().includes('front');
+
   return (
     <div style={{ textAlign: 'center', padding: '20px' }}>
       <h1>Asistencia por Cámara</h1>
@@ -273,7 +275,7 @@ const CameraAttendancePage = () => {
           autoPlay
           playsInline
           muted
-          style={{ width: '100%', height: 'auto', display: (loading || error || !iaModelsLoaded || !faceMatcher) ? 'none' : 'block', verticalAlign: 'middle', transform: 'scaleX(-1)' }}
+          style={{ width: '100%', height: 'auto', display: (loading || error || !iaModelsLoaded || !faceMatcher) ? 'none' : 'block', verticalAlign: 'middle', transform: isFrontCamera ? 'scaleX(-1)' : 'none' }}
           onCanPlay={() => setLoading(false)}
         />
         <canvas ref={canvasRef} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }} />

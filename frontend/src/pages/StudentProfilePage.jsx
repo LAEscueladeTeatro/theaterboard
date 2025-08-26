@@ -457,6 +457,8 @@ const StudentProfilePage = () => {
       3: '/assets/guide-right.png',
     };
 
+    const isFrontCamera = videoDevices[activeDeviceIndex]?.label.toLowerCase().includes('front');
+
     return (
       <div className="modal-overlay">
         <div className="modal-content" style={{textAlign: 'center'}}>
@@ -471,7 +473,7 @@ const StudentProfilePage = () => {
               height="360"
               style={{
                 borderRadius: '8px',
-                transform: 'scaleX(-1)',
+                transform: isFrontCamera ? 'scaleX(-1)' : 'none',
                 display: captureStep <= 3 ? 'block' : 'none'
               }}
             ></video>
