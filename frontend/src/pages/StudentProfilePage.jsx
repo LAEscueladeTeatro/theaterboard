@@ -107,6 +107,8 @@ const StudentProfilePage = () => {
   const canvasRef = React.useRef();
   const [captureStep, setCaptureStep] = useState(0); // 0: inactivo, 1: frente, 2: izq, 3: der, 4: preview
   const [collectedDescriptors, setCollectedDescriptors] = useState([]);
+  const [videoDevices, setVideoDevices] = useState([]);
+  const [activeDeviceIndex, setActiveDeviceIndex] = useState(0);
 
   const initialProfileData = {
     full_name: '', // Display only, not editable by student
@@ -306,35 +308,73 @@ const StudentProfilePage = () => {
     };
     loadModels();
   }, []);
-  const startVideo = () => {
-    navigator.mediaDevices.getUserMedia({ video: {} })
-      .then(stream => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-      })
-      .catch(err => {
-        console.error("Error accessing camera", err);
-        setFaceError("No se pudo acceder a la cámara. Revisa los permisos en tu navegador.");
-      });
-  };
-  const handleOpenFaceModal = () => {
+  // Este useEffect se encargará de reiniciar el video cuando cambie la cámara seleccionada.
+  useEffect(() => {
+    if (isFaceModalOpen && videoDevices.length > 0) {
+      startVideo();
+    }
+    // Cleanup: Detener el video cuando el modal se cierra o el componente se desmonta
+    return () => {
+      if (videoRef.current && videoRef.current.srcObject) {
+        videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [isFaceModalOpen, activeDeviceIndex, videoDevices, startVideo]);
+
+  const startVideo = useCallback(async () => {
+    if (videoDevices.length === 0) {
+      console.log("No video devices found yet, startVideo will wait.");
+      return;
+    }
+    const constraints = {
+      video: {
+        deviceId: { exact: videoDevices[activeDeviceIndex].deviceId }
+      }
+    };
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (err) {
+      console.error("Error accessing camera", err);
+      setFaceError("No se pudo acceder a la cámara. Revisa los permisos en tu navegador.");
+    }
+  }, [videoDevices, activeDeviceIndex]);
+
+  const handleOpenFaceModal = async () => {
     if (!faceApiLoaded) return;
-    setCaptureStep(1); // Iniciar en el paso 1
-    setCollectedDescriptors([]);
     setFaceError('');
     setFaceSuccess('');
-    setIsFaceModalOpen(true);
-    setTimeout(startVideo, 100);
+
+    // 1. Obtener dispositivos
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const cameras = devices.filter(device => device.kind === 'videoinput');
+      setVideoDevices(cameras);
+      setActiveDeviceIndex(0); // Empezar con la primera cámara
+
+      // 2. Resetear estado y abrir modal
+      setCaptureStep(1);
+      setCollectedDescriptors([]);
+      setIsFaceModalOpen(true);
+
+      // 3. Iniciar video (se llamará automáticamente por el useEffect)
+    } catch (err) {
+      console.error("Error enumerating devices:", err);
+      setFaceError("No se pudo obtener la lista de cámaras.");
+    }
   };
 
   const handleCloseFaceModal = () => {
     setIsFaceModalOpen(false);
     setCaptureStep(0); // Resetear
     setCollectedDescriptors([]);
-    if (videoRef.current && videoRef.current.srcObject) {
-      videoRef.current.srcObject.getTracks().forEach(track => track.stop());
-    }
+    // The useEffect cleanup will handle stopping the video stream
+  };
+
+  const handleCameraChange = () => {
+    setActiveDeviceIndex(prevIndex => (prevIndex + 1) % videoDevices.length);
   };
 
   const handleRestartCapture = () => {
@@ -458,6 +498,14 @@ const StudentProfilePage = () => {
             {faceSuccess && <p style={styles.successMessage}>{faceSuccess}</p>}
             {captureStep <= 3 && <p>Capturas realizadas: {collectedDescriptors.length} de 3</p>}
           </div>
+
+          {videoDevices.length > 1 && captureStep <= 3 && (
+            <div style={{ margin: '1rem 0' }}>
+              <button onClick={handleCameraChange} className="btn-secondary">
+                Cambiar Cámara 🔄
+              </button>
+            </div>
+          )}
 
           <div className="modal-actions">
             {captureStep <= 3 && (
