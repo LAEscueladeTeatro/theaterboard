@@ -248,32 +248,4 @@ router.put('/:studentId/edit-full', async (req, res) => {
 });
 
 
-// @route   GET /api/admin/students/all-face-descriptors
-// @desc    Get all face descriptors for active students
-// @access  Private (Teacher/Admin)
-router.get('/all-face-descriptors', async (req, res) => {
-  // Assuming authMiddleware has already run and populated req.user
-  if (!req.user || (req.user.role !== 'teacher' && req.user.role !== 'admin')) {
-    return res.status(403).json({ message: 'Acceso denegado.' });
-  }
-
-  try {
-    const result = await pool.query(
-      `SELECT id, full_name, face_descriptor
-       FROM students
-       WHERE face_descriptor IS NOT NULL AND is_active = TRUE`
-    );
-
-    const labeledFaceDescriptors = result.rows.map(student => ({
-      label: `${student.full_name} (${student.id})`, // Combine name and ID for a unique label
-      descriptor: student.face_descriptor
-    }));
-
-    res.json(labeledFaceDescriptors);
-  } catch (err) {
-    console.error('Error fetching all face descriptors:', err);
-    res.status(500).json({ message: 'Error interno del servidor al obtener los descriptores faciales.' });
-  }
-});
-
 module.exports = router;
