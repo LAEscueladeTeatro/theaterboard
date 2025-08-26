@@ -127,4 +127,37 @@ router.put('/password', authMiddleware, async (req, res) => {
   }
 });
 
+// @route   GET /api/teachers/all-face-descriptors
+// @desc    Get all registered face descriptors for attendance
+// @access  Private (Teacher)
+router.get('/all-face-descriptors', authMiddleware, async (req, res) => {
+  // Asegurarse de que solo un docente pueda acceder
+  if (req.user.role !== 'teacher') {
+    return res.status(403).json({ message: 'Acceso denegado.' });
+  }
+
+  try {
+    // 1. Consultar la base de datos por todos los estudiantes que tengan un descriptor facial
+    const result = await pool.query(
+      'SELECT id, full_name, face_descriptor FROM students WHERE face_descriptor IS NOT NULL'
+    );
+
+    // 2. Formatear los datos para que face-api.js los entienda
+    const labeledDescriptors = result.rows.map(student => {
+      // El frontend espera un objeto con "label" y "descriptor"
+      return {
+        label: student.full_name, // El nombre que se mostrará
+        descriptor: student.face_descriptor // La "huella facial"
+      };
+    });
+
+    // 3. Enviar la lista formateada al frontend
+    res.json(labeledDescriptors);
+
+  } catch (err) {
+    console.error('Error fetching face descriptors:', err);
+    res.status(500).json({ message: 'Error interno del servidor.' });
+  }
+});
+
 module.exports = router;
