@@ -411,6 +411,12 @@ const StudentProfilePage = () => {
       4: "¡Capturas completadas! Revisa y guarda."
     };
 
+    const guideImages = {
+      1: '/assets/guide-front.png',
+      2: '/assets/guide-left.png',
+      3: '/assets/guide-right.png',
+    };
+
     return (
       <div className="modal-overlay">
         <div className="modal-content" style={{textAlign: 'center'}}>
@@ -429,6 +435,21 @@ const StudentProfilePage = () => {
                 display: captureStep <= 3 ? 'block' : 'none'
               }}
             ></video>
+            {captureStep <= 3 && (
+              <img
+                src={guideImages[captureStep]}
+                alt="Guía Facial"
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  opacity: 0.6,
+                  pointerEvents: 'none' // Para que no interfiera con el video
+                }}
+              />
+            )}
              {captureStep > 3 && <div style={{width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white'}}>Video pausado.</div>}
           </div>
           <div style={{marginTop: '1rem', minHeight: '2.5rem'}}>
