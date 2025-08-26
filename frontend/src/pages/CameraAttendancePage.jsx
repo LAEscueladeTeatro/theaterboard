@@ -41,6 +41,10 @@ const CameraAttendancePage = () => {
           headers: { 'x-auth-token': token }
         });
 
+        // --- ¡AÑADE ESTA LÍNEA PARA DEPURAR! ---
+        console.log('Respuesta completa del servidor:', response.data);
+        // ----------------------------------------
+
         if (response.data && response.data.length > 0) {
           // Guardar los descriptores crudos
           setLabeledDescriptors(response.data);
