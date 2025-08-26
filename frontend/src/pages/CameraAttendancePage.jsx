@@ -150,19 +150,32 @@ const CameraAttendancePage = () => {
 
   const markAttendance = async (studentId, studentName) => {
     setRecentlyMarkedIds(prev => new Set(prev).add(studentId));
-    toast.success(`Asistencia marcada para: ${studentName}`, { duration: 2000 });
 
     try {
       const token = getToken();
-      await axios.post(`${API_BASE_URL}/attendance/record`, {
+      const payload = {
         student_id: studentId,
         attendance_date: new Date().toISOString().slice(0, 10), // YYYY-MM-DD
         status: 'PUNTUAL',
         notes: 'Marcado por reconocimiento facial'
-      }, {
+      };
+
+      // 1. Log para ver qué estamos enviando
+      console.log('Enviando este payload para marcar asistencia:', payload);
+
+      const response = await axios.post(`${API_BASE_URL}/attendance/record`, payload, {
         headers: { 'x-auth-token': token }
       });
+
+      // 2. Log para ver qué nos respondió el servidor
+      console.log('Respuesta del servidor al guardar:', response);
+
+      toast.success(`Asistencia marcada para: ${studentName}`, { duration: 2000 });
+
     } catch (error) {
+      // 3. Log para ver el error exacto si la petición falla
+      console.error('ERROR DETALLADO al guardar asistencia:', error.response);
+
       console.error(`Error marcando asistencia para ${studentId}:`, error);
       toast.error(`Error al marcar a ${studentName}`);
       // Si falla, quitarlo de la lista para permitir reintentos
