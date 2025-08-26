@@ -435,6 +435,13 @@ footer {
   text-decoration: none;
 }
 
+.btn-settings .icon {
+  margin-right: 0.6em;
+  width: 18px;
+  height: 18px;
+  vertical-align: middle;
+}
+
 /* Estilos para Páginas de Contenido del Dashboard (como Asistencia, Puntuaciones) */
 .content-page-container {
   padding: 2rem;
