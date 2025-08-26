@@ -352,6 +352,7 @@ const StudentProfilePage = () => {
       const devices = await navigator.mediaDevices.enumerateDevices();
       const cameras = devices.filter(device => device.kind === 'videoinput');
       setVideoDevices(cameras);
+      console.log('Cámaras detectadas:', cameras.length, cameras);
       setActiveDeviceIndex(0); // Empezar con la primera cámara
 
       // 2. Resetear estado y abrir modal
