@@ -128,6 +128,7 @@ const StudentDashboardPage = () => {
     <div className="dashboard-page-container student-dashboard">
       <div className="page-header-controls" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '1rem', gap: '1rem' }}>
         <Link to="/estudiante/mi-perfil" title="Ajustes" className="btn-settings">
+          <SettingsIcon width="18" height="18" />
           Ajustes
         </Link>
         <button onClick={handleLogout} className="btn-logout">
