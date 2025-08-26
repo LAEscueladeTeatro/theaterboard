@@ -414,6 +414,27 @@ footer {
   background-color: color-mix(in srgb, var(--color-danger) 75%, #000000 25%);
 }
 
+.btn-settings {
+  background-color: #6c757d; /* Grey/Lead color */
+  color: var(--text-color-light);
+  padding: 0.7em 1.6em;
+  border-radius: var(--border-radius-small);
+  font-weight: 500;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  transition: background-color 0.2s ease, transform 0.15s ease;
+}
+
+.btn-settings:hover {
+  background-color: #5a6268; /* Darker grey on hover */
+  transform: translateY(-1px);
+  color: var(--text-color-light);
+  text-decoration: none;
+}
+
 /* Estilos para Páginas de Contenido del Dashboard (como Asistencia, Puntuaciones) */
 .content-page-container {
   padding: 2rem;

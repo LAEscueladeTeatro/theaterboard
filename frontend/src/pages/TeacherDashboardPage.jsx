@@ -107,8 +107,8 @@ const TeacherDashboardPage = () => {
   return (
     <div className="dashboard-page-container">
       <div className="page-header-controls" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: '1rem', gap: '1rem' }}>
-        <Link to="/docente/mi-perfil" title="Mi Perfil" className="icon-link" style={{ textDecoration: 'none', color: 'var(--text-color-main)' }}>
-          <SettingsIcon /> {/* Changed from NewSettingsIcon to SettingsIcon if that was the previous name, or ensure this is the new component name */}
+        <Link to="/docente/mi-perfil" title="Ajustes" className="btn-settings">
+          Ajustes
         </Link>
         <button onClick={handleLogout} className="btn-logout">
           <LogoutIcon />
