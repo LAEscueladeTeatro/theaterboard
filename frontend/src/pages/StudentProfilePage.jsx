@@ -308,19 +308,6 @@ const StudentProfilePage = () => {
     };
     loadModels();
   }, []);
-  // Este useEffect se encargará de reiniciar el video cuando cambie la cámara seleccionada.
-  useEffect(() => {
-    if (isFaceModalOpen && videoDevices.length > 0) {
-      startVideo();
-    }
-    // Cleanup: Detener el video cuando el modal se cierra o el componente se desmonta
-    return () => {
-      if (videoRef.current && videoRef.current.srcObject) {
-        videoRef.current.srcObject.getTracks().forEach(track => track.stop());
-      }
-    };
-  }, [isFaceModalOpen, activeDeviceIndex, videoDevices, startVideo]);
-
   const startVideo = useCallback(async () => {
     if (videoDevices.length === 0) {
       console.log("No video devices found yet, startVideo will wait.");
@@ -341,6 +328,19 @@ const StudentProfilePage = () => {
       setFaceError("No se pudo acceder a la cámara. Revisa los permisos en tu navegador.");
     }
   }, [videoDevices, activeDeviceIndex]);
+
+  // Este useEffect se encargará de reiniciar el video cuando cambie la cámara seleccionada.
+  useEffect(() => {
+    if (isFaceModalOpen && videoDevices.length > 0) {
+      startVideo();
+    }
+    // Cleanup: Detener el video cuando el modal se cierra o el componente se desmonta
+    return () => {
+      if (videoRef.current && videoRef.current.srcObject) {
+        videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [isFaceModalOpen, activeDeviceIndex, videoDevices, startVideo]);
 
   const handleOpenFaceModal = async () => {
     if (!faceApiLoaded) return;
