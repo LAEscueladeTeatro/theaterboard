@@ -37,7 +37,7 @@ const CameraAttendancePage = () => {
           setLoading(false);
           return;
         }
-        const response = await axios.get(`${API_BASE_URL}/admin/students/all-face-descriptors`, {
+        const response = await axios.get(`${API_BASE_URL}/teachers/all-face-descriptors`, {
           headers: { 'x-auth-token': token }
         });
 
