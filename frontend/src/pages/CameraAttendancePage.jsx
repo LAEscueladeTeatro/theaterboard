@@ -186,12 +186,16 @@ const CameraAttendancePage = () => {
         toast.error(`Error al marcar a ${studentName}`);
       }
 
-      // Si falla, quitarlo de la lista para permitir reintentos
-      setRecentlyMarkedIds(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(studentId);
-        return newSet;
-      });
+      // Si es un error 409, no queremos reintentar, ya que la asistencia SÍ está registrada.
+      // Para cualquier otro error (ej. de red), sí quitamos al estudiante de la lista
+      // para que el sistema pueda reintentar marcarlo en el siguiente intervalo.
+      if (!error.response || error.response.status !== 409) {
+        setRecentlyMarkedIds(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(studentId);
+          return newSet;
+        });
+      }
     }
 
     // Permitir marcar de nuevo al mismo estudiante después de 2 minutos
