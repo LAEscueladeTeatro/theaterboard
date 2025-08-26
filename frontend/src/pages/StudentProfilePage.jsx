@@ -446,6 +446,7 @@ const StudentProfilePage = () => {
                   width: '100%',
                   height: '100%',
                   opacity: 0.6,
+                  objectFit: 'contain', // <-- Añadir esta línea
                   pointerEvents: 'none' // Para que no interfiera con el video
                 }}
               />
