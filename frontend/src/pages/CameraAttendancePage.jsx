@@ -177,7 +177,7 @@ const CameraAttendancePage = () => {
 
       // Manejo de error específico para 409 Conflict
       if (error.response && error.response.status === 409) {
-        toast.info(error.response.data.message || `Asistencia para ${studentName} ya fue registrada.`, {
+        toast(error.response.data.message || `Asistencia para ${studentName} ya fue registrada.`, {
           duration: 3000,
           icon: 'ℹ️',
         });
