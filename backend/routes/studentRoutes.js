@@ -549,35 +549,43 @@ router.get('/me/daily-quote', async (req, res) => {
 
 
 // @route   POST /api/student/register-face
-// @desc    Register or update a student's face descriptor
+// @desc    Register or update a student's face descriptors (now accepts an array)
 // @access  Private (Student)
 router.post('/register-face', async (req, res) => {
   if (!req.user || req.user.role !== 'student') {
     return res.status(403).json({ message: 'Acceso denegado.' });
   }
   const studentId = req.user.id;
-  const { descriptor } = req.body;
+  // Ahora esperamos un array de descriptores, que llamaremos 'descriptors'
+  const { descriptors } = req.body;
 
-  // Validate descriptor
-  if (!descriptor || !Array.isArray(descriptor) || descriptor.length === 0) {
-    return res.status(400).json({ message: 'El descriptor facial es inválido o está vacío.' });
+  // Validate descriptors array
+  if (!descriptors || !Array.isArray(descriptors) || descriptors.length === 0) {
+    return res.status(400).json({ message: 'El array de descriptores faciales es inválido o está vacío.' });
+  }
+
+  // Opcional: validación más profunda para asegurar que cada elemento del array es un descriptor válido
+  for (const descriptor of descriptors) {
+    if (!Array.isArray(descriptor) || descriptor.length === 0) {
+      return res.status(400).json({ message: 'Se encontró un descriptor facial inválido en el array.' });
+    }
   }
 
   try {
     const result = await pool.query(
       'UPDATE students SET face_descriptor = $1 WHERE id = $2 RETURNING id',
-      [JSON.stringify(descriptor), studentId]
+      [JSON.stringify(descriptors), studentId] // Guardamos el array de descriptores
     );
 
     if (result.rowCount === 0) {
       return res.status(404).json({ message: 'Estudiante no encontrado o no se pudo actualizar.' });
     }
 
-    res.status(200).json({ message: 'Rostro registrado exitosamente.' });
+    res.status(200).json({ message: 'Rostros registrados exitosamente.' }); // Mensaje actualizado
 
   } catch (err) {
-    console.error('Error saving face descriptor:', err);
-    res.status(500).json({ message: 'Error interno del servidor al guardar el rostro.' });
+    console.error('Error saving face descriptors:', err);
+    res.status(500).json({ message: 'Error interno del servidor al guardar los rostros.' });
   }
 });
 
