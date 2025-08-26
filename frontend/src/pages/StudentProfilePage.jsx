@@ -309,62 +309,61 @@ const StudentProfilePage = () => {
     loadModels();
   }, []);
   const startVideo = useCallback(async () => {
-    if (videoDevices.length === 0) {
-      console.log("No video devices found yet, startVideo will wait.");
-      return;
+    // Detener cualquier stream de video previo
+    if (videoRef.current && videoRef.current.srcObject) {
+      videoRef.current.srcObject.getTracks().forEach(track => track.stop());
     }
-    const constraints = {
-      video: {
-        deviceId: videoDevices[activeDeviceIndex].deviceId
-      }
-    };
+
+    // Determinar las constraints
+    let constraints = { video: true }; // Pedir permiso genérico primero
+    if (videoDevices.length > 0) {
+      // Si ya tenemos una lista, usamos la cámara específica
+      constraints.video = { deviceId: videoDevices[activeDeviceIndex].deviceId };
+    }
+
     try {
+      // 1. Pedir permiso y obtener stream
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
       }
+
+      // 2. Si es la primera vez (no teníamos lista de devices), la obtenemos ahora
+      if (videoDevices.length === 0) {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const cameras = devices.filter(device => device.kind === 'videoinput');
+        console.log('Cámaras detectadas:', cameras.length, cameras);
+        setVideoDevices(cameras);
+      }
     } catch (err) {
-      console.error("Error accessing camera", err);
+      console.error("Error accessing camera:", err);
       setFaceError("No se pudo acceder a la cámara. Revisa los permisos en tu navegador.");
     }
   }, [videoDevices, activeDeviceIndex]);
 
-  // Este useEffect se encargará de reiniciar el video cuando cambie la cámara seleccionada.
   useEffect(() => {
-    if (isFaceModalOpen && videoDevices.length > 0) {
+    if (isFaceModalOpen) {
       startVideo();
     }
-    // Cleanup: Detener el video cuando el modal se cierra o el componente se desmonta
+    // Cleanup: se ejecuta cuando el modal se cierra o el índice de cámara cambia
     return () => {
       if (videoRef.current && videoRef.current.srcObject) {
         videoRef.current.srcObject.getTracks().forEach(track => track.stop());
       }
     };
-  }, [isFaceModalOpen, activeDeviceIndex, videoDevices, startVideo]);
+  }, [isFaceModalOpen, activeDeviceIndex, startVideo]);
 
-  const handleOpenFaceModal = async () => {
+
+  const handleOpenFaceModal = () => {
     if (!faceApiLoaded) return;
+    // Resetear todo al abrir
     setFaceError('');
     setFaceSuccess('');
-
-    // 1. Obtener dispositivos
-    try {
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const cameras = devices.filter(device => device.kind === 'videoinput');
-      setVideoDevices(cameras);
-      console.log('Cámaras detectadas:', cameras.length, cameras);
-      setActiveDeviceIndex(0); // Empezar con la primera cámara
-
-      // 2. Resetear estado y abrir modal
-      setCaptureStep(1);
-      setCollectedDescriptors([]);
-      setIsFaceModalOpen(true);
-
-      // 3. Iniciar video (se llamará automáticamente por el useEffect)
-    } catch (err) {
-      console.error("Error enumerating devices:", err);
-      setFaceError("No se pudo obtener la lista de cámaras.");
-    }
+    setVideoDevices([]); // Limpiar la lista de dispositivos para forzar la re-detección
+    setActiveDeviceIndex(0);
+    setCaptureStep(1);
+    setCollectedDescriptors([]);
+    setIsFaceModalOpen(true); // Esto disparará el useEffect para iniciar el video
   };
 
   const handleCloseFaceModal = () => {

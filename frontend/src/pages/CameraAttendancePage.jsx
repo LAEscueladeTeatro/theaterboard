@@ -15,6 +15,8 @@ const CameraAttendancePage = () => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const navigate = useNavigate();
+  const [videoDevices, setVideoDevices] = useState([]);
+  const [activeDeviceIndex, setActiveDeviceIndex] = useState(0);
   const getToken = useCallback(() => localStorage.getItem('teacherToken'), []);
 
 
@@ -78,38 +80,52 @@ const CameraAttendancePage = () => {
     }
   }, [labeledDescriptors]);
 
+  const handleCameraChange = () => {
+    setActiveDeviceIndex(prevIndex => (prevIndex + 1) % videoDevices.length);
+  };
+
+  const startCamera = useCallback(async () => {
+    if (!iaModelsLoaded) return;
+
+    if (videoRef.current && videoRef.current.srcObject) {
+      videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+    }
+
+    let constraints = { video: true };
+    if (videoDevices.length > 0) {
+      constraints.video = { deviceId: videoDevices[activeDeviceIndex].deviceId };
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+      if (videoDevices.length === 0) {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const cameras = devices.filter(device => device.kind === 'videoinput');
+        setVideoDevices(cameras);
+      }
+    } catch (err) {
+      let errorMessage = 'Ocurrió un error al acceder a la cámara.';
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        errorMessage = 'Permiso para acceder a la cámara denegado. Por favor, habilita el acceso en tu navegador.';
+      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+        errorMessage = 'No se encontró ninguna cámara web en tu dispositivo.';
+      }
+      setError(errorMessage);
+      setLoading(false);
+    }
+  }, [iaModelsLoaded, videoDevices, activeDeviceIndex]);
+
   useEffect(() => {
-    const videoElement = videoRef.current;
-
-    const startCamera = async () => {
-      if (!iaModelsLoaded) return;
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        if (videoElement) {
-          videoElement.srcObject = stream;
-        }
-      } catch (err) {
-        let errorMessage = 'Ocurrió un error al acceder a la cámara.';
-        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-          errorMessage = 'Permiso para acceder a la cámara denegado. Por favor, habilita el acceso en la configuración de tu navegador.';
-        } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-          errorMessage = 'No se encontró ninguna cámara web en tu dispositivo.';
-        }
-        setError(errorMessage);
-        setLoading(false);
-      }
-    };
-
     startCamera();
-
     return () => {
-      if (videoElement && videoElement.srcObject) {
-        const stream = videoElement.srcObject;
-        const tracks = stream.getTracks();
-        tracks.forEach(track => track.stop());
+      if (videoRef.current && videoRef.current.srcObject) {
+        videoRef.current.srcObject.getTracks().forEach(track => track.stop());
       }
     };
-  }, [iaModelsLoaded]);
+  }, [startCamera, activeDeviceIndex]);
 
   const intervalRef = useRef(null);
 
@@ -247,6 +263,11 @@ const CameraAttendancePage = () => {
       <div style={{ position: 'relative', width: 'clamp(300px, 80vw, 640px)', margin: '20px auto', border: '2px solid #333', borderRadius: '8px', overflow: 'hidden' }}>
         {(loading || !iaModelsLoaded || !faceMatcher) && <div style={{ padding: '20px' }}>{getLoadingMessage()}</div>}
         {error && <div style={{ color: 'red', padding: '20px' }}>{error}</div>}
+        {videoDevices.length > 1 && (
+          <button onClick={handleCameraChange} className="btn-action btn-secondary" style={{position: 'absolute', top: '10px', right: '10px', zIndex: 10}}>
+            Cambiar Cámara 🔄
+          </button>
+        )}
         <video
           ref={videoRef}
           autoPlay
