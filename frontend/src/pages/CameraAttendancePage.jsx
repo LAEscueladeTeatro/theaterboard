@@ -173,9 +173,19 @@ const CameraAttendancePage = () => {
     } catch (error) {
       // 3. Log para ver el error exacto si la petición falla
       console.error('ERROR DETALLADO al guardar asistencia:', error.response);
-
       console.error(`Error marcando asistencia para ${studentId}:`, error);
-      toast.error(`Error al marcar a ${studentName}`);
+
+      // Manejo de error específico para 409 Conflict
+      if (error.response && error.response.status === 409) {
+        toast.info(error.response.data.message || `Asistencia para ${studentName} ya fue registrada.`, {
+          duration: 3000,
+          icon: 'ℹ️',
+        });
+      } else {
+        // Manejo de error genérico para otros problemas
+        toast.error(`Error al marcar a ${studentName}`);
+      }
+
       // Si falla, quitarlo de la lista para permitir reintentos
       setRecentlyMarkedIds(prev => {
         const newSet = new Set(prev);
