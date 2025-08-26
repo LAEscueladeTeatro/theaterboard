@@ -127,6 +127,32 @@ router.put('/password', authMiddleware, async (req, res) => {
   }
 });
 
+// @route   GET /api/teachers/all-face-descriptors
+// @desc    Get all face descriptors for active students for face recognition
+// @access  Private (Teacher)
+router.get('/all-face-descriptors', authMiddleware, async (req, res) => {
+  if (req.user.role !== 'teacher') {
+    return res.status(403).json({ message: 'Acceso denegado. Solo para docentes.' });
+  }
+
+  try {
+    const result = await pool.query(
+      `SELECT id, full_name, face_descriptor
+       FROM students
+       WHERE face_descriptor IS NOT NULL AND is_active = TRUE`
+    );
+
+    const labeledFaceDescriptors = result.rows.map(student => ({
+      label: `${student.full_name} (${student.id})`, // Combine name and ID for a unique label
+      descriptor: student.face_descriptor
+    }));
+
+    res.json(labeledFaceDescriptors);
+  } catch (err) {
+    console.error('Error fetching all face descriptors:', err);
+    res.status(500).json({ message: 'Error interno del servidor al obtener los descriptores faciales.' });
+  }
+});
 
 
 module.exports = router;
