@@ -105,6 +105,8 @@ const StudentProfilePage = () => {
   const [faceSuccess, setFaceSuccess] = useState('');
   const videoRef = React.useRef();
   const canvasRef = React.useRef();
+  const [captureStep, setCaptureStep] = useState('live'); // 'live', 'preview'
+  const [capturedImage, setCapturedImage] = useState(null); // Para guardar la imagen capturada
 
   const initialProfileData = {
     full_name: '', // Display only, not editable by student
@@ -329,30 +331,41 @@ const StudentProfilePage = () => {
       videoRef.current.srcObject.getTracks().forEach(track => track.stop());
     }
   };
-  const handleCaptureAndSaveFace = async () => {
-    if (!videoRef.current) return;
+  const handleRetake = () => {
+    setCapturedImage(null);
+    setCaptureStep('live');
+    setFaceError('');
+    startVideo(); // Reiniciar el video
+  };
+
+  const handleSaveFace = async () => {
+    if (!canvasRef.current) return;
     setIsCapturing(true);
     setFaceError('');
     setFaceSuccess('');
-    const detections = await faceapi.detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions())
+
+    // Usar el canvas (que tiene la imagen de vista previa) para la detección
+    const detections = await faceapi.detectSingleFace(canvasRef.current, new faceapi.TinyFaceDetectorOptions())
       .withFaceLandmarks()
       .withFaceDescriptor();
+
     if (!detections) {
-      setFaceError("No se detectó ningún rostro. Asegúrate de que tu cara esté bien iluminada y centrada.");
+      setFaceError("No se pudo detectar un rostro en la foto capturada. Inténtalo de nuevo.");
       setIsCapturing(false);
+      handleRetake(); // Volver al modo en vivo
       return;
     }
+
     // Enviar el descriptor al backend
     try {
       const token = getToken();
-      // ¡IMPORTANTE! Este es un nuevo endpoint que necesitarás crear en tu backend
       await axios.post(`${STUDENT_API_URL}/register-face`, {
-        descriptor: Array.from(detections.descriptor) // Convertir a array para que sea compatible con JSON
+        descriptor: Array.from(detections.descriptor)
       }, {
         headers: { 'x-auth-token': token }
       });
       setFaceSuccess("¡Rostro registrado exitosamente!");
-      setTimeout(handleCloseFaceModal, 2000); // Cerrar modal tras 2 segundos de éxito
+      setTimeout(handleCloseFaceModal, 2000);
     } catch (err) {
       console.error("Error saving face descriptor:", err);
       setFaceError(err.response?.data?.message || "Error al guardar el rostro en el servidor.");
@@ -360,22 +373,75 @@ const StudentProfilePage = () => {
       setIsCapturing(false);
     }
   };
+
+  const handleCapturePreview = () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    setFaceError('');
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
+
+    // Dibujar la imagen del video en el canvas
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    // Guardar la imagen para mostrarla si es necesario, aunque el canvas ya la tiene
+    setCapturedImage(canvas.toDataURL('image/jpeg'));
+
+    // Pausar el video
+    if (video.srcObject) {
+      video.srcObject.getTracks().forEach(track => track.stop());
+    }
+
+    // Cambiar al paso de vista previa
+    setCaptureStep('preview');
+  };
+
   const renderFaceRegistrationModal = () => {
     if (!isFaceModalOpen) return null;
     return (
       <div className="modal-overlay">
         <div className="modal-content" style={{textAlign: 'center'}}>
-          <h3>Registrar Rostro</h3>
-          <p>Asegúrate de que tu rostro esté bien iluminado y dentro del cuadro.</p>
-          <div style={{ position: 'relative', display: 'inline-block' }}>
-            <video ref={videoRef} autoPlay muted width="480" height="360" style={{ borderRadius: '8px' }}></video>
-            <canvas ref={canvasRef} style={{ position: 'absolute', top: 0, left: 0 }} />
+          <h3>{captureStep === 'live' ? 'Registrar Rostro' : 'Confirmar Foto'}</h3>
+          <p>
+            {captureStep === 'live'
+              ? 'Asegúrate de que tu rostro esté bien iluminado y dentro del cuadro.'
+              : '¿Estás conforme con esta foto?'}
+          </p>
+          <div style={{ position: 'relative', display: 'inline-block', width: '480px', height: '360px' }}>
+            <video
+              ref={videoRef}
+              autoPlay
+              muted
+              width="480"
+              height="360"
+              style={{ borderRadius: '8px', display: captureStep === 'live' ? 'block' : 'none' }}
+            ></video>
+            <canvas
+              ref={canvasRef}
+              width="480"
+              height="360"
+              style={{ borderRadius: '8px', display: captureStep === 'preview' ? 'block' : 'none' }}
+            />
           </div>
+          {faceError && <p style={{...styles.errorMessage, marginTop: '1rem'}}>{faceError}</p>}
+          {faceSuccess && <p style={{...styles.successMessage, marginTop: '1rem'}}>{faceSuccess}</p>}
           <div className="modal-actions">
-            <button onClick={handleCloseFaceModal} className="btn-secondary" disabled={isCapturing}>Cancelar</button>
-            <button onClick={handleCaptureAndSaveFace} className="btn-primary" disabled={isCapturing}>
-              {isCapturing ? <><Spinner size="20px" color="white" /> Capturando...</> : 'Capturar y Guardar Rostro'}
-            </button>
+            {captureStep === 'live' && (
+              <>
+                <button onClick={handleCloseFaceModal} className="btn-secondary" disabled={isCapturing}>Cancelar</button>
+                <button onClick={handleCapturePreview} className="btn-primary" disabled={isCapturing}>
+                  {isCapturing ? <><Spinner size="20px" color="white" /> Capturando...</> : 'Capturar Foto'}
+                </button>
+              </>
+            )}
+            {captureStep === 'preview' && (
+              <>
+                <button onClick={handleRetake} className="btn-secondary" disabled={isCapturing}>Tomar de Nuevo</button>
+                <button onClick={handleSaveFace} className="btn-primary" disabled={isCapturing}>
+                  {isCapturing ? <><Spinner size="20px" color="white" /> Guardando...</> : 'Guardar Rostro'}
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
