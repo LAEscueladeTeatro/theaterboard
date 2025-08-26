@@ -120,11 +120,20 @@ const CameraAttendancePage = () => {
 
   useEffect(() => {
     startCamera();
+
+    // --- AÑADIR ESTA FUNCIÓN DE LIMPIEZA ---
     return () => {
       if (videoRef.current && videoRef.current.srcObject) {
-        videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+        const stream = videoRef.current.srcObject;
+        const tracks = stream.getTracks();
+
+        tracks.forEach(track => {
+          track.stop();
+        });
+        videoRef.current.srcObject = null;
       }
     };
+    // -----------------------------------------
   }, [startCamera, activeDeviceIndex]);
 
   const intervalRef = useRef(null);
