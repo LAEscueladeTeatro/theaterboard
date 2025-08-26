@@ -414,7 +414,7 @@ const StudentProfilePage = () => {
               muted
               width="480"
               height="360"
-              style={{ borderRadius: '8px', display: captureStep === 'live' ? 'block' : 'none' }}
+              style={{ borderRadius: '8px', display: captureStep === 'live' ? 'block' : 'none', transform: 'scaleX(-1)' }}
             ></video>
             <canvas
               ref={canvasRef}
