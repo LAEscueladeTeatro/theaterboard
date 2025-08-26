@@ -282,7 +282,7 @@ const CameraAttendancePage = () => {
           autoPlay
           playsInline
           muted
-          style={{ width: '100%', height: 'auto', display: (loading || error || !iaModelsLoaded || !faceMatcher) ? 'none' : 'block', verticalAlign: 'middle', transform:. isFrontCamera ? 'scaleX(-1)' : 'none' }}
+          style={{ width: '100%', height: 'auto', display: (loading || error || !iaModelsLoaded || !faceMatcher) ? 'none' : 'block', verticalAlign: 'middle', transform: isFrontCamera ? 'scaleX(-1)' : 'none' }}
           onCanPlay={() => setLoading(false)}
         />
         <canvas ref={canvasRef} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }} />
