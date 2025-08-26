@@ -155,8 +155,6 @@ const CameraAttendancePage = () => {
       const token = getToken();
       const payload = {
         student_id: studentId,
-        attendance_date: new Date().toISOString().slice(0, 10), // YYYY-MM-DD
-        status: 'PUNTUAL',
         notes: 'Marcado por reconocimiento facial'
       };
 

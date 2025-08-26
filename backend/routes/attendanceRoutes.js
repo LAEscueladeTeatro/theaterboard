@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/db');
 const authMiddleware = require('../middleware/authMiddleware');
+const { DateTime } = require('luxon');
 
 // Constantes para los puntos (para mantener la consistencia)
 const POINTS = {
@@ -27,28 +28,35 @@ const STATUS = {
 
 /**
  * @route   POST /api/attendance/record
- * @desc    Registrar la asistencia de un estudiante (puntual, a tiempo, tardanza)
+ * @desc    Registrar la asistencia de un estudiante. La fecha y el estado se determinan en el servidor.
  * @access  Private (Teacher)
  */
 router.post('/record', authMiddleware, async (req, res) => {
-  const { student_id, attendance_date, status, notes } = req.body; // attendance_date en formato 'YYYY-MM-DD'
+  const { student_id, notes } = req.body;
 
   // Validación básica de entrada
-  if (!student_id || !attendance_date || !status) {
-    return res.status(400).json({ message: 'student_id, attendance_date y status son requeridos.' });
+  if (!student_id) {
+    return res.status(400).json({ message: 'student_id es requerido.' });
   }
 
-  if (!Object.values(STATUS).includes(status)) {
-    return res.status(400).json({ message: 'Valor de status no válido.' });
-  }
+  // --- Lógica de Hora y Estado movida al Backend ---
+  const nowInPeru = DateTime.now().setZone('America/Lima');
+  const attendance_date = nowInPeru.toISODate(); // Formato YYYY-MM-DD
+  const hourInPeru = nowInPeru.hour;
+  const minuteInPeru = nowInPeru.minute;
 
-  // No permitir registrar AUSENCIA directamente aquí, se maneja en /close
-  if (status === STATUS.AUSENCIA_JUSTIFICADA || status === STATUS.AUSENCIA_INJUSTIFICADA) {
-    return res.status(400).json({ message: 'Las ausencias se registran a través del endpoint de cierre de asistencia.' });
+  let status;
+  if (hourInPeru < 17) { // Antes de las 5 PM
+    status = STATUS.PUNTUAL;
+  } else if (hourInPeru === 17 && minuteInPeru <= 15) { // Entre 5:00 PM y 5:15 PM
+    status = STATUS.A_TIEMPO;
+  } else { // Después de las 5:15 PM
+    status = STATUS.TARDANZA_INJUSTIFICADA;
   }
+  // --- Fin de la lógica de Hora y Estado ---
 
   let points_earned = 0;
-  let base_attendance_points = POINTS.BASE_ASISTENCIA; // Por defecto, si asiste, gana +2
+  let base_attendance_points = POINTS.BASE_ASISTENCIA; // Gana +2 por asistir
 
   switch (status) {
     case STATUS.PUNTUAL:
@@ -57,25 +65,17 @@ router.post('/record', authMiddleware, async (req, res) => {
     case STATUS.A_TIEMPO:
       points_earned = POINTS.A_TIEMPO;
       break;
-    case STATUS.TARDANZA_JUSTIFICADA:
-      points_earned = POINTS.TARDANZA_JUSTIFICADA;
-      break;
-    case STATUS.TARDANZA_INJUSTIFICADA:
+    case STATUS.TARDANZA_INJUSTIFICADA: // Solo este caso es posible desde la cámara
       points_earned = POINTS.TARDANZA_INJUSTIFICADA;
       break;
     default:
-      // Esto no debería ocurrir si la validación de status es correcta
-      return res.status(400).json({ message: 'Status de asistencia no reconocido para cálculo de puntos.' });
+       // Otros estados como TARDANZA_JUSTIFICADA solo se pueden poner manualmente
+       return res.status(500).json({ message: 'Error de lógica interna: estado de asistencia no manejado.' });
   }
 
   try {
     const client = await pool.connect();
     try {
-      // Verificar si ya existe un registro para este estudiante en esta fecha
-      // La constraint unique_student_attendance_per_day manejará esto, pero es bueno verificarlo programáticamente también
-      // para dar un mensaje más amigable o permitir la actualización (UPSERT).
-      // Por ahora, usaremos INSERT ... ON CONFLICT para actualizar si ya existe.
-
       const query = `
         INSERT INTO attendance_records (student_id, attendance_date, status, points_earned, base_attendance_points, notes)
         VALUES ($1, $2, $3, $4, $5, $6)
