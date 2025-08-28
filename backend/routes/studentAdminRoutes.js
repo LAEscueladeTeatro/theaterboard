@@ -266,7 +266,7 @@ router.post('/:studentId/register-face', async (req, res) => {
     const descriptorsJson = JSON.stringify(descriptors);
 
     const updateResult = await pool.query(
-      'UPDATE students SET face_descriptors = $1 WHERE id = $2 RETURNING id',
+      'UPDATE students SET face_descriptor = $1 WHERE id = $2 RETURNING id',
       [descriptorsJson, studentId]
     );
 
