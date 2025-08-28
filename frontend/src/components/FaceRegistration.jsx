@@ -40,48 +40,77 @@ const FaceRegistration = ({ studentId, userType = 'student', onClose, isOpen }) 
     loadModels();
   }, []);
 
+  // Effect to initialize and get devices ONCE when modal opens
   useEffect(() => {
-    const startVideo = async () => {
-      if (videoRef.current && videoRef.current.srcObject) {
-        videoRef.current.srcObject.getTracks().forEach(track => track.stop());
-      }
-
-      try {
-        await navigator.mediaDevices.getUserMedia({ video: true }); // Request permission
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const cameras = devices.filter(device => device.kind === 'videoinput');
-        setVideoDevices(cameras);
-
-        if (cameras.length > 0) {
-          const deviceId = cameras[activeDeviceIndex]?.deviceId;
-          const constraints = { video: { deviceId: deviceId ? { exact: deviceId } : undefined } };
-          const stream = await navigator.mediaDevices.getUserMedia(constraints);
-          if (videoRef.current) {
-            videoRef.current.srcObject = stream;
-          }
-        } else {
-          setError("No se encontraron cámaras.");
-        }
-      } catch (err) {
-        console.error("Error accessing camera:", err);
-        setError("No se pudo acceder a la cámara. Revisa los permisos en tu navegador.");
-      }
-    };
-
     if (isOpen) {
+      // Reset state
       setError('');
       setSuccess('');
       setCaptureStep(1);
       setCollectedDescriptors([]);
-      startVideo();
+      setActiveDeviceIndex(0); // Reset index
+
+      const getDevices = async () => {
+        try {
+          // Get permission and initial stream to populate device list with labels
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const cameras = devices.filter(device => device.kind === 'videoinput');
+          setVideoDevices(cameras);
+          // Stop the temporary stream, the next effect will handle the main one
+          stream.getTracks().forEach(track => track.stop());
+        } catch (err) {
+          console.error("Error initializing camera:", err);
+          setError("No se pudo acceder a la cámara. Revisa los permisos.");
+        }
+      };
+      getDevices();
+    } else {
+      // When modal closes, clear the device list
+      setVideoDevices([]);
+    }
+  }, [isOpen]); // Only depends on isOpen
+
+  // Effect to manage the video stream when devices are found or index changes
+  useEffect(() => {
+    // Only run if modal is open and we have devices
+    if (isOpen && videoDevices.length > 0) {
+      const startStream = async () => {
+        // Clean up previous stream before starting a new one
+        if (videoRef.current && videoRef.current.srcObject) {
+          videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+        }
+
+        const deviceId = videoDevices[activeDeviceIndex]?.deviceId;
+        if (!deviceId) {
+          setError("No se pudo encontrar el dispositivo de cámara seleccionado.");
+          return;
+        }
+
+        const constraints = {
+          video: { deviceId: { exact: deviceId } }
+        };
+
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia(constraints);
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+          }
+        } catch (err) {
+          console.error(`Error starting camera ${deviceId}:`, err);
+          setError("No se pudo iniciar la cámara seleccionada.");
+        }
+      };
+      startStream();
     }
 
+    // Cleanup function for when the component unmounts or deps change
     return () => {
       if (videoRef.current && videoRef.current.srcObject) {
         videoRef.current.srcObject.getTracks().forEach(track => track.stop());
       }
     };
-  }, [isOpen, activeDeviceIndex]);
+  }, [isOpen, videoDevices, activeDeviceIndex]);
 
   const handleCameraChange = () => {
     setActiveDeviceIndex(prevIndex => (prevIndex + 1) % videoDevices.length);
