@@ -2,10 +2,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { API_BASE_URL } from '../config'; // Corregir la ruta de importación
+import FaceRegistration from '../components/FaceRegistration'; // Importar el nuevo componente
 
 // Iconos
 const EditIcon = () => <svg className="icon" viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path d="M5.433 13.917l1.262-3.155A4 4 0 017.58 9.42l6.92-6.918a2.121 2.121 0 013 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 01-.65-.65z" /><path d="M3.5 5.75c0-.69.56-1.25 1.25-1.25H10A.75.75 0 0010 3H4.75A2.75 2.75 0 002 5.75v9.5A2.75 2.75 0 004.75 18h9.5A2.75 2.75 0 0017 15.25V10a.75.75 0 00-1.5 0v5.25c0 .69-.56 1.25-1.25 1.25h-9.5c-.69 0-1.25-.56-1.25-1.25v-9.5z" /></svg>;
 const SaveIcon = () => <svg className="icon" viewBox="0 0 20 20" fill="currentColor" width="16" height="16" style={{verticalAlign: 'middle', marginRight: '0.5em'}}><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.25a.75.75 0 00-1.5 0v2.5h-2.5a.75.75 0 000 1.5h2.5v2.5a.75.75 0 001.5 0v-2.5h2.5a.75.75 0 000-1.5h-2.5v-2.5z" clipRule="evenodd" /></svg>;
+const FaceIcon = () => <svg className="icon" viewBox="0 0 20 20" fill="currentColor" width="16" height="16" style={{ verticalAlign: 'middle', marginRight: '0.5em' }}><path d="M10 9a3 3 0 100-6 3 3 0 000 6z" /><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM4.056 13.878a6 6 0 118.944 0A8.002 8.002 0 0010 16a8.002 8.002 0 00-5.944-2.122z" clipRule="evenodd" /></svg>;
+
 
 // Definir la constante API_URL_BASE_FOR_STUDENTS fuera del componente, usando la importación.
 const API_URL_BASE_FOR_STUDENTS = `${API_BASE_URL}/admin/students`;
@@ -20,6 +23,10 @@ const TeacherDatabasePage = () => {
   const [showEditFullModal, setShowEditFullModal] = useState(false);
   const [currentStudentToEdit, setCurrentStudentToEdit] = useState(null);
   const [editFormData, setEditFormData] = useState({});
+
+  const [showFaceRegistrationModal, setShowFaceRegistrationModal] = useState(false);
+  const [studentForFaceRegistration, setStudentForFaceRegistration] = useState(null);
+
 
   // Corrección: La importación dinámica no es ideal dentro del cuerpo del componente para una constante.
   // Se asume que config.js exporta API_BASE_URL directamente.
@@ -77,6 +84,16 @@ const TeacherDatabasePage = () => {
   };
 
   const handleCloseEditFullModal = () => { setShowEditFullModal(false); setCurrentStudentToEdit(null); setEditFormData({}); };
+
+  const handleOpenFaceRegistrationModal = (student) => {
+    setStudentForFaceRegistration(student);
+    setShowFaceRegistrationModal(true);
+  };
+
+  const handleCloseFaceRegistrationModal = () => {
+    setShowFaceRegistrationModal(false);
+    setStudentForFaceRegistration(null);
+  };
 
   const handleSubmitEditFull = async (e) => {
     e.preventDefault();
@@ -198,13 +215,29 @@ const TeacherDatabasePage = () => {
                   </label>
                 </div>
               </div>
-              <div className="modal-actions">
-                <button type="button" onClick={handleCloseEditFullModal} className="btn-secondary">Cancelar</button>
-                <button type="submit" className="btn-primary"><SaveIcon /> Guardar Cambios</button>
+              <div className="modal-actions" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', marginTop: '1.5rem' }}>
+                <div>
+                  <button type="button" onClick={() => handleOpenFaceRegistrationModal(currentStudentToEdit)} className="btn-action">
+                    <FaceIcon /> Registrar Rostro
+                  </button>
+                </div>
+                <div style={{ display: 'flex', gap: '1rem' }}>
+                  <button type="button" onClick={handleCloseEditFullModal} className="btn-secondary">Cancelar</button>
+                  <button type="submit" className="btn-primary"><SaveIcon /> Guardar Cambios</button>
+                </div>
               </div>
             </form>
           </div>
         </div>
+      )}
+
+      {showFaceRegistrationModal && studentForFaceRegistration && (
+        <FaceRegistration
+          studentId={studentForFaceRegistration.id}
+          userType="teacher"
+          isOpen={showFaceRegistrationModal}
+          onClose={handleCloseFaceRegistrationModal}
+        />
       )}
     </div>
   );

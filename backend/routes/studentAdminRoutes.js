@@ -248,4 +248,38 @@ router.put('/:studentId/edit-full', async (req, res) => {
 });
 
 
+/**
+ * @route   POST /api/admin/students/:studentId/register-face
+ * @desc    Registrar o actualizar los descriptores faciales de un estudiante
+ * @access  Private (Teacher)
+ */
+router.post('/:studentId/register-face', async (req, res) => {
+  const { studentId } = req.params;
+  const { descriptors } = req.body;
+
+  if (!descriptors || !Array.isArray(descriptors) || descriptors.length === 0) {
+    return res.status(400).json({ message: 'Se requiere un array de descriptores faciales.' });
+  }
+
+  try {
+    // Convertir el array de arrays a un formato JSON string para guardarlo en la BD.
+    const descriptorsJson = JSON.stringify(descriptors);
+
+    const updateResult = await pool.query(
+      'UPDATE students SET face_descriptors = $1 WHERE id = $2 RETURNING id',
+      [descriptorsJson, studentId]
+    );
+
+    if (updateResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Estudiante no encontrado.' });
+    }
+
+    res.json({ message: 'Registro facial completado exitosamente.' });
+  } catch (err) {
+    console.error('Error saving face descriptors for student by admin:', err);
+    res.status(500).json({ message: 'Error interno del servidor al guardar el registro facial.' });
+  }
+});
+
+
 module.exports = router;
