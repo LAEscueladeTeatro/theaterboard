@@ -4,7 +4,7 @@ import axios from 'axios';
 import { API_BASE_URL } from "../config"; // Importar config
 import Spinner from '../components/Spinner'; // Importar Spinner
 import PasswordInput from '../components/PasswordInput';
-import * as faceapi from 'face-api.js';
+import FaceRegistration from '../components/FaceRegistration';
 
 // Re-using styles from TeacherProfilePage for consistency, or define separately
 const styles = {
@@ -100,18 +100,9 @@ const StudentProfilePage = () => {
   const getToken = useCallback(() => localStorage.getItem('studentToken'), []);
 
   const [isFaceModalOpen, setIsFaceModalOpen] = useState(false);
-  const [faceApiLoaded, setFaceApiLoaded] = useState(false);
-  const [isCapturing, setIsCapturing] = useState(false);
-  const [faceError, setFaceError] = useState('');
-  const [faceSuccess, setFaceSuccess] = useState('');
-  const videoRef = React.useRef();
-  const canvasRef = React.useRef();
-  const [captureStep, setCaptureStep] = useState(0); // 0: inactivo, 1: frente, 2: izq, 3: der, 4: preview
-  const [collectedDescriptors, setCollectedDescriptors] = useState([]);
-  const [videoDevices, setVideoDevices] = useState([]);
-  const [activeDeviceIndex, setActiveDeviceIndex] = useState(0);
 
   const initialProfileData = {
+    id: '', // Make sure to have id for the face registration component
     full_name: '', // Display only, not editable by student
     nickname: '',
     email: '',
@@ -290,254 +281,6 @@ const StudentProfilePage = () => {
 
   const profileHasChanged = JSON.stringify(profile) !== JSON.stringify(initialFetchedProfile);
 
-  // ===== LÓGICA PARA REGISTRO FACIAL =====
-  // Cargar los modelos de face-api.js
-  useEffect(() => {
-    const loadModels = async () => {
-      const MODEL_URL = '/models'; // Asume que los modelos están en public/models
-      try {
-        await Promise.all([
-          faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-          faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-          faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
-        ]);
-        setFaceApiLoaded(true);
-      } catch (error) {
-        console.error("Error loading face-api models", error);
-        setFaceError("No se pudieron cargar las herramientas de IA. Inténtalo de nuevo.");
-      }
-    };
-    loadModels();
-  }, []);
-  const startVideo = useCallback(async () => {
-    // Detener cualquier stream de video previo
-    if (videoRef.current && videoRef.current.srcObject) {
-      videoRef.current.srcObject.getTracks().forEach(track => track.stop());
-    }
-
-    // Determinar las constraints
-    let constraints = { video: true }; // Pedir permiso genérico primero
-    if (videoDevices.length > 0) {
-      // Si ya tenemos una lista, usamos la cámara específica
-      constraints.video = { deviceId: videoDevices[activeDeviceIndex].deviceId };
-    }
-
-    try {
-      // 1. Pedir permiso y obtener stream
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
-
-      // 2. Si es la primera vez (no teníamos lista de devices), la obtenemos ahora
-      if (videoDevices.length === 0) {
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const cameras = devices.filter(device => device.kind === 'videoinput');
-        console.log('Cámaras detectadas:', cameras.length, cameras);
-        setVideoDevices(cameras);
-      }
-    } catch (err) {
-      console.error("Error accessing camera:", err);
-      setFaceError("No se pudo acceder a la cámara. Revisa los permisos en tu navegador.");
-    }
-  }, [videoDevices, activeDeviceIndex]);
-
-  useEffect(() => {
-    if (isFaceModalOpen) {
-      startVideo();
-    }
-    // Cleanup: se ejecuta cuando el modal se cierra o el índice de cámara cambia
-    return () => {
-      if (videoRef.current && videoRef.current.srcObject) {
-        videoRef.current.srcObject.getTracks().forEach(track => track.stop());
-      }
-    };
-  }, [isFaceModalOpen, activeDeviceIndex, startVideo]);
-
-
-  const handleOpenFaceModal = () => {
-    if (!faceApiLoaded) return;
-    // Resetear todo al abrir
-    setFaceError('');
-    setFaceSuccess('');
-    setVideoDevices([]); // Limpiar la lista de dispositivos para forzar la re-detección
-    setActiveDeviceIndex(0);
-    setCaptureStep(1);
-    setCollectedDescriptors([]);
-    setIsFaceModalOpen(true); // Esto disparará el useEffect para iniciar el video
-  };
-
-  const handleCloseFaceModal = () => {
-    setIsFaceModalOpen(false);
-    setCaptureStep(0); // Resetear
-    setCollectedDescriptors([]);
-    // The useEffect cleanup will handle stopping the video stream
-  };
-
-  const handleCameraChange = () => {
-    setActiveDeviceIndex(prevIndex => (prevIndex + 1) % videoDevices.length);
-  };
-
-  const handleRestartCapture = () => {
-    setCollectedDescriptors([]);
-    setCaptureStep(1);
-    setFaceError('');
-    setFaceSuccess('');
-    startVideo();
-  };
-
-  const handleCapture = async () => {
-    if (!videoRef.current) return;
-    setIsCapturing(true);
-    setFaceError('');
-
-    const detections = await faceapi.detectSingleFace(videoRef.current, new faceapi.TinyFaceDetectorOptions())
-      .withFaceLandmarks()
-      .withFaceDescriptor();
-
-    if (!detections) {
-      setFaceError("No se detectó rostro. Inténtalo de nuevo.");
-      setIsCapturing(false);
-      return;
-    }
-
-    const newDescriptors = [...collectedDescriptors, Array.from(detections.descriptor)];
-    setCollectedDescriptors(newDescriptors);
-
-    if (captureStep < 3) {
-      setCaptureStep(captureStep + 1);
-    } else {
-      // Última captura, ir a la vista previa final
-      if (videoRef.current && videoRef.current.srcObject) {
-        videoRef.current.srcObject.getTracks().forEach(track => track.stop());
-      }
-      setCaptureStep(4); // Paso de confirmación/preview
-    }
-    setIsCapturing(false);
-  };
-
-  const handleSaveFace = async () => {
-    if (collectedDescriptors.length < 3) {
-      setFaceError("No se han completado las 3 capturas necesarias.");
-      return;
-    }
-    setIsCapturing(true);
-    setFaceError('');
-    setFaceSuccess('');
-
-    try {
-      const token = getToken();
-      await axios.post(`${STUDENT_API_URL}/register-face`, {
-        descriptors: collectedDescriptors // Enviar el array de descriptores
-      }, {
-        headers: { 'x-auth-token': token }
-      });
-      setFaceSuccess("¡Rostros registrados exitosamente!");
-      setTimeout(handleCloseFaceModal, 2000);
-    } catch (err) {
-      console.error("Error saving face descriptors:", err);
-      setFaceError(err.response?.data?.message || "Error al guardar los rostros en el servidor.");
-    } finally {
-      setIsCapturing(false);
-    }
-  };
-
-  const renderFaceRegistrationModal = () => {
-    if (!isFaceModalOpen) return null;
-
-    const instructions = {
-      1: "Paso 1 de 3: Mira directamente a la cámara.",
-      2: "Paso 2 de 3: Gira tu rostro ligeramente a la izquierda.",
-      3: "Paso 3 de 3: Gira tu rostro ligeramente a la derecha.",
-      4: "¡Capturas completadas! Revisa y guarda."
-    };
-
-    const guideImages = {
-      1: '/assets/guide-front.png',
-      2: '/assets/guide-left.png',
-      3: '/assets/guide-right.png',
-    };
-
-    const isFrontCamera = videoDevices[activeDeviceIndex]?.label.toLowerCase().includes('front');
-
-    return (
-      <div className="modal-overlay">
-        <div className="modal-content" style={{textAlign: 'center', width: '90%', maxWidth: '500px'}}>
-          <h3>{instructions[captureStep]}</h3>
-          <p>Asegúrate de que tu rostro esté bien iluminado y centrado.</p>
-          <div style={{ position: 'relative', width: '100%', paddingTop: '75%', backgroundColor: '#111', borderRadius: '8px', overflow: 'hidden' }}>
-            <video
-              ref={videoRef}
-              autoPlay
-              muted
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                borderRadius: '8px',
-                transform: isFrontCamera ? 'scaleX(-1)' : 'none',
-                display: captureStep <= 3 ? 'block' : 'none'
-              }}
-            ></video>
-            {captureStep <= 3 && (
-              <img
-                src={guideImages[captureStep]}
-                alt="Guía Facial"
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  height: '100%',
-                  opacity: 0.6,
-                  objectFit: 'contain',
-                  pointerEvents: 'none'
-                }}
-              />
-            )}
-             {captureStep > 3 && <div style={{width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white'}}>Video pausado.</div>}
-          </div>
-          <div style={{marginTop: '1rem', minHeight: '2.5rem'}}>
-            {faceError && <p style={styles.errorMessage}>{faceError}</p>}
-            {faceSuccess && <p style={styles.successMessage}>{faceSuccess}</p>}
-            {captureStep <= 3 && <p>Capturas realizadas: {collectedDescriptors.length} de 3</p>}
-          </div>
-
-          {videoDevices.length > 1 && captureStep <= 3 && (
-            <div style={{ margin: '1rem 0' }}>
-              <button onClick={handleCameraChange} className="btn-secondary">
-                Cambiar Cámara 🔄
-              </button>
-            </div>
-          )}
-
-          <div className="modal-actions" style={{display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap'}}>
-            {captureStep <= 3 && (
-              <>
-                <button onClick={handleCloseFaceModal} className="btn-secondary" disabled={isCapturing}>Cancelar</button>
-                <button onClick={handleCapture} className="btn-primary" disabled={isCapturing}>
-                  {isCapturing ? <><Spinner size="20px" color="white" /> Capturando...</> : `Capturar Foto ${captureStep}`}
-                </button>
-              </>
-            )}
-            {captureStep > 3 && (
-              <>
-                <button onClick={handleRestartCapture} className="btn-secondary" disabled={isCapturing}>Empezar de Nuevo</button>
-                <button onClick={handleSaveFace} className="btn-primary" disabled={isCapturing}>
-                  {isCapturing ? <><Spinner size="20px" color="white" /> Guardando...</> : 'Guardar Registros'}
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
-  // ===== FIN DE LA LÓGICA FACIAL =====
-
   if (loadingProfile && (!initialFetchedProfile || !initialFetchedProfile.id)) {
     return <div style={{...styles.pageContainer, ...styles.loadingContainer}} className="loading-container"><Spinner /></div>;
   }
@@ -702,13 +445,17 @@ const StudentProfilePage = () => {
         <p style={{marginBottom: '1rem', fontSize: '0.9em'}}>
           Este registro permitirá marcar tu asistencia automáticamente usando la cámara.
         </p>
-        {faceError && <p style={styles.errorMessage}>{faceError}</p>}
-        {faceSuccess && <p style={styles.successMessage}>{faceSuccess}</p>}
-        <button type="button" onClick={handleOpenFaceModal} style={styles.button}>
-          {faceApiLoaded ? 'Registrar / Actualizar Rostro' : 'Cargando Herramientas de IA...'}
+        <button type="button" onClick={() => setIsFaceModalOpen(true)} style={styles.button}>
+          Registrar / Actualizar Rostro
         </button>
       </div>
-      {renderFaceRegistrationModal()}
+
+      <FaceRegistration
+        isOpen={isFaceModalOpen}
+        onClose={() => setIsFaceModalOpen(false)}
+        studentId={profile.id}
+        userType="student"
+      />
     </div>
   );
 };
