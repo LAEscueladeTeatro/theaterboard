@@ -40,42 +40,40 @@ const FaceRegistration = ({ studentId, userType = 'student', onClose, isOpen }) 
     loadModels();
   }, []);
 
-  const startVideo = useCallback(async () => {
-    if (videoRef.current && videoRef.current.srcObject) {
-      videoRef.current.srcObject.getTracks().forEach(track => track.stop());
-    }
-
-    let constraints = { video: true };
-    if (videoDevices.length > 0) {
-      constraints.video = { deviceId: videoDevices[activeDeviceIndex].deviceId };
-    }
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
+  useEffect(() => {
+    const startVideo = async () => {
+      if (videoRef.current && videoRef.current.srcObject) {
+        videoRef.current.srcObject.getTracks().forEach(track => track.stop());
       }
-      if (videoDevices.length === 0) {
+
+      try {
+        await navigator.mediaDevices.getUserMedia({ video: true }); // Request permission
         const devices = await navigator.mediaDevices.enumerateDevices();
         const cameras = devices.filter(device => device.kind === 'videoinput');
         setVideoDevices(cameras);
-      }
-    } catch (err) {
-      console.error("Error accessing camera:", err);
-      setError("No se pudo acceder a la cámara. Revisa los permisos en tu navegador.");
-    }
-  }, [videoDevices, activeDeviceIndex]);
 
-  useEffect(() => {
+        if (cameras.length > 0) {
+          const deviceId = cameras[activeDeviceIndex]?.deviceId;
+          const constraints = { video: { deviceId: deviceId ? { exact: deviceId } : undefined } };
+          const stream = await navigator.mediaDevices.getUserMedia(constraints);
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+          }
+        } else {
+          setError("No se encontraron cámaras.");
+        }
+      } catch (err) {
+        console.error("Error accessing camera:", err);
+        setError("No se pudo acceder a la cámara. Revisa los permisos en tu navegador.");
+      }
+    };
+
     if (isOpen) {
-        // Reset state when modal is opened
-        setError('');
-        setSuccess('');
-        setVideoDevices([]);
-        setActiveDeviceIndex(0);
-        setCaptureStep(1);
-        setCollectedDescriptors([]);
-        startVideo();
+      setError('');
+      setSuccess('');
+      setCaptureStep(1);
+      setCollectedDescriptors([]);
+      startVideo();
     }
 
     return () => {
@@ -83,8 +81,7 @@ const FaceRegistration = ({ studentId, userType = 'student', onClose, isOpen }) 
         videoRef.current.srcObject.getTracks().forEach(track => track.stop());
       }
     };
-  }, [isOpen, activeDeviceIndex, startVideo]);
-
+  }, [isOpen, activeDeviceIndex]);
 
   const handleCameraChange = () => {
     setActiveDeviceIndex(prevIndex => (prevIndex + 1) % videoDevices.length);
@@ -95,7 +92,8 @@ const FaceRegistration = ({ studentId, userType = 'student', onClose, isOpen }) 
     setCaptureStep(1);
     setError('');
     setSuccess('');
-    startVideo();
+    // The main useEffect will handle restarting the video when the capture step changes.
+    // No need to call startVideo() directly.
   };
 
   const handleCapture = async () => {
