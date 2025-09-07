@@ -4,13 +4,11 @@ import './App.css';
 
 import TeacherLoginPage from './pages/TeacherLoginPage';
 import TeacherDashboardPage from './pages/TeacherDashboardPage';
-import StudentListPage from './pages/StudentListPage';
-import DisabledStudentListPage from './pages/DisabledStudentListPage';
 import TeacherAttendancePage from './pages/TeacherAttendancePage';
 import TeacherScoresPage from './pages/TeacherScoresPage';
 import TeacherSummaryPage from './pages/TeacherSummaryPage';
 import TeacherRankingPage from './pages/TeacherRankingPage';
-import TeacherDatabasePage from './pages/TeacherDatabasePage';
+import StudentManagementPage from './pages/StudentManagementPage';
 import TeacherHistoricAttendancePage from './pages/TeacherHistoricAttendancePage';
 import TeacherProfilePage from './pages/TeacherProfilePage';
 import StudentLoginPage from './pages/StudentLoginPage';
@@ -109,9 +107,7 @@ function App() {
             <Route path="/docente/login" element={<TeacherLoginPage />} />
             <Route element={<ProtectedRoute tokenType="teacherToken" redirectTo="/docente/login" />}>
               <Route path="/docente/dashboard" element={<TeacherDashboardPage />} />
-              <Route path="/docente/lista-estudiantes" element={<StudentListPage />} />
-              <Route path="/docente/lista-estudiantes/inhabilitados" element={<DisabledStudentListPage />} />
-              <Route path="/docente/database" element={<TeacherDatabasePage />} />
+              <Route path="/docente/estudiantes" element={<StudentManagementPage />} />
               <Route path="/docente/asistencia" element={<TeacherAttendancePage />} />
               <Route path="/docente/asistencia-camara" element={<CameraAttendancePage />} />
               <Route path="/docente/puntuaciones" element={<TeacherScoresPage />} />
