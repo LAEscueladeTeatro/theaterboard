@@ -2,6 +2,9 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import './App.css';
 
+import { GroupProvider } from './context/GroupContext';
+import TeacherLayout from './layouts/TeacherLayout';
+
 import TeacherLoginPage from './pages/TeacherLoginPage';
 import TeacherDashboardPage from './pages/TeacherDashboardPage';
 import TeacherAttendancePage from './pages/TeacherAttendancePage';
@@ -43,80 +46,83 @@ const PencilIcon = () => (
 
 function App() {
   return (
-    <Router>
-      <div>
-        <Toaster
-          position="top-right" // Posición común para toasts
-          toastOptions={{
-            // Opciones globales por defecto para los toasts
-            duration: 5000, // Duración por defecto de 5 segundos
-            success: {
-              duration: 3000, // Éxito un poco más corto
-              iconTheme: {
-                primary: 'var(--color-success)', // Usar variable CSS para el color del icono
-                secondary: 'white',
+    <GroupProvider>
+      <Router>
+        <div>
+          <Toaster
+            position="top-right" // Posición común para toasts
+            toastOptions={{
+              // Opciones globales por defecto para los toasts
+              duration: 5000, // Duración por defecto de 5 segundos
+              success: {
+                duration: 3000, // Éxito un poco más corto
+                iconTheme: {
+                  primary: 'var(--color-success)', // Usar variable CSS para el color del icono
+                  secondary: 'white',
+                },
+                style: {
+                  background: 'rgba(45, 45, 65, 0.95)', // Fondo más opaco
+                  color: 'var(--text-color-main, #E0E0E0)', // Fallback por si la variable no está
+                  border: '1px solid var(--color-success)',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)', // Sombra sutil
+                },
               },
-              style: {
-                background: 'rgba(45, 45, 65, 0.95)', // Fondo más opaco
-                color: 'var(--text-color-main, #E0E0E0)', // Fallback por si la variable no está
-                border: '1px solid var(--color-success)',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)', // Sombra sutil
+              error: {
+                iconTheme: {
+                  primary: 'var(--color-danger)',
+                  secondary: 'white',
+                },
+                style: {
+                  background: 'rgba(45, 45, 65, 0.95)', // Fondo más opaco
+                  color: 'var(--text-color-main, #E0E0E0)', // Fallback
+                  border: '1px solid var(--color-danger)',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)', // Sombra sutil
+                },
               },
-            },
-            error: {
-              iconTheme: {
-                primary: 'var(--color-danger)',
-                secondary: 'white',
-              },
-              style: {
-                background: 'rgba(45, 45, 65, 0.95)', // Fondo más opaco
-                color: 'var(--text-color-main, #E0E0E0)', // Fallback
-                border: '1px solid var(--color-danger)',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)', // Sombra sutil
-              },
-            },
-          }}
-        />
-        <header>
-          <nav>
-            <Link to="/">Home</Link> | {' '}
-            <Link to="/docente/login">Login Docente</Link> | {' '}
-            <Link to="/estudiante/login">Login Estudiante</Link> | {' '}
-            <Link to="/registro">Regístrate Aquí</Link>
-          </nav>
-          <h1 className="app-title-header">TheaterBoard</h1>
-        </header>
+            }}
+          />
+          <header>
+            <nav>
+              <Link to="/">Home</Link> | {' '}
+              <Link to="/docente/login">Login Docente</Link> | {' '}
+              <Link to="/estudiante/login">Login Estudiante</Link> | {' '}
+              <Link to="/registro">Regístrate Aquí</Link>
+            </nav>
+            <h1 className="app-title-header">TheaterBoard</h1>
+          </header>
 
-        <main>
-          <Routes>
-            <Route path="/" element={
-              <div className="home-container">
-                <h2 className="home-title">TheaterBoard 2025</h2>
-                <Link to="/docente/login" className="btn-action btn-teacher">
-                  <AcademicCapIcon />Acceder como Docente
-                </Link>
-                <Link to="/estudiante/login" className="btn-action btn-student">
-                  <UserIcon />Acceder como Estudiante
-                </Link>
-                <Link to="/registro" className="btn-action btn-register">
-                  <PencilIcon />Regístrate Aquí
-                </Link>
-              </div>
-            } />
-            <Route path="/registro" element={<PublicRegistrationPage />} />
-            <Route path="/docente/login" element={<TeacherLoginPage />} />
-            <Route element={<ProtectedRoute tokenType="teacherToken" redirectTo="/docente/login" />}>
-              <Route path="/docente/dashboard" element={<TeacherDashboardPage />} />
-              <Route path="/docente/estudiantes" element={<StudentManagementPage />} />
-              <Route path="/docente/asistencia" element={<TeacherAttendancePage />} />
-              <Route path="/docente/asistencia-camara" element={<CameraAttendancePage />} />
-              <Route path="/docente/puntuaciones" element={<TeacherScoresPage />} />
-              <Route path="/docente/resumen" element={<TeacherSummaryPage />} />
-              <Route path="/docente/ranking" element={<TeacherRankingPage />} />
-              <Route path="/docente/ingreso-historico" element={<TeacherHistoricAttendancePage />} />
-              <Route path="/docente/mi-perfil" element={<TeacherProfilePage />} />
-            </Route>
-            <Route path="/estudiante/login" element={<StudentLoginPage />} />
+          <main>
+            <Routes>
+              <Route path="/" element={
+                <div className="home-container">
+                  <h2 className="home-title">TheaterBoard 2025</h2>
+                  <Link to="/docente/login" className="btn-action btn-teacher">
+                    <AcademicCapIcon />Acceder como Docente
+                  </Link>
+                  <Link to="/estudiante/login" className="btn-action btn-student">
+                    <UserIcon />Acceder como Estudiante
+                  </Link>
+                  <Link to="/registro" className="btn-action btn-register">
+                    <PencilIcon />Regístrate Aquí
+                  </Link>
+                </div>
+              } />
+              <Route path="/registro" element={<PublicRegistrationPage />} />
+              <Route path="/docente/login" element={<TeacherLoginPage />} />
+              <Route element={<ProtectedRoute tokenType="teacherToken" redirectTo="/docente/login" />}>
+                <Route element={<TeacherLayout />}>
+                  <Route path="/docente/dashboard" element={<TeacherDashboardPage />} />
+                  <Route path="/docente/estudiantes" element={<StudentManagementPage />} />
+                  <Route path="/docente/asistencia" element={<TeacherAttendancePage />} />
+                  <Route path="/docente/asistencia-camara" element={<CameraAttendancePage />} />
+                  <Route path="/docente/puntuaciones" element={<TeacherScoresPage />} />
+                  <Route path="/docente/resumen" element={<TeacherSummaryPage />} />
+                  <Route path="/docente/ranking" element={<TeacherRankingPage />} />
+                  <Route path="/docente/ingreso-historico" element={<TeacherHistoricAttendancePage />} />
+                  <Route path="/docente/mi-perfil" element={<TeacherProfilePage />} />
+                </Route>
+              </Route>
+              <Route path="/estudiante/login" element={<StudentLoginPage />} />
             <Route element={<ProtectedRoute tokenType="studentToken" redirectTo="/estudiante/login" />}>
               <Route path="/estudiante/dashboard" element={<StudentDashboardPage />} />
               <Route path="/estudiante/mis-puntajes" element={<StudentScoresDetailPage />} />
@@ -136,6 +142,7 @@ function App() {
         <WhatsAppButton />
       </div>
     </Router>
+  </GroupProvider>
   );
 }
 export default App;
