@@ -2,6 +2,9 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import './App.css';
 
+import GroupProvider from './context/GroupContext';
+import TeacherLayout from './layouts/TeacherLayout';
+
 import TeacherLoginPage from './pages/TeacherLoginPage';
 import TeacherDashboardPage from './pages/TeacherDashboardPage';
 import StudentManagementPage from './pages/StudentManagementPage';
@@ -43,8 +46,9 @@ const PencilIcon = () => (
 
 function App() {
   return (
-    <Router>
-      <div>
+    <GroupProvider>
+      <Router>
+        <div>
         <Toaster
           position="top-right" // Posición común para toasts
           toastOptions={{
@@ -106,15 +110,17 @@ function App() {
             <Route path="/registro" element={<PublicRegistrationPage />} />
             <Route path="/docente/login" element={<TeacherLoginPage />} />
             <Route element={<ProtectedRoute tokenType="teacherToken" redirectTo="/docente/login" />}>
-              <Route path="/docente/dashboard" element={<TeacherDashboardPage />} />
-              <Route path="/docente/estudiantes" element={<StudentManagementPage />} />
-              <Route path="/docente/asistencia" element={<TeacherAttendancePage />} />
-              <Route path="/docente/asistencia-camara" element={<CameraAttendancePage />} />
-              <Route path="/docente/puntuaciones" element={<TeacherScoresPage />} />
-              <Route path="/docente/resumen" element={<TeacherSummaryPage />} />
-              <Route path="/docente/ranking" element={<TeacherRankingPage />} />
-              <Route path="/docente/ingreso-historico" element={<TeacherHistoricAttendancePage />} />
-              <Route path="/docente/mi-perfil" element={<TeacherProfilePage />} />
+              <Route element={<TeacherLayout />}>
+                <Route path="/docente/dashboard" element={<TeacherDashboardPage />} />
+                <Route path="/docente/estudiantes" element={<StudentManagementPage />} />
+                <Route path="/docente/asistencia" element={<TeacherAttendancePage />} />
+                <Route path="/docente/asistencia-camara" element={<CameraAttendancePage />} />
+                <Route path="/docente/puntuaciones" element={<TeacherScoresPage />} />
+                <Route path="/docente/resumen" element={<TeacherSummaryPage />} />
+                <Route path="/docente/ranking" element={<TeacherRankingPage />} />
+                <Route path="/docente/ingreso-historico" element={<TeacherHistoricAttendancePage />} />
+                <Route path="/docente/mi-perfil" element={<TeacherProfilePage />} />
+              </Route>
             </Route>
             <Route path="/estudiante/login" element={<StudentLoginPage />} />
             <Route element={<ProtectedRoute tokenType="studentToken" redirectTo="/estudiante/login" />}>
@@ -136,6 +142,7 @@ function App() {
         <WhatsAppButton />
       </div>
     </Router>
+  </GroupProvider>
   );
 }
 export default App;

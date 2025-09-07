@@ -1,3 +1,17 @@
+-- Tabla para Grupos de Estudiantes
+DROP TABLE IF EXISTS groups CASCADE;
+CREATE TABLE groups (
+    group_id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    schedule_description TEXT
+);
+
+-- Poblar la tabla de grupos
+INSERT INTO groups (name, schedule_description) VALUES
+('Grupo 1', 'Jueves y Viernes - 5:00 PM'),
+('Grupo 2', 'Sábados - 3:00 PM y Martes - 5:00 PM'),
+('Grupo 3', 'Lunes y Miércoles - 5:00 PM');
+
 DROP TABLE IF EXISTS students;
 
 CREATE TABLE students (
@@ -20,7 +34,8 @@ CREATE TABLE students (
     comments TEXT,
     emergency_contact_name TEXT,
     emergency_contact_phone VARCHAR(20),
-    face_descriptor JSONB
+    face_descriptor JSONB,
+    group_id INTEGER REFERENCES groups(group_id) ON DELETE SET NULL
 );
 
 -- Insertar estudiantes con contraseñas HASHEADAS de ejemplo.
