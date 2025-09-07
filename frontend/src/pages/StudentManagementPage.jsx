@@ -2,10 +2,33 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
+import { useGroup } from '../context/GroupContext';
 import FaceRegistration from '../components/FaceRegistration';
 import ConfirmationModal from '../components/ConfirmationModal';
 import Spinner from '../components/Spinner';
 import toast from 'react-hot-toast';
+
+// Simple CSS-in-JS for tabs
+const styles = {
+  tabs: {
+    display: 'flex',
+    borderBottom: '1px solid #ccc',
+    marginBottom: '1rem',
+  },
+  tabButton: {
+    padding: '10px 20px',
+    cursor: 'pointer',
+    border: 'none',
+    background: 'none',
+    borderBottom: '2px solid transparent',
+    marginBottom: '-1px',
+    fontSize: '1rem',
+  },
+  activeTab: {
+    borderBottom: '2px solid var(--primary-color-teacher)',
+    fontWeight: 'bold',
+  }
+};
 
 // Iconos
 const AddIcon = () => <svg className="icon" viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" /></svg>;
@@ -30,12 +53,13 @@ const StudentManagementPage = () => {
   const [showFaceRegistrationModal, setShowFaceRegistrationModal] = useState(false);
 
   // State for modal data
-  const [newStudentData, setNewStudentData] = useState({ full_name: '', nickname: '' });
+  const [newStudentData, setNewStudentData] = useState({ full_name: '', nickname: '', group_id: '' });
   const [currentStudent, setCurrentStudent] = useState(null);
   const [editFormData, setEditFormData] = useState({});
   const [studentForFaceRegistration, setStudentForFaceRegistration] = useState(null);
   const [studentToToggleStatus, setStudentToToggleStatus] = useState(null);
   const [editTab, setEditTab] = useState('basic'); // 'basic' or 'complete'
+  const [groups, setGroups] = useState([]);
 
   // Loading states for actions
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -57,7 +81,22 @@ const StudentManagementPage = () => {
     finally { setLoading(false); }
   }, [getToken, filter]);
 
-  useEffect(() => { fetchStudents(); }, [fetchStudents]);
+  useEffect(() => {
+    fetchStudents();
+    const fetchGroups = async () => {
+      try {
+        const token = getToken();
+        const { data } = await axios.get(`${API_BASE_URL}/groups`, {
+          headers: { 'x-auth-token': token },
+        });
+        setGroups(data);
+      } catch (err) {
+        console.error("Error fetching groups:", err);
+        toast.error("No se pudo cargar la lista de grupos.");
+      }
+    };
+    fetchGroups();
+  }, [fetchStudents, getToken]);
 
   const handleAddQuickStudent = async (e) => {
     e.preventDefault();
@@ -68,11 +107,15 @@ const StudentManagementPage = () => {
     setIsSubmitting(true);
     try {
       const token = getToken();
-      const payload = { full_name: newStudentData.full_name, nickname: newStudentData.nickname };
+      const payload = {
+        full_name: newStudentData.full_name,
+        nickname: newStudentData.nickname,
+        group_id: newStudentData.group_id || null
+      };
       await axios.post(`${API_URL_BASE_FOR_STUDENTS}/add-quick`, payload, { headers: { 'x-auth-token': token }});
       toast.success("Estudiante añadido con éxito.");
       setShowAddModal(false);
-      setNewStudentData({ full_name: '', nickname: '' });
+      setNewStudentData({ full_name: '', nickname: '', group_id: '' });
       fetchStudents(); // Reload students
     } catch (err) {
       console.error("Error adding student (quick):", err);
@@ -99,7 +142,8 @@ const StudentManagementPage = () => {
         guardian_full_name: student.guardian_full_name || '', guardian_relationship: student.guardian_relationship || '',
         guardian_phone: student.guardian_phone || '', guardian_email: student.guardian_email || '',
         medical_conditions: student.medical_conditions || '', comments: student.comments || '',
-        emergency_contact_name: student.emergency_contact_name || '', emergency_contact_phone: student.emergency_contact_phone || ''
+        emergency_contact_name: student.emergency_contact_name || '', emergency_contact_phone: student.emergency_contact_phone || '',
+        group_id: student.group_id || ''
     };
     setEditFormData(initialFormData);
     setShowEditModal(true);
@@ -144,7 +188,7 @@ const StudentManagementPage = () => {
   const handleSubmitEdit = async (e) => {
     e.preventDefault();
     if (!currentStudent || !editFormData.full_name) { toast.error("Nombre Completo es requerido."); return; }
-    const payload = { ...editFormData, age: editFormData.age === '' ? null : parseInt(editFormData.age, 10) };
+    const payload = { ...editFormData, age: editFormData.age === '' ? null : parseInt(editFormData.age, 10), group_id: editFormData.group_id || null };
     if (!payload.birth_date) payload.birth_date = null;
 
     setIsSubmitting(true);
@@ -167,6 +211,7 @@ const StudentManagementPage = () => {
     { key: 'id', header: 'ID' },
     { key: 'full_name', header: 'Nombre Completo' },
     { key: 'nickname', header: 'Apodo' },
+    { key: 'group_name', header: 'Grupo', render: (val) => val || 'Sin Asignar' },
   ];
 
   if (loading && students.length === 0) return <div className="content-page-container"><Spinner /></div>;
@@ -250,6 +295,15 @@ const StudentManagementPage = () => {
                 <label htmlFor="newNickname">Sobrenombre:</label>
                 <input type="text" id="newNickname" value={newStudentData.nickname} onChange={(e) => setNewStudentData({...newStudentData, nickname: e.target.value})} />
               </div>
+              <div className="form-group">
+                <label htmlFor="newGroup">Grupo:</label>
+                <select id="newGroup" name="group_id" value={newStudentData.group_id || ''} onChange={(e) => setNewStudentData({...newStudentData, group_id: e.target.value})}>
+                    <option value="">Sin Asignar</option>
+                    {groups.map(group => (
+                        <option key={group.group_id} value={group.group_id}>{group.name}</option>
+                    ))}
+                </select>
+              </div>
               <div className="modal-actions">
                 <button type="button" onClick={() => setShowAddModal(false)} className="btn-secondary">Cancelar</button>
                 <button type="submit" className="btn-primary" disabled={isSubmitting}>
@@ -277,6 +331,15 @@ const StudentManagementPage = () => {
                   <div className="modal-form-grid">
                     <div className="form-group"><label>Nombre Completo:</label><input type="text" name="full_name" value={editFormData.full_name} onChange={handleEditFormChange} required /></div>
                     <div className="form-group"><label>Apodo:</label><input type="text" name="nickname" value={editFormData.nickname} onChange={handleEditFormChange} /></div>
+                    <div className="form-group">
+                        <label htmlFor="editGroup">Grupo:</label>
+                        <select id="editGroup" name="group_id" value={editFormData.group_id || ''} onChange={handleEditFormChange}>
+                            <option value="">Sin Asignar</option>
+                            {groups.map(group => (
+                                <option key={group.group_id} value={group.group_id}>{group.name}</option>
+                            ))}
+                        </select>
+                    </div>
                   </div>
                 )}
 
@@ -288,6 +351,15 @@ const StudentManagementPage = () => {
 
                     <hr className="full-width-grid-hr" />
 
+                    <div className="form-group">
+                        <label htmlFor="editGroupComplete">Grupo:</label>
+                        <select id="editGroupComplete" name="group_id" value={editFormData.group_id || ''} onChange={handleEditFormChange}>
+                            <option value="">Sin Asignar</option>
+                            {groups.map(group => (
+                                <option key={group.group_id} value={group.group_id}>{group.name}</option>
+                            ))}
+                        </select>
+                    </div>
                     <div className="form-group"><label>Email:</label><input type="email" name="email" value={editFormData.email} onChange={handleEditFormChange} /></div>
                     <div className="form-group"><label>Celular:</label><input type="tel" name="phone" value={editFormData.phone} onChange={handleEditFormChange} /></div>
                     <div className="form-group"><label>Edad:</label><input type="number" name="age" value={editFormData.age || ''} onChange={handleEditFormChange} /></div>
