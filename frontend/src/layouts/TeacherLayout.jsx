@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useContext } from 'react';
 import { Outlet } from 'react-router-dom';
 import axios from 'axios';
-import { useGroup } from '../context/GroupContext';
+import { GroupContext } from '../context/GroupContext';
 import { API_BASE_URL } from '../config';
 import toast from 'react-hot-toast';
 
 const TeacherLayout = () => {
     const [groups, setGroups] = useState([]);
-    const { selectedGroupId, setSelectedGroupId } = useGroup();
+    const { selectedGroupId, setSelectedGroupId } = useContext(GroupContext);
     const getToken = useCallback(() => localStorage.getItem('teacherToken'), []);
 
     useEffect(() => {
