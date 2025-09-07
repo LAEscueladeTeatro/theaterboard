@@ -229,8 +229,11 @@ router.put('/:studentId/edit-full', async (req, res) => {
                 guardian_full_name, guardian_relationship, guardian_phone, guardian_email,
                 medical_conditions, comments, emergency_contact_name, emergency_contact_phone, photo_url, group_id;
     `;
+    // Convert empty email string to null to avoid unique constraint errors
+    const emailForDb = email === '' ? null : email;
+
     const values = [
-      full_name, nickname, is_active, age, birth_date, phone, email,
+      full_name, nickname, is_active, age, birth_date, phone, emailForDb,
       guardian_full_name, guardian_relationship, guardian_phone, guardian_email,
       medical_conditions, comments, emergency_contact_name, emergency_contact_phone,
       group_id || null,

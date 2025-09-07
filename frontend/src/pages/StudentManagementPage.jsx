@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useContext } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
+import { GroupContext } from '../context/GroupContext';
 import { API_BASE_URL } from '../config';
 import FaceRegistration from '../components/FaceRegistration';
 import ConfirmationModal from '../components/ConfirmationModal';
@@ -41,25 +42,42 @@ const StudentManagementPage = () => {
   // Loading states for actions
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isTogglingStatus, setIsTogglingStatus] = useState(false);
+  const { selectedGroupId } = useContext(GroupContext);
 
 
   const getToken = useCallback(() => localStorage.getItem('teacherToken'), []);
 
   const fetchStudents = useCallback(async () => {
-    setLoading(true); setError('');
-    let url = API_URL_BASE_FOR_STUDENTS;
-    if (filter === 'active') url += '?active=true';
-    else if (filter === 'inactive') url += '?active=false';
+    setLoading(true);
+    setError('');
     try {
-      const token = getToken();
-      const response = await axios.get(url, { headers: { 'x-auth-token': token } });
-      setStudents(response.data);
-    } catch (err) { console.error("Error fetching students:", err); setError(err.response?.data?.message || 'Error al cargar estudiantes.'); }
-    finally { setLoading(false); }
-  }, [getToken, filter]);
+        const token = getToken();
+        const params = new URLSearchParams();
+        if (filter !== 'all') {
+            params.append('active', filter === 'active');
+        }
+        if (selectedGroupId && selectedGroupId !== 'all') {
+            params.append('group_id', selectedGroupId);
+        }
+
+        const { data } = await axios.get(API_URL_BASE_FOR_STUDENTS, {
+            headers: { 'x-auth-token': token },
+            params
+        });
+        setStudents(data);
+    } catch (err) {
+        console.error("Error fetching students:", err);
+        setError(err.response?.data?.message || 'Error al cargar estudiantes.');
+    } finally {
+        setLoading(false);
+    }
+  }, [getToken, filter, selectedGroupId]);
 
   useEffect(() => {
     fetchStudents();
+  }, [fetchStudents]);
+
+  useEffect(() => {
     const fetchGroups = async () => {
       try {
         const token = getToken();
