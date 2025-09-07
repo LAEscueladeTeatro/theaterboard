@@ -11,31 +11,34 @@ const bcrypt = require('bcryptjs'); // Importar bcryptjs
  * @access  Private (Teacher)
  */
 router.get('/', async (req, res) => {
-  const activeQuery = req.query.active;
-  // Devolver todos los campos para la vista de "Base de Datos" y edición completa.
-  // La contraseña no se devuelve.
+  const { active, group_id } = req.query;
+
   let query = `
-    SELECT id, full_name, nickname, is_active, age, birth_date, phone, email,
-           guardian_full_name, guardian_relationship, guardian_phone, guardian_email,
-           medical_conditions, comments, emergency_contact_name, emergency_contact_phone
-    FROM students
+    SELECT s.id, s.full_name, s.nickname, s.is_active, s.age, s.birth_date, s.phone, s.email,
+           s.guardian_full_name, s.guardian_relationship, s.guardian_phone, s.guardian_email,
+           s.medical_conditions, s.comments, s.emergency_contact_name, s.emergency_contact_phone,
+           s.group_id, g.name as group_name
+    FROM students s
+    LEFT JOIN groups g ON s.group_id = g.group_id
   `;
+  const conditions = [];
   const queryParams = [];
 
-  if (activeQuery === 'true') {
-    query += ' WHERE is_active = true';
-  } else if (activeQuery === 'false') {
-    query += ' WHERE is_active = false';
+  if (active === 'true' || active === 'false') {
+    queryParams.push(active === 'true');
+    conditions.push(`s.is_active = $${queryParams.length}`);
   }
-  // Si activeQuery es undefined, no se añade WHERE, por lo que se obtienen todos.
-  // Ajuste: si activeQuery no es 'false', por defecto listar activos o todos.
-  // Para ser más explícito: si activeQuery es 'true', activos. Si 'false', inactivos. Si no, todos.
-  // O, como estaba: 'true' activos, 'false' inactivos, undefined/otro -> todos.
-  // Prefiero que el default sea activos si no se especifica, para la lista principal.
-  // Para obtener TODOS, se podría añadir un ?active=all o similar, o dejarlo como está (undefined).
-  // Por ahora, mantendré la lógica: ?active=true -> activos, ?active=false -> inactivos, sin query param -> todos.
 
-  query += ' ORDER BY id ASC'; // Cambiado de full_name a id
+  if (group_id && group_id !== 'all') {
+    queryParams.push(group_id);
+    conditions.push(`s.group_id = $${queryParams.length}`);
+  }
+
+  if (conditions.length > 0) {
+    query += ' WHERE ' + conditions.join(' AND ');
+  }
+
+  query += ' ORDER BY s.id ASC';
 
   try {
     const result = await pool.query(query, queryParams);
@@ -53,7 +56,7 @@ router.get('/', async (req, res) => {
  * @access  Private (Teacher)
  */
 router.post('/add-quick', async (req, res) => {
-  const { full_name, nickname } = req.body; // ID ya no se recibe del frontend
+  const { full_name, nickname, group_id } = req.body;
 
   if (!full_name) {
     return res.status(400).json({ message: 'Nombre Completo es requerido.' });
@@ -86,8 +89,8 @@ router.post('/add-quick', async (req, res) => {
     const hashedPassword = await bcrypt.hash(defaultPassword, salt);
 
     const newStudentResult = await client.query(
-      "INSERT INTO students (id, full_name, nickname, password_hash, is_active) VALUES ($1, $2, $3, $4, true) RETURNING id, full_name, nickname, is_active", // Columna corregida a password_hash
-      [newId, full_name, nickname || null, hashedPassword] // Usar hashedPassword
+      "INSERT INTO students (id, full_name, nickname, password_hash, is_active, group_id) VALUES ($1, $2, $3, $4, true, $5) RETURNING id, full_name, nickname, is_active, group_id",
+      [newId, full_name, nickname || null, hashedPassword, group_id || null]
     );
 
     await client.query('COMMIT');
@@ -200,7 +203,8 @@ router.put('/:studentId/edit-full', async (req, res) => {
   const {
     full_name, nickname, is_active, age, birth_date, phone, email,
     guardian_full_name, guardian_relationship, guardian_phone, guardian_email,
-    medical_conditions, comments, emergency_contact_name, emergency_contact_phone
+    medical_conditions, comments, emergency_contact_name, emergency_contact_phone,
+    group_id
   } = req.body;
 
   // Validación básica (al menos el nombre completo es usualmente requerido)
@@ -218,16 +222,21 @@ router.put('/:studentId/edit-full', async (req, res) => {
         full_name = $1, nickname = $2, is_active = $3, age = $4, birth_date = $5,
         phone = $6, email = $7, guardian_full_name = $8, guardian_relationship = $9,
         guardian_phone = $10, guardian_email = $11, medical_conditions = $12,
-        comments = $13, emergency_contact_name = $14, emergency_contact_phone = $15
-      WHERE id = $16
+        comments = $13, emergency_contact_name = $14, emergency_contact_phone = $15,
+        group_id = $16
+      WHERE id = $17
       RETURNING id, full_name, nickname, is_active, age, birth_date, phone, email,
                 guardian_full_name, guardian_relationship, guardian_phone, guardian_email,
-                medical_conditions, comments, emergency_contact_name, emergency_contact_phone, photo_url;
+                medical_conditions, comments, emergency_contact_name, emergency_contact_phone, photo_url, group_id;
     `;
+    // Convert empty email string to null to avoid unique constraint errors
+    const emailForDb = email === '' ? null : email;
+
     const values = [
-      full_name, nickname, is_active, age, birth_date, phone, email,
+      full_name, nickname, is_active, age, birth_date, phone, emailForDb,
       guardian_full_name, guardian_relationship, guardian_phone, guardian_email,
       medical_conditions, comments, emergency_contact_name, emergency_contact_phone,
+      group_id || null,
       studentId
     ];
 

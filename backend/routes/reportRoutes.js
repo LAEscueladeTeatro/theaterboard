@@ -99,7 +99,7 @@ router.get('/student-summary', async (req, res) => {
  * @query   date=YYYY-MM-DD
  */
 router.get('/daily-summary', async (req, res) => {
-  const { date } = req.query; // date en formato YYYY-MM-DD
+  const { date, group_id } = req.query;
 
   if (!date) {
     return res.status(400).json({ message: 'date (YYYY-MM-DD) es requerido.' });
@@ -158,11 +158,17 @@ router.get('/daily-summary', async (req, res) => {
       LEFT JOIN student_attendance_points sap ON s.id = sap.student_id
       LEFT JOIN student_bonus_points sbp ON s.id = sbp.student_id
       LEFT JOIN aggregated_score_points asp ON s.id = asp.student_id
-      WHERE s.is_active = true -- Añadido para incluir solo estudiantes activos
+      WHERE s.is_active = true
+      ${group_id && group_id !== 'all' ? 'AND s.group_id = $2' : ''}
       ORDER BY s.full_name;
     `;
 
-    const summaryResult = await client.query(summaryQuery, [date]);
+    const queryParams = [date];
+    if (group_id && group_id !== 'all') {
+      queryParams.push(group_id);
+    }
+
+    const summaryResult = await client.query(summaryQuery, queryParams);
 
     res.json({
       date,
@@ -184,7 +190,7 @@ router.get('/daily-summary', async (req, res) => {
  * @query   month=YYYY-MM
  */
 router.get('/monthly-ranking', async (req, res) => {
-  const { month } = req.query; // month en formato YYYY-MM
+  const { month, group_id } = req.query;
 
   if (!month) {
     return res.status(400).json({ message: 'month (YYYY-MM) es requerido.' });
@@ -247,10 +253,15 @@ router.get('/monthly-ranking', async (req, res) => {
             LEFT JOIN student_bonus_points_prev sbp ON s.id = sbp.student_id
             LEFT JOIN student_score_records_points_prev ssrp ON s.id = ssrp.student_id
             WHERE s.is_active = true
+            ${group_id && group_id !== 'all' ? `AND s.group_id = $2` : ''}
             ORDER BY grand_total_points DESC, s.full_name ASC
             LIMIT 10;
         `;
-        const prevRankingResult = await client.query(prevRankingQuery, [prevMonthString]);
+        const prevRankingParams = [prevMonthString];
+        if (group_id && group_id !== 'all') {
+            prevRankingParams.push(group_id);
+        }
+        const prevRankingResult = await client.query(prevRankingQuery, prevRankingParams);
         // Solo asignar IDs para el bono si hay resultados y el puntaje máximo del mes anterior es > 0
         if (prevRankingResult.rows.length > 0 && prevRankingResult.rows[0].grand_total_points > 0) {
             top10PreviousMonthIDs = prevRankingResult.rows.map(r => r.student_id);
@@ -308,10 +319,15 @@ router.get('/monthly-ranking', async (req, res) => {
       LEFT JOIN student_bonus_points sbp ON s.id = sbp.student_id
       LEFT JOIN student_score_records_points ssrp ON s.id = ssrp.student_id
       WHERE s.is_active = true
+      ${group_id && group_id !== 'all' ? `AND s.group_id = $3` : ''}
       ORDER BY grand_total_points DESC, s.full_name ASC;
     `;
 
-    const currentRankingResult = await client.query(currentRankingQuery, [month, top10PreviousMonthIDs]);
+    const currentRankingParams = [month, top10PreviousMonthIDs];
+    if (group_id && group_id !== 'all') {
+        currentRankingParams.push(group_id);
+    }
+    const currentRankingResult = await client.query(currentRankingQuery, currentRankingParams);
 
     res.json({
       month,
