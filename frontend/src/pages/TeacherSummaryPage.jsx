@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useContext } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
+import { GroupContext } from '../context/GroupContext';
 import { API_BASE_URL } from '../config'; // Importar API_BASE_URL
 
 // Icono para el botón
@@ -17,21 +18,31 @@ const TeacherSummaryPage = () => {
   const [summaryData, setSummaryData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const { selectedGroupId } = useContext(GroupContext);
 
-  // const API_URL = 'http://localhost:3001/api'; // Eliminar esta línea
   const getToken = useCallback(() => localStorage.getItem('teacherToken'), []);
 
   useEffect(() => {
     const fetchStudents = async () => {
       try {
         const token = getToken();
-        // Usar API_BASE_URL para construir la URL de la solicitud
-        const response = await axios.get(`${API_BASE_URL}/admin/students?active=true`, { headers: { 'x-auth-token': token } });
+        const params = new URLSearchParams({ active: 'true' });
+        if (selectedGroupId && selectedGroupId !== 'all') {
+            params.append('group_id', selectedGroupId);
+        }
+        const response = await axios.get(`${API_BASE_URL}/admin/students`, {
+            headers: { 'x-auth-token': token },
+            params
+        });
         setStudents(response.data);
+        // If the currently selected student is not in the new list, reset it
+        if (selectedStudent && !response.data.some(s => s.id === selectedStudent)) {
+            setSelectedStudent('');
+        }
       } catch (err) { console.error("Error fetching students:", err); setError(err.response?.data?.message || 'Error al cargar estudiantes.'); }
     };
     fetchStudents();
-  }, [getToken]); // API_BASE_URL es constante global, no necesita ser dependencia
+  }, [getToken, selectedGroupId, selectedStudent]);
 
   const handleFetchSummary = async () => {
     setLoading(true); setError(''); setSummaryData(null);
@@ -44,8 +55,11 @@ const TeacherSummaryPage = () => {
         response = await axios.get(`${API_BASE_URL}/reports/student-summary`, { params: { studentId: selectedStudent, month: selectedMonth }, headers });
       } else {
         if (!selectedDate) { setError('Por favor, seleccione una fecha.'); setLoading(false); return; }
-        // Usar API_BASE_URL para construir la URL de la solicitud
-        response = await axios.get(`${API_BASE_URL}/reports/daily-summary`, { params: { date: selectedDate }, headers });
+        const params = { date: selectedDate };
+        if (selectedGroupId && selectedGroupId !== 'all') {
+            params.group_id = selectedGroupId;
+        }
+        response = await axios.get(`${API_BASE_URL}/reports/daily-summary`, { params, headers });
       }
       setSummaryData(response.data);
     } catch (err) { console.error("Error fetching summary:", err); setError(err.response?.data?.message || 'Error al cargar el resumen.'); }

@@ -2,33 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
-import { useGroup } from '../context/GroupContext';
 import FaceRegistration from '../components/FaceRegistration';
 import ConfirmationModal from '../components/ConfirmationModal';
 import Spinner from '../components/Spinner';
 import toast from 'react-hot-toast';
-
-// Simple CSS-in-JS for tabs
-const styles = {
-  tabs: {
-    display: 'flex',
-    borderBottom: '1px solid #ccc',
-    marginBottom: '1rem',
-  },
-  tabButton: {
-    padding: '10px 20px',
-    cursor: 'pointer',
-    border: 'none',
-    background: 'none',
-    borderBottom: '2px solid transparent',
-    marginBottom: '-1px',
-    fontSize: '1rem',
-  },
-  activeTab: {
-    borderBottom: '2px solid var(--primary-color-teacher)',
-    fontWeight: 'bold',
-  }
-};
 
 // Iconos
 const AddIcon = () => <svg className="icon" viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" /></svg>;

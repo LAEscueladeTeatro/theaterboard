@@ -1,10 +1,8 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState } from 'react';
 
-const GroupContext = createContext();
+export const GroupContext = createContext();
 
-export const useGroup = () => useContext(GroupContext);
-
-export const GroupProvider = ({ children }) => {
+const GroupProvider = ({ children }) => {
     const [selectedGroupId, setSelectedGroupId] = useState('all'); // 'all' o un ID de grupo
 
     const value = {
@@ -18,3 +16,5 @@ export const GroupProvider = ({ children }) => {
         </GroupContext.Provider>
     );
 };
+
+export default GroupProvider;

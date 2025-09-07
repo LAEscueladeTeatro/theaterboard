@@ -2,7 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import './App.css';
 
-import { GroupProvider } from './context/GroupContext';
+import GroupProvider from './context/GroupContext';
 import TeacherLayout from './layouts/TeacherLayout';
 
 import TeacherLoginPage from './pages/TeacherLoginPage';

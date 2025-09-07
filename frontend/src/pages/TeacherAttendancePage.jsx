@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useContext } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
+import { GroupContext } from '../context/GroupContext';
 import { getCurrentPeruDateTimeObject, getTodayPeruDateString } from "../utils/dateUtils";
 import { API_BASE_URL } from "../config";
 import Spinner from '../components/Spinner';
@@ -39,11 +40,45 @@ const TeacherAttendancePage = ({ selectedDate: historicDateProp }) => {
   const [isSavingSpecificAttendance, setIsSavingSpecificAttendance] = useState(false);
 
   const [dateForOperations, setDateForOperations] = useState(historicDateProp || getTodayPeruDateString());
+  const { selectedGroupId } = useContext(GroupContext);
 
   useEffect(() => { const newDate = historicDateProp || getTodayPeruDateString(); setDateForOperations(newDate); setDailyStatus({ attendance_records: [], bonus_awarded_today: null }); setAttendanceData({}); setSelectedStudentForBonus(''); }, [historicDateProp, getTodayPeruDateString]); // Añadido getTodayPeruDateString a dependencias
   const getToken = useCallback(() => localStorage.getItem('teacherToken'), []);
 
-  useEffect(() => { const fetchData = async () => { setLoading(true); setError(null); try { const token = getToken(); const headers = { 'x-auth-token': token }; const studentsResponse = await axios.get(`${API_BASE_URL}/admin/students?active=true`, { headers }); setAllStudents(studentsResponse.data); setStudents(studentsResponse.data); const dailyStatusResponse = await axios.get(`${API_BASE_URL}/attendance/status/${dateForOperations}?t=${new Date().getTime()}`, { headers }); setDailyStatus(dailyStatusResponse.data); const initialAttendance = {}; dailyStatusResponse.data.attendance_records.forEach(record => { initialAttendance[record.student_id] = { status: record.status, notes: record.notes || '', is_synced: true }; }); setAttendanceData(initialAttendance); } catch (err) { console.error(`Error fetching initial data for date ${dateForOperations}:`, err); setError(err.response?.data?.message || err.message || 'Error al cargar datos iniciales.'); } finally { setLoading(false); } }; fetchData(); }, [getToken, dateForOperations, API_BASE_URL]);
+  useEffect(() => {
+    const fetchData = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const token = getToken();
+            const headers = { 'x-auth-token': token };
+
+            const studentParams = new URLSearchParams({ active: 'true' });
+            if (selectedGroupId && selectedGroupId !== 'all') {
+                studentParams.append('group_id', selectedGroupId);
+            }
+
+            const studentsResponse = await axios.get(`${API_BASE_URL}/admin/students`, { headers, params: studentParams });
+            setAllStudents(studentsResponse.data);
+            setStudents(studentsResponse.data);
+
+            const dailyStatusResponse = await axios.get(`${API_BASE_URL}/attendance/status/${dateForOperations}?t=${new Date().getTime()}`, { headers });
+            setDailyStatus(dailyStatusResponse.data);
+
+            const initialAttendance = {};
+            dailyStatusResponse.data.attendance_records.forEach(record => {
+                initialAttendance[record.student_id] = { status: record.status, notes: record.notes || '', is_synced: true };
+            });
+            setAttendanceData(initialAttendance);
+        } catch (err) {
+            console.error(`Error fetching initial data for date ${dateForOperations}:`, err);
+            setError(err.response?.data?.message || err.message || 'Error al cargar datos iniciales.');
+        } finally {
+            setLoading(false);
+        }
+    };
+    fetchData();
+  }, [getToken, dateForOperations, selectedGroupId]);
   useEffect(() => { let timer; if (!historicDateProp) { timer = setInterval(() => setCurrentPeruDateTime(getCurrentPeruDateTimeObject()), 1000); } return () => { if (timer) clearInterval(timer); }; }, [historicDateProp]); // getCurrentPeruDateTimeObject es estable
   useEffect(() => { if (!searchTerm) { setStudents(allStudents); return; } const lowerSearchTerm = searchTerm.toLowerCase(); const filtered = allStudents.filter(student => student.full_name.toLowerCase().includes(lowerSearchTerm) || student.id.toLowerCase().includes(lowerSearchTerm)); setStudents(filtered); }, [searchTerm, allStudents]);
 
