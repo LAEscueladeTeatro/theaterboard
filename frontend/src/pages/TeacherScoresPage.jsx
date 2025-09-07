@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useCallback, useContext } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
-import { GroupContext } from '../context/GroupContext';
 import { getTodayPeruDateString as getTodayPeruDateStringForScores } from "../utils/dateUtils";
 import { API_BASE_URL } from "../config";
 import Spinner from '../components/Spinner';
@@ -32,45 +31,36 @@ const TeacherScoresPage = () => {
   const [personalPoints, setPersonalPoints] = useState('');
   const [personalSubCategory, setPersonalSubCategory] = useState('');
   const [personalNotes, setPersonalNotes] = useState('');
-  const { selectedGroupId } = useContext(GroupContext);
 
   const getToken = useCallback(() => localStorage.getItem('teacherToken'), []);
 
   const fetchAttendanceAndFilterStudents = useCallback(async (dateForFilter) => {
     if (!dateForFilter || allStudents.length === 0) {
-        setPresentStudents(allStudents.length > 0 ? allStudents : []);
-        setLoadingAttendance(false);
-        return;
+      setPresentStudents(allStudents.length > 0 ? allStudents : []);
+      setLoadingAttendance(false);
+      return;
     }
     setLoadingAttendance(true);
     setError('');
     try {
-        const token = getToken();
-        const params = new URLSearchParams();
-        if (selectedGroupId && selectedGroupId !== 'all') {
-            params.append('group_id', selectedGroupId);
-        }
-
-        const response = await axios.get(`${API_BASE_URL}/attendance/status/${dateForFilter}`, {
-            headers: { 'x-auth-token': token },
-            params
-        });
-        const attendanceRecords = response.data.attendance_records || [];
-        const presentStudentIds = new Set(
-            attendanceRecords
-                .filter(record => record.status && !record.status.startsWith('AUSENCIA'))
-                .map(record => record.student_id)
-        );
-        const filtered = allStudents.filter(student => presentStudentIds.has(student.id));
-        setPresentStudents(filtered);
+      const token = getToken();
+      const response = await axios.get(`${API_BASE_URL}/attendance/status/${dateForFilter}`, { headers: { 'x-auth-token': token } });
+      const attendanceRecords = response.data.attendance_records || [];
+      const presentStudentIds = new Set(
+        attendanceRecords
+          .filter(record => record.status && !record.status.startsWith('AUSENCIA'))
+          .map(record => record.student_id)
+      );
+      const filtered = allStudents.filter(student => presentStudentIds.has(student.id));
+      setPresentStudents(filtered);
     } catch (err) {
-        console.error(`Error fetching attendance for ${dateForFilter}:`, err);
-        setError(err.response?.data?.message || err.message || `Error al cargar asistencia para ${dateForFilter}.`);
-        setPresentStudents([]);
+      console.error(`Error fetching attendance for ${dateForFilter}:`, err);
+      setError(err.response?.data?.message || err.message || `Error al cargar asistencia para ${dateForFilter}.`);
+      setPresentStudents([]);
     } finally {
-        setLoadingAttendance(false);
+      setLoadingAttendance(false);
     }
-  }, [getToken, allStudents, selectedGroupId]);
+  }, [getToken, allStudents, API_BASE_URL]);
 
   // Carga inicial de todos los estudiantes
   useEffect(() => {
@@ -78,14 +68,7 @@ const TeacherScoresPage = () => {
       setLoadingStudents(true);
       try {
         const token = getToken();
-        const params = new URLSearchParams({ active: 'true' });
-        if (selectedGroupId && selectedGroupId !== 'all') {
-            params.append('group_id', selectedGroupId);
-        }
-        const response = await axios.get(`${API_BASE_URL}/admin/students`, {
-            headers: { 'x-auth-token': token },
-            params
-        });
+        const response = await axios.get(`${API_BASE_URL}/admin/students?active=true`, { headers: { 'x-auth-token': token } });
         setAllStudents(response.data);
       } catch (err) {
         console.error("Error fetching all students:", err);
@@ -95,7 +78,7 @@ const TeacherScoresPage = () => {
       }
     };
     fetchAllStudents();
-  }, [getToken, selectedGroupId]);
+  }, [getToken, API_BASE_URL]);
 
   // Efecto para obtener estudiantes presentes cuando cambia la fecha o la lista de todos los estudiantes
   useEffect(() => {

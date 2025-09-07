@@ -43,6 +43,7 @@ const StudentManagementPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isTogglingStatus, setIsTogglingStatus] = useState(false);
   const { selectedGroupId } = useContext(GroupContext);
+  const [sortConfig, setSortConfig] = useState({ key: 'id', direction: 'ascending' });
 
 
   const getToken = useCallback(() => localStorage.getItem('teacherToken'), []);
@@ -91,7 +92,7 @@ const StudentManagementPage = () => {
       }
     };
     fetchGroups();
-  }, [fetchStudents, getToken]);
+  }, [getToken]);
 
   const handleAddQuickStudent = async (e) => {
     e.preventDefault();
@@ -185,6 +186,7 @@ const StudentManagementPage = () => {
     if (!currentStudent || !editFormData.full_name) { toast.error("Nombre Completo es requerido."); return; }
     const payload = { ...editFormData, age: editFormData.age === '' ? null : parseInt(editFormData.age, 10), group_id: editFormData.group_id || null };
     if (!payload.birth_date) payload.birth_date = null;
+    if (payload.email === '') payload.email = null;
 
     setIsSubmitting(true);
     try {
@@ -197,10 +199,48 @@ const StudentManagementPage = () => {
     finally { setIsSubmitting(false); }
   };
 
-  const filteredStudents = students.filter(student => {
-    const sTerm = searchTerm.toLowerCase();
-    return (student.full_name.toLowerCase().includes(sTerm) || student.id.toLowerCase().includes(sTerm) || (student.nickname && student.nickname.toLowerCase().includes(sTerm)));
-  });
+  const filteredStudents = React.useMemo(() => {
+    let searchableStudents = [...students];
+    if (searchTerm) {
+        const lowerSearchTerm = searchTerm.toLowerCase();
+        searchableStudents = searchableStudents.filter(student =>
+            student.full_name.toLowerCase().includes(lowerSearchTerm) ||
+            student.id.toLowerCase().includes(lowerSearchTerm) ||
+            (student.nickname && student.nickname.toLowerCase().includes(lowerSearchTerm))
+        );
+    }
+    return searchableStudents;
+  }, [students, searchTerm]);
+
+  const sortedStudents = React.useMemo(() => {
+    let sortableItems = [...filteredStudents];
+    if (sortConfig !== null) {
+      sortableItems.sort((a, b) => {
+        const valA = a[sortConfig.key] || '';
+        const valB = b[sortConfig.key] || '';
+        if (valA < valB) {
+          return sortConfig.direction === 'ascending' ? -1 : 1;
+        }
+        if (valA > valB) {
+          return sortConfig.direction === 'ascending' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableItems;
+  }, [filteredStudents, sortConfig]);
+
+  const requestSort = (key) => {
+    let direction = 'ascending';
+    if (
+      sortConfig &&
+      sortConfig.key === key &&
+      sortConfig.direction === 'ascending'
+    ) {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
 
   const columns = [
     { key: 'id', header: 'ID' },
@@ -243,19 +283,26 @@ const StudentManagementPage = () => {
 
       {error && <div className="error-message-page" style={{marginBottom: '1.5rem'}}>{error}</div>}
 
-      {filteredStudents.length === 0 && !loading ? (
+      {sortedStudents.length === 0 && !loading ? (
         <div className="empty-table-message">No se encontraron estudiantes con los filtros y búsqueda actuales.</div>
       ) : (
         <div style={{overflowX: 'auto'}}>
           <table className="styled-table">
             <thead>
               <tr>
-                {columns.map(col => <th key={col.key}>{col.header}</th>)}
+                {columns.map(col => (
+                  <th key={col.key}>
+                    <button type="button" onClick={() => requestSort(col.key)} className="sortable-header">
+                      {col.header}
+                      {sortConfig.key === col.key ? (sortConfig.direction === 'ascending' ? ' ▲' : ' ▼') : ''}
+                    </button>
+                  </th>
+                ))}
                 <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {filteredStudents.map((student) => (
+              {sortedStudents.map((student) => (
                 <tr key={student.id}>
                   {columns.map(col => (
                     <td key={col.key}>
@@ -343,9 +390,6 @@ const StudentManagementPage = () => {
                     {/* Basic Info also in Complete Tab */}
                     <div className="form-group"><label>Nombre Completo:</label><input type="text" name="full_name" value={editFormData.full_name} onChange={handleEditFormChange} required /></div>
                     <div className="form-group"><label>Apodo:</label><input type="text" name="nickname" value={editFormData.nickname} onChange={handleEditFormChange} /></div>
-
-                    <hr className="full-width-grid-hr" />
-
                     <div className="form-group">
                         <label htmlFor="editGroupComplete">Grupo:</label>
                         <select id="editGroupComplete" name="group_id" value={editFormData.group_id || ''} onChange={handleEditFormChange}>
@@ -355,6 +399,9 @@ const StudentManagementPage = () => {
                             ))}
                         </select>
                     </div>
+
+                    <hr className="full-width-grid-hr" />
+
                     <div className="form-group"><label>Email:</label><input type="email" name="email" value={editFormData.email} onChange={handleEditFormChange} /></div>
                     <div className="form-group"><label>Celular:</label><input type="tel" name="phone" value={editFormData.phone} onChange={handleEditFormChange} /></div>
                     <div className="form-group"><label>Edad:</label><input type="number" name="age" value={editFormData.age || ''} onChange={handleEditFormChange} /></div>

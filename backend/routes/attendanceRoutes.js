@@ -265,8 +265,7 @@ router.post('/close', authMiddleware, async (req, res) => {
  * @access  Private (Teacher)
  */
 router.get('/status/:date', authMiddleware, async (req, res) => {
-  const { date } = req.params;
-  const { group_id } = req.query;
+  const { date } = req.params; // Fecha en formato 'YYYY-MM-DD'
 
   if (!date) {
     return res.status(400).json({ message: 'El parámetro de fecha es requerido.' });
@@ -275,38 +274,24 @@ router.get('/status/:date', authMiddleware, async (req, res) => {
   try {
     const client = await pool.connect();
     try {
-      // Build attendance query
-      let attendanceQuery = `
-        SELECT ar.student_id, s.full_name, s.nickname, ar.status, ar.points_earned, ar.base_attendance_points, ar.notes, ar.recorded_at
-        FROM attendance_records ar
-        JOIN students s ON ar.student_id = s.id
-      `;
-      const attendanceConditions = ['ar.attendance_date = $1'];
-      const queryParams = [date];
+      // Obtener registros de asistencia
+      const attendanceResult = await client.query(
+        `SELECT ar.student_id, s.full_name, s.nickname, ar.status, ar.points_earned, ar.base_attendance_points, ar.notes, ar.recorded_at
+         FROM attendance_records ar
+         JOIN students s ON ar.student_id = s.id
+         WHERE ar.attendance_date = $1
+         ORDER BY s.full_name`,
+        [date]
+      );
 
-      if (group_id && group_id !== 'all') {
-        queryParams.push(group_id);
-        attendanceConditions.push(`s.group_id = $${queryParams.length}`);
-      }
-      attendanceQuery += ` WHERE ${attendanceConditions.join(' AND ')} ORDER BY s.full_name`;
-
-      const attendanceResult = await client.query(attendanceQuery, queryParams);
-
-      // Build bonus query (bonus is global, but we check if the awarded student is in the filtered group)
-      let bonusQuery = `
-        SELECT dbl.student_id, s.full_name AS bonus_student_name, dbl.points_awarded
-        FROM daily_bonus_log dbl
-        JOIN students s ON dbl.student_id = s.id
-        WHERE dbl.bonus_date = $1
-      `;
-      const bonusParams = [date];
-
-      if (group_id && group_id !== 'all') {
-        bonusQuery += ` AND s.group_id = $2`;
-        bonusParams.push(group_id);
-      }
-
-      const bonusResult = await client.query(bonusQuery, bonusParams);
+      // Obtener el bono madrugador si existe para esa fecha
+      const bonusResult = await client.query(
+        `SELECT dbl.student_id, s.full_name AS bonus_student_name, dbl.points_awarded
+         FROM daily_bonus_log dbl
+         JOIN students s ON dbl.student_id = s.id
+         WHERE dbl.bonus_date = $1`,
+        [date]
+      );
 
       res.json({
         attendance_records: attendanceResult.rows,
