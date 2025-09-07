@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useCallback, useContext } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
-import { GroupContext } from '../context/GroupContext';
 import { getCurrentPeruDateTimeObject, getTodayPeruDateString } from "../utils/dateUtils";
 import { API_BASE_URL } from "../config";
 import Spinner from '../components/Spinner';
@@ -33,6 +32,7 @@ const TeacherAttendancePage = ({ selectedDate: historicDateProp }) => {
   const [closeAttendanceModalOpen, setCloseAttendanceModalOpen] = useState(false);
   const [absentStudentsForModal, setAbsentStudentsForModal] = useState([]);
   const [absentJustifications, setAbsentJustifications] = useState({});
+  const [sortConfig, setSortConfig] = useState({ key: 'full_name', direction: 'ascending' });
 
   // Estados para spinners de acciones
   const [isApplyingBonus, setIsApplyingBonus] = useState(false);
@@ -40,47 +40,60 @@ const TeacherAttendancePage = ({ selectedDate: historicDateProp }) => {
   const [isSavingSpecificAttendance, setIsSavingSpecificAttendance] = useState(false);
 
   const [dateForOperations, setDateForOperations] = useState(historicDateProp || getTodayPeruDateString());
-  const { selectedGroupId } = useContext(GroupContext);
 
   useEffect(() => { const newDate = historicDateProp || getTodayPeruDateString(); setDateForOperations(newDate); setDailyStatus({ attendance_records: [], bonus_awarded_today: null }); setAttendanceData({}); setSelectedStudentForBonus(''); }, [historicDateProp, getTodayPeruDateString]); // Añadido getTodayPeruDateString a dependencias
   const getToken = useCallback(() => localStorage.getItem('teacherToken'), []);
 
-  useEffect(() => {
-    const fetchData = async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const token = getToken();
-            const headers = { 'x-auth-token': token };
-
-            const studentParams = new URLSearchParams({ active: 'true' });
-            if (selectedGroupId && selectedGroupId !== 'all') {
-                studentParams.append('group_id', selectedGroupId);
-            }
-
-            const studentsResponse = await axios.get(`${API_BASE_URL}/admin/students`, { headers, params: studentParams });
-            setAllStudents(studentsResponse.data);
-            setStudents(studentsResponse.data);
-
-            const dailyStatusResponse = await axios.get(`${API_BASE_URL}/attendance/status/${dateForOperations}?t=${new Date().getTime()}`, { headers });
-            setDailyStatus(dailyStatusResponse.data);
-
-            const initialAttendance = {};
-            dailyStatusResponse.data.attendance_records.forEach(record => {
-                initialAttendance[record.student_id] = { status: record.status, notes: record.notes || '', is_synced: true };
-            });
-            setAttendanceData(initialAttendance);
-        } catch (err) {
-            console.error(`Error fetching initial data for date ${dateForOperations}:`, err);
-            setError(err.response?.data?.message || err.message || 'Error al cargar datos iniciales.');
-        } finally {
-            setLoading(false);
-        }
-    };
-    fetchData();
-  }, [getToken, dateForOperations, selectedGroupId]);
+  useEffect(() => { const fetchData = async () => { setLoading(true); setError(null); try { const token = getToken(); const headers = { 'x-auth-token': token }; const studentsResponse = await axios.get(`${API_BASE_URL}/admin/students?active=true`, { headers }); setAllStudents(studentsResponse.data); setStudents(studentsResponse.data); const dailyStatusResponse = await axios.get(`${API_BASE_URL}/attendance/status/${dateForOperations}?t=${new Date().getTime()}`, { headers }); setDailyStatus(dailyStatusResponse.data); const initialAttendance = {}; dailyStatusResponse.data.attendance_records.forEach(record => { initialAttendance[record.student_id] = { status: record.status, notes: record.notes || '', is_synced: true }; }); setAttendanceData(initialAttendance); } catch (err) { console.error(`Error fetching initial data for date ${dateForOperations}:`, err); setError(err.response?.data?.message || err.message || 'Error al cargar datos iniciales.'); } finally { setLoading(false); } }; fetchData(); }, [getToken, dateForOperations, API_BASE_URL]);
   useEffect(() => { let timer; if (!historicDateProp) { timer = setInterval(() => setCurrentPeruDateTime(getCurrentPeruDateTimeObject()), 1000); } return () => { if (timer) clearInterval(timer); }; }, [historicDateProp]); // getCurrentPeruDateTimeObject es estable
-  useEffect(() => { if (!searchTerm) { setStudents(allStudents); return; } const lowerSearchTerm = searchTerm.toLowerCase(); const filtered = allStudents.filter(student => student.full_name.toLowerCase().includes(lowerSearchTerm) || student.id.toLowerCase().includes(lowerSearchTerm)); setStudents(filtered); }, [searchTerm, allStudents]);
+  const processedStudents = React.useMemo(() => {
+    let sortableItems = [...allStudents]; // Start with all students for the current group
+
+    // 1. Filter by search term first
+    if (searchTerm) {
+        const lowerSearchTerm = searchTerm.toLowerCase();
+        sortableItems = sortableItems.filter(student =>
+            student.full_name.toLowerCase().includes(lowerSearchTerm) ||
+            student.id.toLowerCase().includes(lowerSearchTerm)
+        );
+    }
+
+    // 2. Then, sort the filtered list
+    const recordedStudentIds = new Set(dailyStatus.attendance_records.map(r => r.student_id));
+
+    sortableItems.sort((a, b) => {
+        const aIsRecorded = recordedStudentIds.has(a.id);
+        const bIsRecorded = recordedStudentIds.has(b.id);
+
+        // Primary sort: unmarked students first
+        if (aIsRecorded !== bIsRecorded) {
+            return aIsRecorded ? 1 : -1;
+        }
+
+        // Secondary sort: user-selected column
+        if (sortConfig !== null) {
+            const valA = a[sortConfig.key] || '';
+            const valB = b[sortConfig.key] || '';
+            if (valA < valB) {
+              return sortConfig.direction === 'ascending' ? -1 : 1;
+            }
+            if (valA > valB) {
+              return sortConfig.direction === 'ascending' ? 1 : -1;
+            }
+        }
+        return 0;
+    });
+
+    return sortableItems;
+  }, [allStudents, searchTerm, sortConfig, dailyStatus.attendance_records]);
+
+  const requestSort = (key) => {
+    let direction = 'ascending';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
 
   const handleAttendanceChange = (studentId, field, value) => setAttendanceData(prev => ({ ...prev, [studentId]: { ...prev[studentId], [field]: value, is_synced: false } }));
   const determineStatusTypeForModal = () => { if (historicDateProp) return 'HISTORIC_MODAL'; const nowPeru = currentPeruDateTime; const hours = nowPeru.getHours(); const minutes = nowPeru.getMinutes(); if (hours < 17) return 'PUNTUAL_DIRECT'; if (hours === 17 && minutes <= 15) return 'A_TIEMPO_DIRECT'; return 'TARDANZA_MODAL'; };
@@ -238,21 +251,21 @@ const TeacherAttendancePage = ({ selectedDate: historicDateProp }) => {
         </div>
       )}
 
-      {students.length > 0 ? (
+      {processedStudents.length > 0 ? (
         <div style={{overflowX: 'auto'}}>
           <table className="styled-table">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Nombre Completo</th>
-                <th>Apodo</th>
+                <th><button type="button" onClick={() => requestSort('id')} className="sortable-header">ID{sortConfig.key === 'id' ? (sortConfig.direction === 'ascending' ? ' ▲' : ' ▼') : ''}</button></th>
+                <th><button type="button" onClick={() => requestSort('full_name')} className="sortable-header">Nombre Completo{sortConfig.key === 'full_name' ? (sortConfig.direction === 'ascending' ? ' ▲' : ' ▼') : ''}</button></th>
+                <th><button type="button" onClick={() => requestSort('nickname')} className="sortable-header">Apodo{sortConfig.key === 'nickname' ? (sortConfig.direction === 'ascending' ? ' ▲' : ' ▼') : ''}</button></th>
                 <th>Estado Actual</th>
                 <th>Acciones</th>
                 <th>Notas</th>
               </tr>
             </thead>
             <tbody>
-              {students.map(student => {
+              {processedStudents.map(student => {
                 const currentStudentAttendance = attendanceData[student.id] || { status: 'NO_REGISTRADO', notes: '', is_synced: true };
                 const isRecorded = dailyStatus.attendance_records.some(r => r.student_id === student.id);
                 const record = dailyStatus.attendance_records.find(r => r.student_id === student.id);
