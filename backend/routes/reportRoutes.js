@@ -343,4 +343,87 @@ router.get('/monthly-ranking', async (req, res) => {
   }
 });
 
+/**
+ * @route   GET /api/reports/export/students
+ * @desc    Exportar lista de estudiantes en formato CSV.
+ * @access  Private (Teacher)
+ * @query   mode=simple|full, group_id=<id>|all
+ */
+router.get('/export/students', async (req, res) => {
+  const { mode, group_id } = req.query;
+
+  if (!mode || (mode !== 'simple' && mode !== 'full')) {
+    return res.status(400).json({ message: 'El parámetro "mode" es requerido y debe ser "simple" o "full".' });
+  }
+
+  let client;
+  try {
+    client = await pool.connect();
+
+    let query;
+    const queryParams = [];
+
+    // Campos para el modo simple
+    let selectFields = 's.id, s.full_name';
+    if (mode === 'full') {
+      // Todos los campos de students para el modo completo
+      selectFields = 's.*';
+    }
+
+    let fromClause = 'FROM students s';
+    let whereClause = 'WHERE s.is_active = true';
+
+    // Si se pide un reporte general (todos los grupos), añadir el nombre del grupo
+    if (!group_id || group_id === 'all') {
+      selectFields += ', g.name AS group_name';
+      fromClause += ' LEFT JOIN groups g ON s.group_id = g.group_id';
+    } else {
+      whereClause += ' AND s.group_id = $1';
+      queryParams.push(group_id);
+    }
+
+    query = `SELECT ${selectFields} ${fromClause} ${whereClause} ORDER BY s.full_name;`;
+
+    const { rows } = await client.query(query, queryParams);
+
+    if (rows.length === 0) {
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="students.csv"');
+      return res.status(200).send(''); // Enviar un CSV vacío si no hay datos
+    }
+
+    // Convertir JSON a CSV manualmente
+    const headers = Object.keys(rows[0]);
+    const csvHeader = headers.join(',');
+
+    const csvRows = rows.map(row => {
+      return headers.map(header => {
+        let value = row[header];
+        // Si el valor es null o undefined, convertir a string vacío
+        if (value === null || typeof value === 'undefined') {
+          value = '';
+        }
+        // Si el valor contiene comas, envolverlo en comillas dobles
+        if (typeof value === 'string' && value.includes(',')) {
+          return `"${value}"`;
+        }
+        return value;
+      }).join(',');
+    }).join('\n');
+
+    const csv = `${csvHeader}\n${csvRows}`;
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="students.csv"');
+    res.status(200).send(csv);
+
+  } catch (err) {
+    console.error('Error en GET /api/reports/export/students:', err);
+    res.status(500).json({ message: 'Error interno del servidor al exportar los estudiantes.' });
+  } finally {
+    if (client) client.release();
+  }
+});
+
+
 module.exports = router;
