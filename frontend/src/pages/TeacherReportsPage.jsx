@@ -210,32 +210,69 @@ const StudentSummary = ({ getToken, selectedGroupId }) => {
 
 // --- Sub-component for Exporting Students ---
 const ExportStudents = ({ getToken, selectedGroupId }) => {
-    const [exportMode, setExportMode] = useState('simple');
+    const availableColumns = [
+        { key: 'id', label: 'ID' },
+        { key: 'full_name', label: 'Nombre Completo' },
+        { key: 'nickname', label: 'Apodo' },
+        { key: 'age', label: 'Edad' },
+        { key: 'birth_date', label: 'Fecha de Nacimiento' },
+        { key: 'phone', label: 'Celular' },
+        { key: 'email', label: 'Email' },
+        { key: 'guardian_full_name', label: 'Nombre del Apoderado' },
+        { key: 'guardian_relationship', label: 'Parentesco' },
+        { key: 'guardian_phone', label: 'Celular del Apoderado' },
+        { key: 'guardian_email', label: 'Email del Apoderado' },
+        { key: 'medical_conditions', label: 'Condiciones Médicas' },
+        { key: 'comments', label: 'Comentarios' },
+        { key: 'emergency_contact_name', label: 'Contacto de Emergencia' },
+        { key: 'emergency_contact_phone', label: 'Celular de Emergencia' },
+        { key: 'group_name', label: 'Grupo' },
+    ];
+
+    const [selectedColumns, setSelectedColumns] = useState(['id', 'full_name']);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const { groups } = useContext(GroupContext);
+
+    const handleColumnChange = (e) => {
+        const { value, checked } = e.target;
+        setSelectedColumns(prev =>
+            checked ? [...prev, value] : prev.filter(col => col !== value)
+        );
+    };
+
+    const handleSelectAll = (e) => {
+        if (e.target.checked) {
+            setSelectedColumns(availableColumns.map(col => col.key));
+        } else {
+            setSelectedColumns([]);
+        }
+    };
 
     const handleExport = async () => {
+        if (selectedColumns.length === 0) {
+            setError('Debes seleccionar al menos una columna para exportar.');
+            return;
+        }
+
         setLoading(true);
         setError('');
         try {
             const token = getToken();
             const params = {
-                mode: exportMode,
+                columns: selectedColumns.join(','),
                 group_id: selectedGroupId || 'all',
             };
 
             const response = await axios.get(`${API_BASE_URL}/reports/export/students`, {
                 params,
                 headers: { 'x-auth-token': token },
-                responseType: 'blob', // Importante para manejar la descarga de archivos
+                responseType: 'blob',
             });
 
-            // Crear un enlace para descargar el archivo
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            const filename = `estudiantes-${params.group_id}-${params.mode}-${new Date().toISOString().split('T')[0]}.csv`;
+            const filename = `estudiantes-${params.group_id}-${new Date().toISOString().split('T')[0]}.xls`;
             link.setAttribute('download', filename);
             document.body.appendChild(link);
             link.click();
@@ -243,8 +280,6 @@ const ExportStudents = ({ getToken, selectedGroupId }) => {
             window.URL.revokeObjectURL(url);
 
         } catch (err) {
-            // Como el responseType es 'blob', el error puede venir como blob también.
-            // Se necesita un FileReader para leer el mensaje de error del blob.
             if (err.response && err.response.data) {
                 const reader = new FileReader();
                 reader.onload = () => {
@@ -255,9 +290,7 @@ const ExportStudents = ({ getToken, selectedGroupId }) => {
                         setError('Error al procesar la respuesta del servidor.');
                     }
                 };
-                reader.onerror = () => {
-                    setError('No se pudo leer el error de la respuesta.');
-                };
+                reader.onerror = () => { setError('No se pudo leer el error de la respuesta.'); };
                 reader.readAsText(err.response.data);
             } else {
                 setError('Error de red o de servidor al intentar exportar.');
@@ -269,18 +302,37 @@ const ExportStudents = ({ getToken, selectedGroupId }) => {
 
     return (
         <div>
-            <div className="controls-bar" style={{ justifyContent: 'center', gap: '1rem', alignItems: 'flex-end' }}>
-                <div className="control-group">
-                    <label htmlFor="exportMode">Modo de Exportación:</label>
-                    <select id="exportMode" value={exportMode} onChange={(e) => setExportMode(e.target.value)}>
-                        <option value="simple">Simple (ID, Nombre)</option>
-                        <option value="full">Completo (Toda la info)</option>
-                    </select>
+            <div className="export-columns-container">
+                <h4>Selecciona las columnas a exportar:</h4>
+                <div className="checkbox-group select-all-group">
+                    <input
+                        type="checkbox"
+                        id="select-all"
+                        onChange={handleSelectAll}
+                        checked={selectedColumns.length === availableColumns.length}
+                    />
+                    <label htmlFor="select-all"><strong>Seleccionar Todo</strong></label>
                 </div>
-                {/* El filtro por grupo se gestiona globalmente a través de GroupContext, no se necesita un selector aquí */}
+                <div className="checkbox-grid">
+                    {availableColumns.map(col => (
+                        <div key={col.key} className="checkbox-group">
+                            <input
+                                type="checkbox"
+                                id={`col-${col.key}`}
+                                value={col.key}
+                                checked={selectedColumns.includes(col.key)}
+                                onChange={handleColumnChange}
+                            />
+                            <label htmlFor={`col-${col.key}`}>{col.label}</label>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            <div className="controls-bar" style={{ justifyContent: 'center', marginTop: '1.5rem' }}>
                 <button onClick={handleExport} disabled={loading} className="btn-action btn-export">
                     <svg className="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path d="M10 3a.75.75 0 01.75.75v10.638l3.96-4.155a.75.75 0 111.08 1.04l-5.25 5.5a.75.75 0 01-1.08 0l-5.25-5.5a.75.75 0 111.08-1.04l3.96 4.155V3.75A.75.75 0 0110 3z M3.75 16.5a.75.75 0 01.75-.75h10.5a.75.75 0 010 1.5H4.5a.75.75 0 01-.75-.75z" /></svg>
-                    {loading ? 'Exportando...' : 'Exportar a CSV'}
+                    {loading ? 'Exportando...' : 'Exportar a XLS'}
                 </button>
             </div>
             {error && <div className="error-message-page" style={{textAlign: 'center', marginTop: '1rem'}}>{error}</div>}
