@@ -12,6 +12,7 @@ import TeacherAttendancePage from './pages/TeacherAttendancePage';
 import TeacherScoresPage from './pages/TeacherScoresPage';
 import TeacherReportsPage from './pages/TeacherReportsPage';
 import TeacherProfilePage from './pages/TeacherProfilePage';
+import GroupManagementPage from './pages/GroupManagementPage';
 import StudentLoginPage from './pages/StudentLoginPage';
 import StudentDashboardPage from './pages/StudentDashboardPage';
 import StudentScoresDetailPage from './pages/StudentScoresDetailPage';
@@ -115,6 +116,7 @@ function App() {
                 <Route path="/docente/asistencia-camara" element={<CameraAttendancePage />} />
                 <Route path="/docente/puntuaciones" element={<TeacherScoresPage />} />
                 <Route path="/docente/informes" element={<TeacherReportsPage />} />
+                <Route path="/docente/grupos" element={<GroupManagementPage />} />
                 <Route path="/docente/mi-perfil" element={<TeacherProfilePage />} />
               </Route>
             </Route>
