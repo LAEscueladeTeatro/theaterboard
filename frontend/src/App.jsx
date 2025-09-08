@@ -10,9 +10,7 @@ import TeacherDashboardPage from './pages/TeacherDashboardPage';
 import StudentManagementPage from './pages/StudentManagementPage';
 import TeacherAttendancePage from './pages/TeacherAttendancePage';
 import TeacherScoresPage from './pages/TeacherScoresPage';
-import TeacherSummaryPage from './pages/TeacherSummaryPage';
-import TeacherRankingPage from './pages/TeacherRankingPage';
-import TeacherHistoricAttendancePage from './pages/TeacherHistoricAttendancePage';
+import TeacherReportsPage from './pages/TeacherReportsPage';
 import TeacherProfilePage from './pages/TeacherProfilePage';
 import StudentLoginPage from './pages/StudentLoginPage';
 import StudentDashboardPage from './pages/StudentDashboardPage';
@@ -116,9 +114,7 @@ function App() {
                 <Route path="/docente/asistencia" element={<TeacherAttendancePage />} />
                 <Route path="/docente/asistencia-camara" element={<CameraAttendancePage />} />
                 <Route path="/docente/puntuaciones" element={<TeacherScoresPage />} />
-                <Route path="/docente/resumen" element={<TeacherSummaryPage />} />
-                <Route path="/docente/ranking" element={<TeacherRankingPage />} />
-                <Route path="/docente/ingreso-historico" element={<TeacherHistoricAttendancePage />} />
+                <Route path="/docente/informes" element={<TeacherReportsPage />} />
                 <Route path="/docente/mi-perfil" element={<TeacherProfilePage />} />
               </Route>
             </Route>

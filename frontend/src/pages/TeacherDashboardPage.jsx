@@ -161,9 +161,7 @@ const TeacherDashboardPage = () => {
         <Link to="/docente/asistencia" className="dashboard-action-card">Registrar Asistencia</Link>
         <Link to="/docente/puntuaciones" className="dashboard-action-card">Registrar Puntuaciones</Link>
         <Link to="/docente/estudiantes" className="dashboard-action-card">Gestionar Estudiantes</Link>
-        <Link to="/docente/ingreso-historico" className="dashboard-action-card">Ingresar Registro Pasado</Link>
-        <Link to="/docente/resumen" className="dashboard-action-card">Resumen de Puntos</Link>
-        <Link to="/docente/ranking" className="dashboard-action-card">Ranking Mensual</Link>
+        <Link to="/docente/informes" className="dashboard-action-card">Informes y Resúmenes</Link>
       </div>
 
       <p style={{textAlign: 'center', marginTop: '2.5rem', fontSize: '0.9rem', color: 'var(--text-color-main)'}}>
