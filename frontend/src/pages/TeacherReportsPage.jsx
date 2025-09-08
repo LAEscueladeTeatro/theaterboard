@@ -208,6 +208,90 @@ const StudentSummary = ({ getToken, selectedGroupId }) => {
 };
 
 
+// --- Sub-component for Exporting Students ---
+const ExportStudents = ({ getToken, selectedGroupId }) => {
+    const [exportMode, setExportMode] = useState('simple');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const { groups } = useContext(GroupContext);
+
+    const handleExport = async () => {
+        setLoading(true);
+        setError('');
+        try {
+            const token = getToken();
+            const params = {
+                mode: exportMode,
+                group_id: selectedGroupId || 'all',
+            };
+
+            const response = await axios.get(`${API_BASE_URL}/reports/export/students`, {
+                params,
+                headers: { 'x-auth-token': token },
+                responseType: 'blob', // Importante para manejar la descarga de archivos
+            });
+
+            // Crear un enlace para descargar el archivo
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            const filename = `estudiantes-${params.group_id}-${params.mode}-${new Date().toISOString().split('T')[0]}.csv`;
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode.removeChild(link);
+            window.URL.revokeObjectURL(url);
+
+        } catch (err) {
+            // Como el responseType es 'blob', el error puede venir como blob también.
+            // Se necesita un FileReader para leer el mensaje de error del blob.
+            if (err.response && err.response.data) {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    try {
+                        const errorData = JSON.parse(reader.result);
+                        setError(errorData.message || 'Error desconocido al exportar.');
+                    } catch (e) {
+                        setError('Error al procesar la respuesta del servidor.');
+                    }
+                };
+                reader.onerror = () => {
+                    setError('No se pudo leer el error de la respuesta.');
+                };
+                reader.readAsText(err.response.data);
+            } else {
+                setError('Error de red o de servidor al intentar exportar.');
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div>
+            <div className="controls-bar" style={{ justifyContent: 'center', gap: '1rem', alignItems: 'flex-end' }}>
+                <div className="control-group">
+                    <label htmlFor="exportMode">Modo de Exportación:</label>
+                    <select id="exportMode" value={exportMode} onChange={(e) => setExportMode(e.target.value)}>
+                        <option value="simple">Simple (ID, Nombre)</option>
+                        <option value="full">Completo (Toda la info)</option>
+                    </select>
+                </div>
+                {/* El filtro por grupo se gestiona globalmente a través de GroupContext, no se necesita un selector aquí */}
+                <button onClick={handleExport} disabled={loading} className="btn-action btn-export">
+                    <svg className="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path d="M10 3a.75.75 0 01.75.75v10.638l3.96-4.155a.75.75 0 111.08 1.04l-5.25 5.5a.75.75 0 01-1.08 0l-5.25-5.5a.75.75 0 111.08-1.04l3.96 4.155V3.75A.75.75 0 0110 3z M3.75 16.5a.75.75 0 01.75-.75h10.5a.75.75 0 010 1.5H4.5a.75.75 0 01-.75-.75z" /></svg>
+                    {loading ? 'Exportando...' : 'Exportar a CSV'}
+                </button>
+            </div>
+            {error && <div className="error-message-page" style={{textAlign: 'center', marginTop: '1rem'}}>{error}</div>}
+             <div className="info-box-centered" style={{marginTop: '2rem'}}>
+                <p>La exportación se realizará para el <strong>grupo seleccionado en el filtro principal</strong>.</p>
+                <p>Si desea exportar <strong>todos los estudiantes</strong>, asegúrese de que el filtro de grupo esté en "Todos los Grupos".</p>
+            </div>
+        </div>
+    );
+};
+
 // --- Main Page Component ---
 const TeacherReportsPage = () => {
     const [activeTab, setActiveTab] = useState('daily_summary');
@@ -223,6 +307,8 @@ const TeacherReportsPage = () => {
                 return <MonthlyRanking {...props} />;
             case 'student_summary':
                 return <StudentSummary {...props} />;
+            case 'export_students':
+                return <ExportStudents {...props} />;
             default:
                 return null;
         }
@@ -239,6 +325,7 @@ const TeacherReportsPage = () => {
                 <button className={`tab-button ${activeTab === 'daily_summary' ? 'active' : ''}`} onClick={() => setActiveTab('daily_summary')}>Resumen Diario</button>
                 <button className={`tab-button ${activeTab === 'monthly_ranking' ? 'active' : ''}`} onClick={() => setActiveTab('monthly_ranking')}>Ranking Mensual</button>
                 <button className={`tab-button ${activeTab === 'student_summary' ? 'active' : ''}`} onClick={() => setActiveTab('student_summary')}>Resumen por Alumno</button>
+                <button className={`tab-button ${activeTab === 'export_students' ? 'active' : ''}`} onClick={() => setActiveTab('export_students')}>Exportar Alumnos</button>
             </div>
 
             <div className="reports-content" style={{marginTop: '1.5rem'}}>
