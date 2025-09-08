@@ -5,8 +5,10 @@ import { getCurrentPeruDateTimeObject, getTodayPeruDateString } from "../utils/d
 import { API_BASE_URL } from "../config";
 import Spinner from '../components/Spinner';
 import toast from 'react-hot-toast'; // Importar toast
+import QuickScoreModal from '../components/QuickScoreModal';
 
 // Iconos
+const StarIcon = () => <svg className="icon" viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fillRule="evenodd" d="M10.868 2.884c.321-.662 1.215-.662 1.536 0l1.681 3.468 3.82.556c.734.107 1.03.998.494 1.512l-2.764 2.694.654 3.805c.124.73-.64 1.282-1.28.944l-3.414-1.795a1.125 1.125 0 00-1.056 0L4.77 17.76c-.64.338-1.404-.214-1.28-.944l.653-3.805-2.764-2.694c-.537-.514-.24-1.405.494-1.512l3.82-.556L9.132 2.884z" clipRule="evenodd" /></svg>;
 const GiftIcon = () => <svg className="icon" viewBox="0 0 20 20" fill="currentColor" width="16" height="16" style={{verticalAlign: 'middle', marginRight: '0.5em'}}><path d="M10 1.5a1.5 1.5 0 00-1.5 1.5v1.233A5.003 5.003 0 005.78 7.52L3.666 9.634a.75.75 0 000 1.06L9.25 16.28a.75.75 0 001.06 0L16.333 10.7a.75.75 0 000-1.061L14.221 7.52c-.902-.903-2.148-1.498-3.471-1.724V3a1.5 1.5 0 00-1.5-1.5c-.396 0-.772.156-1.06.439A1.5 1.5 0 0010 1.5zm0 3.417a3.5 3.5 0 013.231 2.066l.06.112L15.03 8.833l-5.03 5.03-1.739-1.739.011-.01.68-.68a3.502 3.502 0 012.048-5.006V4.917zM10 18a.75.75 0 000-1.5.75.75 0 000 1.5z" /></svg>;
 const CheckCircleIcon = () => <svg className="icon" viewBox="0 0 20 20" fill="currentColor" width="16" height="16" style={{verticalAlign: 'middle', marginRight: '0.5em'}}><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" /></svg>;
 const CameraIcon = () => <svg className="icon" viewBox="0 0 20 20" fill="currentColor" width="16" height="16" style={{verticalAlign: 'middle', marginRight: '0.5em'}}><path d="M2 6a2 2 0 012-2h1.5a1.5 1.5 0 001.28-.72l.534-1.069A1.5 1.5 0 018.618 1h2.764a1.5 1.5 0 011.304.72l.534 1.07A1.5 1.5 0 0014.5 4H16a2 2 0 012 2v1H2V6z" /><path fillRule="evenodd" d="M2 8v8a2 2 0 002 2h12a2 2 0 002-2V8H2zm6.5 1.5a3.5 3.5 0 100 7 3.5 3.5 0 000-7zM10 15a2.5 2.5 0 110-5 2.5 2.5 0 010 5z" clipRule="evenodd" /></svg>;
@@ -15,7 +17,7 @@ const STATUS_DISPLAY_MAP = { PUNTUAL: { text: 'Puntual', basePoints: 2 }, A_TIEM
 const HISTORIC_STATUS_OPTIONS = [ { value: 'PUNTUAL', label: 'Puntual' }, { value: 'A_TIEMPO', label: 'A Tiempo' }, { value: 'TARDANZA_JUSTIFICADA', label: 'Tardanza Justificada' }, { value: 'TARDANZA_INJUSTIFICADA', label: 'Tardanza Injustificada' }];
 const getDisplayableAttendanceInfo = (status, points_earned = 0, base_attendance_points = 0) => { const displayInfo = STATUS_DISPLAY_MAP[status] || { text: status, basePoints: 0 }; let totalPoints = 0; if (status && !status.startsWith('AUSENCIA') && status !== 'NO_REGISTRADO') { totalPoints = (points_earned || 0) + (base_attendance_points || 0); } else if (status) { totalPoints = (points_earned || 0); } return `${displayInfo.text} (${totalPoints >= 0 ? '+' : ''}${totalPoints} pts)`; };
 
-const TeacherAttendancePage = ({ selectedDate: historicDateProp }) => {
+const TeacherAttendancePage = () => {
   const [students, setStudents] = useState([]);
   const [allStudents, setAllStudents] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -33,19 +35,33 @@ const TeacherAttendancePage = ({ selectedDate: historicDateProp }) => {
   const [absentStudentsForModal, setAbsentStudentsForModal] = useState([]);
   const [absentJustifications, setAbsentJustifications] = useState({});
   const [sortConfig, setSortConfig] = useState({ key: 'full_name', direction: 'ascending' });
+  const [quickScoreStudent, setQuickScoreStudent] = useState(null);
 
   // Estados para spinners de acciones
   const [isApplyingBonus, setIsApplyingBonus] = useState(false);
   const [isClosingAttendance, setIsClosingAttendance] = useState(false);
   const [isSavingSpecificAttendance, setIsSavingSpecificAttendance] = useState(false);
 
-  const [dateForOperations, setDateForOperations] = useState(historicDateProp || getTodayPeruDateString());
+  const [dateForOperations, setDateForOperations] = useState(getTodayPeruDateString());
 
-  useEffect(() => { const newDate = historicDateProp || getTodayPeruDateString(); setDateForOperations(newDate); setDailyStatus({ attendance_records: [], bonus_awarded_today: null }); setAttendanceData({}); setSelectedStudentForBonus(''); }, [historicDateProp, getTodayPeruDateString]); // Añadido getTodayPeruDateString a dependencias
+  useEffect(() => {
+    // Reset state when date changes
+    setDailyStatus({ attendance_records: [], bonus_awarded_today: null });
+    setAttendanceData({});
+    setSelectedStudentForBonus('');
+  }, [dateForOperations]);
   const getToken = useCallback(() => localStorage.getItem('teacherToken'), []);
 
   useEffect(() => { const fetchData = async () => { setLoading(true); setError(null); try { const token = getToken(); const headers = { 'x-auth-token': token }; const studentsResponse = await axios.get(`${API_BASE_URL}/admin/students?active=true`, { headers }); setAllStudents(studentsResponse.data); setStudents(studentsResponse.data); const dailyStatusResponse = await axios.get(`${API_BASE_URL}/attendance/status/${dateForOperations}?t=${new Date().getTime()}`, { headers }); setDailyStatus(dailyStatusResponse.data); const initialAttendance = {}; dailyStatusResponse.data.attendance_records.forEach(record => { initialAttendance[record.student_id] = { status: record.status, notes: record.notes || '', is_synced: true }; }); setAttendanceData(initialAttendance); } catch (err) { console.error(`Error fetching initial data for date ${dateForOperations}:`, err); setError(err.response?.data?.message || err.message || 'Error al cargar datos iniciales.'); } finally { setLoading(false); } }; fetchData(); }, [getToken, dateForOperations, API_BASE_URL]);
-  useEffect(() => { let timer; if (!historicDateProp) { timer = setInterval(() => setCurrentPeruDateTime(getCurrentPeruDateTimeObject()), 1000); } return () => { if (timer) clearInterval(timer); }; }, [historicDateProp]); // getCurrentPeruDateTimeObject es estable
+  useEffect(() => {
+    let timer;
+    if (dateForOperations === getTodayPeruDateString()) {
+      timer = setInterval(() => setCurrentPeruDateTime(getCurrentPeruDateTimeObject()), 1000);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [dateForOperations]);
   const processedStudents = React.useMemo(() => {
     let sortableItems = [...allStudents]; // Start with all students for the current group
 
@@ -96,8 +112,8 @@ const TeacherAttendancePage = ({ selectedDate: historicDateProp }) => {
   };
 
   const handleAttendanceChange = (studentId, field, value) => setAttendanceData(prev => ({ ...prev, [studentId]: { ...prev[studentId], [field]: value, is_synced: false } }));
-  const determineStatusTypeForModal = () => { if (historicDateProp) return 'HISTORIC_MODAL'; const nowPeru = currentPeruDateTime; const hours = nowPeru.getHours(); const minutes = nowPeru.getMinutes(); if (hours < 17) return 'PUNTUAL_DIRECT'; if (hours === 17 && minutes <= 15) return 'A_TIEMPO_DIRECT'; return 'TARDANZA_MODAL'; };
-  const handleOpenStatusModal = (student, existingStatus = '') => { setStatusModalStudent(student); setStatusModalNotes(attendanceData[student.id]?.notes || ''); let defaultStatus = ''; if (historicDateProp) { defaultStatus = existingStatus || 'PUNTUAL'; } else { defaultStatus = existingStatus || 'TARDANZA_INJUSTIFICADA'; } setStatusModalSelectedStatus(existingStatus || defaultStatus); setStatusModalOpen(true); };
+  const determineStatusTypeForModal = () => { if (dateForOperations !== getTodayPeruDateString()) return 'HISTORIC_MODAL'; const nowPeru = currentPeruDateTime; const hours = nowPeru.getHours(); const minutes = nowPeru.getMinutes(); if (hours < 17) return 'PUNTUAL_DIRECT'; if (hours === 17 && minutes <= 15) return 'A_TIEMPO_DIRECT'; return 'TARDANZA_MODAL'; };
+  const handleOpenStatusModal = (student, existingStatus = '') => { setStatusModalStudent(student); setStatusModalNotes(attendanceData[student.id]?.notes || ''); let defaultStatus = ''; if (dateForOperations !== getTodayPeruDateString()) { defaultStatus = existingStatus || 'PUNTUAL'; } else { defaultStatus = existingStatus || 'TARDANZA_INJUSTIFICADA'; } setStatusModalSelectedStatus(existingStatus || defaultStatus); setStatusModalOpen(true); };
   const handleCloseStatusModal = () => { setStatusModalOpen(false); setStatusModalStudent(null); setStatusModalSelectedStatus(''); setStatusModalNotes(''); };
   const handleSubmitStatusModal = async () => { if (!statusModalStudent || !statusModalSelectedStatus) { toast.error("Por favor, seleccione un estado de asistencia."); return; } setIsSavingSpecificAttendance(true); try { await saveAttendanceRecord(statusModalStudent.id, statusModalSelectedStatus, statusModalNotes); } catch (saveErr) { /* El error ya se maneja y toastea en saveAttendanceRecord */ } finally { setIsSavingSpecificAttendance(false); handleCloseStatusModal(); } };
   const saveAttendanceRecord = async (studentId, status, notes) => { try { const token = getToken(); const response = await axios.post(`${API_BASE_URL}/attendance/record`, { student_id: studentId, attendance_date: dateForOperations, status: status, notes: notes, }, { headers: { 'x-auth-token': token } }); setAttendanceData(prev => ({ ...prev, [studentId]: { status: status, notes: notes, is_synced: true } })); setDailyStatus(prev => { const studentInfo = allStudents.find(s => s.id === studentId); const updatedRecords = prev.attendance_records.filter(r => r.student_id !== studentId); updatedRecords.push({ student_id: studentId, status: status, notes: notes, full_name: studentInfo?.full_name || 'Desconocido', nickname: studentInfo?.nickname || '', points_earned: response.data.record.points_earned, base_attendance_points: response.data.record.base_attendance_points, recorded_at: response.data.record.recorded_at, }); return { ...prev, attendance_records: updatedRecords.sort((a,b) => (a.full_name || "").localeCompare(b.full_name || "")) }; }); const studentInfoForAlert = allStudents.find(s => s.id === studentId); toast.success(`Asistencia para ${studentInfoForAlert?.full_name || studentId} (${dateForOperations}) registrada como ${status}.`); } catch (err) { console.error("Error saving attendance:", err); const errorMsg = err.response?.data?.message || err.message || 'Error al guardar asistencia.'; setError(errorMsg); toast.error(`Error al guardar: ${errorMsg}`); throw err; /* Re-throw para que el finally del caller se ejecute */ }};
@@ -117,7 +133,7 @@ const TeacherAttendancePage = ({ selectedDate: historicDateProp }) => {
   const renderStatusModal = () => {
     if (!statusModalOpen || !statusModalStudent) return null;
     const modalTitle = `Registrar/Modificar Estado para: ${statusModalStudent.full_name} (${statusModalStudent.id})`;
-    const isHistoric = !!historicDateProp;
+    const isHistoric = dateForOperations !== getTodayPeruDateString();
     return (
       <div className="modal-overlay">
         <div className="modal-content">
@@ -188,22 +204,36 @@ const TeacherAttendancePage = ({ selectedDate: historicDateProp }) => {
 
   return (
     <div className="content-page-container">
-      {!historicDateProp && (
-        <div className="page-header-controls">
-           <Link to="/docente/dashboard" className="back-link">&larr; Volver al Panel</Link>
+      <div className="page-header-controls">
+         <Link to="/docente/dashboard" className="back-link">&larr; Volver al Panel</Link>
+      </div>
+      <h2 className="page-title">Registro de Asistencia</h2>
+
+      <div className="controls-section" style={{ borderBottom: '1px solid #ccc', paddingBottom: '1rem', marginBottom: '1rem' }}>
+          <div className="control-group">
+              <label htmlFor="attendanceDate">Seleccionar Fecha:</label>
+              <input
+                  type="date"
+                  id="attendanceDate"
+                  value={dateForOperations}
+                  onChange={(e) => setDateForOperations(e.target.value)}
+              />
+          </div>
+      </div>
+
+      {dateForOperations === getTodayPeruDateString() && (
+        <div style={{ textAlign: 'center', margin: '1rem 0' }}>
+            <Link to="/docente/asistencia-camara" className="btn-action btn-teacher" style={{fontSize: '1.1rem', padding: '12px 20px'}}>
+                <CameraIcon /> Marcar Asistencia con Cámara
+            </Link>
         </div>
       )}
-       <h2 className="page-title">{historicDateProp ? "Registro de Asistencia Histórico" : "Registrar Asistencia del Día"}</h2>
-      {!historicDateProp && (
-          <div style={{ textAlign: 'center', margin: '1rem 0' }}>
-              <Link to="/docente/asistencia-camara" className="btn-action btn-teacher" style={{fontSize: '1.1rem', padding: '12px 20px'}}>
-                  <CameraIcon /> Marcar Asistencia con Cámara
-              </Link>
-          </div>
-      )}
+
       <p className="current-date-display">
-        Fecha para registros: <strong>{dateForOperations}</strong>
-        {!historicDateProp && `  •  Hora Actual (Perú): ${currentPeruDateTime.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`}
+        {dateForOperations === getTodayPeruDateString()
+          ? `Registrando para Hoy: ${dateForOperations}  •  Hora Actual (Perú): ${currentPeruDateTime.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`
+          : `Mostrando registros para: ${dateForOperations}`
+        }
       </p>
 
       <div className="controls-bar">
@@ -215,7 +245,7 @@ const TeacherAttendancePage = ({ selectedDate: historicDateProp }) => {
         />
       </div>
 
-      {!historicDateProp && (
+      {dateForOperations === getTodayPeruDateString() && (
         <div className="controls-section">
           <h4 className="section-title">Bono Madrugador</h4>
           {dailyStatus.bonus_awarded_today ? (
@@ -261,6 +291,7 @@ const TeacherAttendancePage = ({ selectedDate: historicDateProp }) => {
                 <th><button type="button" onClick={() => requestSort('nickname')} className="sortable-header">Apodo{sortConfig.key === 'nickname' ? (sortConfig.direction === 'ascending' ? ' ▲' : ' ▼') : ''}</button></th>
                 <th>Estado Actual</th>
                 <th>Acciones</th>
+                <th>Puntuación Rápida</th>
                 <th>Notas</th>
               </tr>
             </thead>
@@ -296,6 +327,16 @@ const TeacherAttendancePage = ({ selectedDate: historicDateProp }) => {
                       )}
                     </td>
                     <td>
+                      <button
+                        className="btn-action-row"
+                        onClick={() => setQuickScoreStudent(student)}
+                        disabled={!isRecorded || record?.status.startsWith('AUSENCIA')}
+                        title={!isRecorded || record?.status.startsWith('AUSENCIA') ? 'Debe registrar asistencia primero' : 'Añadir puntuación'}
+                      >
+                        <StarIcon /> Puntuar
+                      </button>
+                    </td>
+                    <td>
                       <input
                         type="text"
                         value={currentStudentAttendance.notes}
@@ -326,6 +367,16 @@ const TeacherAttendancePage = ({ selectedDate: historicDateProp }) => {
 
       {renderStatusModal()}
       {renderCloseAttendanceModal()}
+      {quickScoreStudent && (
+        <QuickScoreModal
+          student={quickScoreStudent}
+          date={dateForOperations}
+          onClose={() => setQuickScoreStudent(null)}
+          onScoreSaved={() => {
+            // Optionally, you could refresh some data here, but for now, just closing is fine.
+          }}
+        />
+      )}
     </div>
   );
 };
