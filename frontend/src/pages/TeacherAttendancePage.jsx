@@ -379,8 +379,123 @@ const TeacherAttendancePage = () => {
           }}
         />
       )}
+
+      <AdvancedCleaningOptions allStudents={allStudents} getToken={getToken} />
     </div>
   );
 };
+
+// Componente para las opciones de limpieza
+const AdvancedCleaningOptions = ({ allStudents, getToken }) => {
+    const [studentToClear, setStudentToClear] = useState('');
+    const [monthToClear, setMonthToClear] = useState('');
+    const [monthToClearAll, setMonthToClearAll] = useState('');
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [confirmCallback, setConfirmCallback] = useState(null);
+    const [confirmMessage, setConfirmMessage] = useState('');
+    const [isCleaning, setIsCleaning] = useState(false);
+
+    const handleClearStudentData = () => {
+        if (!studentToClear || !monthToClear) {
+            toast.error('Por favor, seleccione un estudiante y un mes.');
+            return;
+        }
+        setConfirmMessage(`¿Está seguro de que desea borrar TODOS los registros (asistencia, bonos, puntajes) de ${allStudents.find(s => s.id === studentToClear)?.full_name} para el mes de ${monthToClear}? Esta acción es irreversible.`);
+        setConfirmCallback(() => async () => {
+            setIsCleaning(true);
+            try {
+                const token = getToken();
+                await axios.delete(`${API_BASE_URL}/admin-actions/student-records`, {
+                    headers: { 'x-auth-token': token },
+                    data: { studentId: studentToClear, month: monthToClear }
+                });
+                toast.success('Datos del estudiante limpiados para el mes seleccionado.');
+            } catch (err) {
+                toast.error(err.response?.data?.message || 'Error al limpiar los datos.');
+            } finally {
+                setIsCleaning(false);
+                setShowConfirmModal(false);
+                setStudentToClear('');
+                setMonthToClear('');
+            }
+        });
+        setShowConfirmModal(true);
+    };
+
+    const handleClearAllData = () => {
+        if (!monthToClearAll) {
+            toast.error('Por favor, seleccione un mes.');
+            return;
+        }
+        setConfirmMessage(`¿Está seguro de que desea borrar TODOS los registros de TODOS los estudiantes para el mes de ${monthToClearAll}? Esta acción es irreversible y afectará a todos.`);
+        setConfirmCallback(() => async () => {
+            setIsCleaning(true);
+            try {
+                const token = getToken();
+                await axios.delete(`${API_BASE_URL}/admin-actions/monthly-records`, {
+                    headers: { 'x-auth-token': token },
+                    data: { month: monthToClearAll }
+                });
+                toast.success(`Todos los datos del mes ${monthToClearAll} han sido limpiados.`);
+            } catch (err) {
+                toast.error(err.response?.data?.message || 'Error al limpiar los datos.');
+            } finally {
+                setIsCleaning(false);
+                setShowConfirmModal(false);
+                setMonthToClearAll('');
+            }
+        });
+        setShowConfirmModal(true);
+    };
+
+    return (
+        <div className="advanced-options-section">
+            <h3 className="section-title">Opciones Avanzadas de Limpieza</h3>
+            <div className="card">
+                <h4 className="card-header">Limpiar Datos de un Estudiante por Mes</h4>
+                <div className="card-content form-grid">
+                    <div className="form-group">
+                        <label>Estudiante:</label>
+                        <select value={studentToClear} onChange={(e) => setStudentToClear(e.target.value)}>
+                            <option value="">-- Seleccione Estudiante --</option>
+                            {allStudents.map(s => <option key={s.id} value={s.id}>{s.full_name}</option>)}
+                        </select>
+                    </div>
+                    <div className="form-group">
+                        <label>Mes:</label>
+                        <input type="month" value={monthToClear} onChange={(e) => setMonthToClear(e.target.value)} />
+                    </div>
+                    <div className="form-group">
+                        <button onClick={handleClearStudentData} className="btn-action btn-danger" disabled={isCleaning}>Limpiar Datos del Estudiante</button>
+                    </div>
+                </div>
+            </div>
+            <div className="card">
+                <h4 className="card-header">Limpiar Todos los Datos de un Mes</h4>
+                <div className="card-content form-grid">
+                    <div className="form-group">
+                        <label>Mes:</label>
+                        <input type="month" value={monthToClearAll} onChange={(e) => setMonthToClearAll(e.target.value)} />
+                    </div>
+                    <div className="form-group">
+                        <button onClick={handleClearAllData} className="btn-action btn-danger" disabled={isCleaning}>Limpiar Datos del Mes</button>
+                    </div>
+                </div>
+            </div>
+            {showConfirmModal && (
+                <ConfirmationModal
+                    isOpen={showConfirmModal}
+                    onClose={() => setShowConfirmModal(false)}
+                    onConfirm={confirmCallback}
+                    title="Confirmación de Borrado"
+                    message={confirmMessage}
+                    confirmText="Sí, estoy seguro"
+                    isDestructive={true}
+                    showSpinner={isCleaning}
+                />
+            )}
+        </div>
+    );
+}
 
 export default TeacherAttendancePage;

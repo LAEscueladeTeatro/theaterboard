@@ -160,8 +160,7 @@ const TeacherDashboardPage = () => {
       <div className="dashboard-actions-grid">
         <Link to="/docente/asistencia" className="dashboard-action-card">Registrar Asistencia</Link>
         <Link to="/docente/puntuaciones" className="dashboard-action-card">Registrar Puntuaciones</Link>
-        <Link to="/docente/estudiantes" className="dashboard-action-card">Gestionar Estudiantes</Link>
-        <Link to="/docente/grupos" className="dashboard-action-card">Gestionar Grupos</Link>
+        <Link to="/docente/estudiantes" className="dashboard-action-card">Gestionar Estudiantes y Grupos</Link>
         <Link to="/docente/informes" className="dashboard-action-card">Informes y Resúmenes</Link>
       </div>
 
