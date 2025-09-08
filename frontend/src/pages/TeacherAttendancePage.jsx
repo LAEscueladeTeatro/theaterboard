@@ -7,6 +7,7 @@ import Spinner from '../components/Spinner';
 import toast from 'react-hot-toast'; // Importar toast
 import QuickScoreModal from '../components/QuickScoreModal';
 import { GroupContext } from '../context/GroupContext';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 // Iconos
 const StarIcon = () => <svg className="icon" viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fillRule="evenodd" d="M10.868 2.884c.321-.662 1.215-.662 1.536 0l1.681 3.468 3.82.556c.734.107 1.03.998.494 1.512l-2.764 2.694.654 3.805c.124.73-.64 1.282-1.28.944l-3.414-1.795a1.125 1.125 0 00-1.056 0L4.77 17.76c-.64.338-1.404-.214-1.28-.944l.653-3.805-2.764-2.694c-.537-.514-.24-1.405.494-1.512l3.82-.556L9.132 2.884z" clipRule="evenodd" /></svg>;
