@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useContext } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { getCurrentPeruDateTimeObject, getTodayPeruDateString } from "../utils/dateUtils";
@@ -6,6 +6,7 @@ import { API_BASE_URL } from "../config";
 import Spinner from '../components/Spinner';
 import toast from 'react-hot-toast'; // Importar toast
 import QuickScoreModal from '../components/QuickScoreModal';
+import { GroupContext } from '../context/GroupContext';
 
 // Iconos
 const StarIcon = () => <svg className="icon" viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fillRule="evenodd" d="M10.868 2.884c.321-.662 1.215-.662 1.536 0l1.681 3.468 3.82.556c.734.107 1.03.998.494 1.512l-2.764 2.694.654 3.805c.124.73-.64 1.282-1.28.944l-3.414-1.795a1.125 1.125 0 00-1.056 0L4.77 17.76c-.64.338-1.404-.214-1.28-.944l.653-3.805-2.764-2.694c-.537-.514-.24-1.405.494-1.512l3.82-.556L9.132 2.884z" clipRule="evenodd" /></svg>;
@@ -18,6 +19,7 @@ const HISTORIC_STATUS_OPTIONS = [ { value: 'PUNTUAL', label: 'Puntual' }, { valu
 const getDisplayableAttendanceInfo = (status, points_earned = 0, base_attendance_points = 0) => { const displayInfo = STATUS_DISPLAY_MAP[status] || { text: status, basePoints: 0 }; let totalPoints = 0; if (status && !status.startsWith('AUSENCIA') && status !== 'NO_REGISTRADO') { totalPoints = (points_earned || 0) + (base_attendance_points || 0); } else if (status) { totalPoints = (points_earned || 0); } return `${displayInfo.text} (${totalPoints >= 0 ? '+' : ''}${totalPoints} pts)`; };
 
 const TeacherAttendancePage = () => {
+  const { selectedGroupId } = useContext(GroupContext);
   const [students, setStudents] = useState([]);
   const [allStudents, setAllStudents] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -52,7 +54,7 @@ const TeacherAttendancePage = () => {
   }, [dateForOperations]);
   const getToken = useCallback(() => localStorage.getItem('teacherToken'), []);
 
-  useEffect(() => { const fetchData = async () => { setLoading(true); setError(null); try { const token = getToken(); const headers = { 'x-auth-token': token }; const studentsResponse = await axios.get(`${API_BASE_URL}/admin/students?active=true`, { headers }); setAllStudents(studentsResponse.data); setStudents(studentsResponse.data); const dailyStatusResponse = await axios.get(`${API_BASE_URL}/attendance/status/${dateForOperations}?t=${new Date().getTime()}`, { headers }); setDailyStatus(dailyStatusResponse.data); const initialAttendance = {}; dailyStatusResponse.data.attendance_records.forEach(record => { initialAttendance[record.student_id] = { status: record.status, notes: record.notes || '', is_synced: true }; }); setAttendanceData(initialAttendance); } catch (err) { console.error(`Error fetching initial data for date ${dateForOperations}:`, err); setError(err.response?.data?.message || err.message || 'Error al cargar datos iniciales.'); } finally { setLoading(false); } }; fetchData(); }, [getToken, dateForOperations, API_BASE_URL]);
+  useEffect(() => { const fetchData = async () => { setLoading(true); setError(null); try { const token = getToken(); const headers = { 'x-auth-token': token }; const studentUrl = new URL(`${API_BASE_URL}/admin/students`); studentUrl.searchParams.append('active', 'true'); if (selectedGroupId && selectedGroupId !== 'all') { studentUrl.searchParams.append('group_id', selectedGroupId); } const studentsResponse = await axios.get(studentUrl.toString(), { headers }); setAllStudents(studentsResponse.data); setStudents(studentsResponse.data); const dailyStatusResponse = await axios.get(`${API_BASE_URL}/attendance/status/${dateForOperations}?t=${new Date().getTime()}`, { headers }); setDailyStatus(dailyStatusResponse.data); const initialAttendance = {}; dailyStatusResponse.data.attendance_records.forEach(record => { initialAttendance[record.student_id] = { status: record.status, notes: record.notes || '', is_synced: true }; }); setAttendanceData(initialAttendance); } catch (err) { console.error(`Error fetching initial data for date ${dateForOperations}:`, err); setError(err.response?.data?.message || err.message || 'Error al cargar datos iniciales.'); } finally { setLoading(false); } }; fetchData(); }, [getToken, dateForOperations, selectedGroupId]);
   useEffect(() => {
     let timer;
     if (dateForOperations === getTodayPeruDateString()) {
