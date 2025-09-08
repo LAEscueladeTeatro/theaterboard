@@ -13,6 +13,7 @@ const publicRoutes = require('./routes/publicRoutes'); // Nuevas rutas públicas
 const adminSettingsRoutes = require('./routes/adminSettingsRoutes'); // <-- Importar nuevas rutas
 const teacherRoutes = require('./routes/teacherRoutes'); // <-- Importar rutas de docente
 const groupRoutes = require('./routes/groupRoutes');
+const adminActionsRoutes = require('./routes/adminActionsRoutes');
 
 // Importar Middleware (si es necesario globalmente o para rutas específicas aquí)
 const authMiddleware = require('./middleware/authMiddleware');
@@ -39,6 +40,7 @@ app.use('/api/student', authMiddleware, studentRoutes);
 app.use('/api/admin/students', authMiddleware, studentAdminRoutes);
 app.use('/api/admin/settings', authMiddleware, adminSettingsRoutes); // <-- Montar nuevas rutas
 app.use('/api/groups', authMiddleware, groupRoutes);
+app.use('/api/admin-actions', authMiddleware, adminActionsRoutes);
 app.use('/api/public', publicRoutes); // Rutas públicas (ej: /api/public/register)
 
 const ensureDatabaseSchema = async () => {
