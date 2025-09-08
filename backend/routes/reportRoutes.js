@@ -345,84 +345,96 @@ router.get('/monthly-ranking', async (req, res) => {
 
 /**
  * @route   GET /api/reports/export/students
- * @desc    Exportar lista de estudiantes en formato CSV.
+ * @desc    Exportar lista de estudiantes en formato CSV/XLS.
  * @access  Private (Teacher)
- * @query   mode=simple|full, group_id=<id>|all
+ * @query   columns=col1,col2,..., group_id=<id>|all
  */
 router.get('/export/students', async (req, res) => {
-  const { mode, group_id } = req.query;
+    const { columns, group_id } = req.query;
 
-  if (!mode || (mode !== 'simple' && mode !== 'full')) {
-    return res.status(400).json({ message: 'El parámetro "mode" es requerido y debe ser "simple" o "full".' });
-  }
-
-  let client;
-  try {
-    client = await pool.connect();
-
-    let query;
-    const queryParams = [];
-
-    // Campos para el modo simple
-    let selectFields = 's.id, s.full_name';
-    if (mode === 'full') {
-      // Todos los campos de students para el modo completo
-      selectFields = 's.*';
+    if (!columns) {
+        return res.status(400).json({ message: 'El parámetro "columns" es requerido.' });
     }
 
-    let fromClause = 'FROM students s';
-    let whereClause = 'WHERE s.is_active = true';
+    const requestedColumns = columns.split(',');
 
-    // Si se pide un reporte general (todos los grupos), añadir el nombre del grupo
-    if (!group_id || group_id === 'all') {
-      selectFields += ', g.name AS group_name';
-      fromClause += ' LEFT JOIN groups g ON s.group_id = g.group_id';
-    } else {
-      whereClause += ' AND s.group_id = $1';
-      queryParams.push(group_id);
+    // Whitelist de columnas para evitar inyección SQL
+    const allowedColumns = [
+        'id', 'full_name', 'nickname', 'age', 'birth_date', 'phone', 'email',
+        'guardian_full_name', 'guardian_relationship', 'guardian_phone',
+        'guardian_email', 'medical_conditions', 'comments',
+        'emergency_contact_name', 'emergency_contact_phone'
+    ];
+
+    const sanitizedColumns = requestedColumns.filter(col => allowedColumns.includes(col));
+
+    if (sanitizedColumns.length === 0 && !requestedColumns.includes('group_name')) {
+        return res.status(400).json({ message: 'Ninguna de las columnas solicitadas es válida.' });
     }
 
-    query = `SELECT ${selectFields} ${fromClause} ${whereClause} ORDER BY s.full_name;`;
+    let client;
+    try {
+        client = await pool.connect();
 
-    const { rows } = await client.query(query, queryParams);
+        const queryParams = [];
+        let fromClause = 'FROM students s';
+        let whereClause = 'WHERE s.is_active = true';
 
-    if (rows.length === 0) {
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', 'attachment; filename="students.csv"');
-      return res.status(200).send(''); // Enviar un CSV vacío si no hay datos
-    }
+        let selectFields = sanitizedColumns.map(col => `s.${col}`).join(', ');
 
-    // Convertir JSON a CSV manualmente
-    const headers = Object.keys(rows[0]);
-    const csvHeader = headers.join(',');
-
-    const csvRows = rows.map(row => {
-      return headers.map(header => {
-        let value = row[header];
-        // Si el valor es null o undefined, convertir a string vacío
-        if (value === null || typeof value === 'undefined') {
-          value = '';
+        // Manejo especial para la columna 'group_name'
+        if (requestedColumns.includes('group_name')) {
+            if (selectFields) selectFields += ', ';
+            selectFields += 'g.name AS group_name';
+            fromClause += ' LEFT JOIN groups g ON s.group_id = g.group_id';
         }
-        // Si el valor contiene comas, envolverlo en comillas dobles
-        if (typeof value === 'string' && value.includes(',')) {
-          return `"${value}"`;
+
+        if (group_id && group_id !== 'all') {
+            whereClause += ` AND s.group_id = $${queryParams.length + 1}`;
+            queryParams.push(group_id);
         }
-        return value;
-      }).join(',');
-    }).join('\n');
 
-    const csv = `${csvHeader}\n${csvRows}`;
+        const query = `SELECT ${selectFields || 's.id'} ${fromClause} ${whereClause} ORDER BY s.full_name;`;
 
-    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition', 'attachment; filename="students.csv"');
-    res.status(200).send(csv);
+        const { rows } = await client.query(query, queryParams);
 
-  } catch (err) {
-    console.error('Error en GET /api/reports/export/students:', err);
-    res.status(500).json({ message: 'Error interno del servidor al exportar los estudiantes.' });
-  } finally {
-    if (client) client.release();
-  }
+        if (rows.length === 0) {
+            res.setHeader('Content-Type', 'application/vnd.ms-excel');
+            const filename = `estudiantes-vacio-${new Date().toISOString().split('T')[0]}.xls`;
+            res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+            return res.status(200).send('');
+        }
+
+        const headers = Object.keys(rows[0]);
+        const csvHeader = headers.join('\t'); // Usar tab como separador para mejor compatibilidad con Excel
+
+        const csvRows = rows.map(row => {
+            return headers.map(header => {
+                let value = row[header];
+                if (value === null || typeof value === 'undefined') {
+                    value = '';
+                }
+                // Limpiar saltos de línea y otros caracteres que puedan romper el formato
+                if (typeof value === 'string') {
+                    value = value.replace(/(\r\n|\n|\r)/gm, " ").replace(/\t/g, " ");
+                }
+                return value;
+            }).join('\t');
+        }).join('\n');
+
+        const csv = `${csvHeader}\n${csvRows}`;
+
+        const filename = `estudiantes-${group_id || 'todos'}-${new Date().toISOString().split('T')[0]}.xls`;
+        res.setHeader('Content-Type', 'application/vnd.ms-excel; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.status(200).send(Buffer.from(csv, 'utf-8'));
+
+    } catch (err) {
+        console.error('Error en GET /api/reports/export/students:', err);
+        res.status(500).json({ message: 'Error interno del servidor al exportar los estudiantes.' });
+    } finally {
+        if (client) client.release();
+    }
 });
 
 
